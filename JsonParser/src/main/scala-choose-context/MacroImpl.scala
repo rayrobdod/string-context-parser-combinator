@@ -104,7 +104,7 @@ object MacroImpl {
 						IsString("b").map(_ => '\b') orElse
 						IsString("f").map(_ => '\f') orElse
 						IsString("t").map(_ => '\t')
-					)).map(_._2)
+					))
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(_.mkString).map(x => c.literal(x))
@@ -152,7 +152,7 @@ object MacroImpl {
 					}
 					c.Expr(summedString)
 				})
-				(DelimiterP andThen Content andThen DelimiterP).map(_._1._2)
+				(DelimiterP andThen Content andThen DelimiterP)
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
@@ -169,6 +169,12 @@ object MacroImpl {
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
 
+			/** An AndThenTypes that melds the shape of an A followed by a repeating A into a single List */
+			implicit def headTailAndThenTypes[A]:Implicits.AndThenTypes[A, Seq[A], List[A]] = new HeadTailAndThenTypes
+			private[this] final class HeadTailAndThenTypes[A] extends Implicits.AndThenTypes[A, Seq[A], List[A]] {
+				def aggregate(a:A, bs:Seq[A]):List[A] = a :: bs.toList
+			}
+
 			val ArrayP:Parser[c.Expr[JArray]] = DelayedConstruction(() => {
 				val Prefix:Parser[Unit] = IsString("[")
 				val Delim:Parser[Unit] = IsString(",")
@@ -177,11 +183,8 @@ object MacroImpl {
 				val Elems:Parser[List[c.Expr[JValue]]] = (
 					(Prefix andThen WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						(ValueP andThen (Delim andThen ValueP).map(_._2).repeat() andThen Suffix).map({x =>
-							val ((a, bs), _) = x
-							a :: bs.toList
-						})
-					)).map(_._2)
+						((ValueP andThen (Delim andThen ValueP).repeat()) andThen Suffix)
+					))
 				)
 				val Elems2:Parser[c.Expr[Vector[JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Vector).tree, "apply", xs.map(_.tree))))
 				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeOf[Vector[JValue]]).map(x => c.Expr(x))
@@ -199,7 +202,7 @@ object MacroImpl {
 
 				val KeyValuePair:Parser[c.Expr[(String, JValue)]] = (
 					(WhitespaceP andThen StringP andThen WhitespaceP andThen Separator andThen ValueP).map({x =>
-						val ((((_, k), _), _), v) = x
+						val (k, v) = x
 						c.Expr(objectApply(c)(c.universe.reify(Tuple2).tree, "apply", List(k.tree, v.tree)))
 					})
 				)
@@ -207,11 +210,8 @@ object MacroImpl {
 				val Elems:Parser[List[c.Expr[(String, JValue)]]] = (
 					(Prefix andThen WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						(KeyValuePair andThen (Delim andThen KeyValuePair).map(_._2).repeat() andThen Suffix).map({x =>
-							val ((a, bs), _) = x
-							a :: bs.toList
-						})
-					)).map(_._2)
+						(KeyValuePair andThen (Delim andThen KeyValuePair).repeat() andThen Suffix)
+					))
 				)
 				val Elems2:Parser[c.Expr[Map[String, JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Map).tree, "apply", xs.map(_.tree))))
 				val ScalaV:Parser[c.Expr[Map[String, JValue]]] = OfType(c.typeOf[Map[String, JValue]]).map(x => c.Expr(x))
@@ -224,10 +224,10 @@ object MacroImpl {
 			val ValueP:Parser[c.Expr[JValue]] = {
 				(WhitespaceP andThen (
 					NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP
-				) andThen WhitespaceP).map({x => val ((_, a), _) = x; c.Expr(a.tree)})
+				) andThen WhitespaceP).map({x => c.Expr(x.tree)})
 			}
 
-			val Aggregate = (ValueP andThen End()).map(_._1)
+			val Aggregate = (ValueP andThen End())
 		}
 
 		/* Parse the input */

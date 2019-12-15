@@ -1,6 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.Predef.augmentString
+import scala.collection.immutable.Seq
 import scala.reflect.macros.blackbox.Context
 
 /**
@@ -27,8 +28,8 @@ trait Parser[U <: Context with Singleton, +A] {
 		def parse(data:Data[U]):Result[U, A] = Parser.this.parse(data).orElse(Failure(Seq(description)))
 	}
 
-	def andThen[B](rhs:Parser[U, B]):Parser[U, (A, B)] = {
-		new AndThen(this, rhs)
+	def andThen[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]):Parser[U, Z] = {
+		new AndThen(this, rhs, ev)
 	}
 	def orElse[Z >: A](rhs:Parser[U, Z]):Parser[U, Z] = new Parser[U, Z] {
 		def parse(data:Data[U]):Result[U, Z] = Parser.this.parse(data).orElse(rhs.parse(data))
@@ -36,11 +37,11 @@ trait Parser[U <: Context with Singleton, +A] {
 	def repeat(min:Int = 0, max:Int = Integer.MAX_VALUE):Parser[U, Seq[A]] = new Repeat(this, min, max)
 }
 
-private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B](left:Parser[U, A], right:Parser[U, B]) extends Parser[U, (A, B)] {
-	def parse(data:Data[U]):Result[U, (A, B)] = {
+private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B, Z](left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A,B,Z]) extends Parser[U, Z] {
+	def parse(data:Data[U]):Result[U, Z] = {
 		left.parse(data) match {
 			case Success(a, resa) => right.parse(resa) match {
-				case Success(b, resb) => Success((a,b), resb)
+				case Success(b, resb) => Success(ev.aggregate(a,b), resb)
 				case Failure(ex) => Failure(ex)
 			}
 			case Failure(ex) => Failure(ex)
