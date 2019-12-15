@@ -34,7 +34,7 @@ trait Parser[U <: Context with Singleton, +A] {
 	def orElse[Z >: A](rhs:Parser[U, Z]):Parser[U, Z] = new Parser[U, Z] {
 		def parse(data:Data[U]):Result[U, Z] = Parser.this.parse(data).orElse(rhs.parse(data))
 	}
-	def repeat(min:Int = 0, max:Int = Integer.MAX_VALUE):Parser[U, Seq[A]] = new Repeat(this, min, max)
+	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]):Parser[U, Z] = new Repeat(this, min, max, ev)
 }
 
 private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B, Z](left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A,B,Z]) extends Parser[U, Z] {
@@ -62,8 +62,8 @@ private[stringContextParserCombinator] final class FlatMap[U <: Context with Sin
  * Succeeds if the next codepoint is a member of the given function
  * @group Parser
  */
-final class CodepointWhere[U <: Context with Singleton](fn:Function1[Int, Boolean]) extends Parser[U, Int] {
-	def parse(data:Data[U]):Result[U, Int] = {
+final class CodepointWhere[U <: Context with Singleton](fn:Function1[Int, Boolean]) extends Parser[U, CodePoint] {
+	def parse(data:Data[U]):Result[U, CodePoint] = {
 		if (data._1.head.isEmpty) {
 			Failure(Seq("Something matching fn"))
 		} else {
@@ -71,7 +71,7 @@ final class CodepointWhere[U <: Context with Singleton](fn:Function1[Int, Boolea
 			val cp = checking.codePointAt(0)
 			val rest = checking.substring(checking.offsetByCodePoints(0, 1))
 			if (fn(cp)) {
-				Success(cp, (rest :: data._1.tail, data._2))
+				Success(CodePoint(cp), (rest :: data._1.tail, data._2))
 			} else {
 				Failure(Seq("Something matching fn"))
 			}
@@ -113,10 +113,15 @@ final class CharWhere[U <: Context with Singleton](pred:Function1[Char, Boolean]
 	private def expecting:Seq[String] = Seq(s"???")
 }
 
-private[stringContextParserCombinator] final class Repeat[U <: Context with Singleton, A](inner:Parser[U, A], min:Int = 0, max:Int = Integer.MAX_VALUE) extends Parser[U, Seq[A]] {
-	def parse(data:Data[U]):Result[U, Seq[A]] = {
+private[stringContextParserCombinator] final class Repeat[U <: Context with Singleton, A, Z](
+	inner:Parser[U, A],
+	min:Int,
+	max:Int,
+	ev:Implicits.RepeatTypes[A, Z]
+) extends Parser[U, Z] {
+	def parse(data:Data[U]):Result[U, Z] = {
 		var counter:Int = 0
-		val accumulator = Seq.newBuilder[A]
+		val accumulator = ev.init()
 		var remaining:Data[U] = data
 		var continue:Boolean = true
 		var innerExpecting:Seq[String] = Seq.empty
@@ -125,7 +130,7 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 			inner.parse(remaining) match {
 				case Success(a, r) => {
 					counter += 1
-					accumulator.+=(a)
+					ev.append(accumulator, a)
 					remaining = r
 				}
 				case Failure(ex) => {
@@ -135,7 +140,7 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 			}
 		}
 		if (min <= counter && counter <= max) {
-			return Success(accumulator.result(), remaining)
+			return Success(ev.result(accumulator), remaining)
 		} else {
 			return Failure(Seq(expectingString(innerExpecting)))
 		}

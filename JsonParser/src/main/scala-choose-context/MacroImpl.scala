@@ -72,18 +72,27 @@ object MacroImpl {
 				import scala.Predef.charWrapper
 
 				val NumberI:Parser[c.Expr[JNumber]] = {
-					def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min).map(_.mkString)
+					def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
+
+					/* Concatenate every capture in the following parser and combine into one long string */
+					implicit object StringStringAndThenTypes extends Implicits.AndThenTypes[String, String, String] {
+						def aggregate(a:String, b:String):String = a + b
+					}
+					implicit object StringStringRepeatTypes extends Implicits.RepeatTypes[String, String] {
+						type Acc = StringBuilder
+						def init():Acc = new StringBuilder
+						def append(acc:Acc, elem:String):Unit = {acc ++= elem}
+						def result(acc:Acc):String = acc.toString
+					}
 
 					(
-						CharIn("-").repeat(0, 1).map(_.mkString)
-						andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9') andThen RepeatedDigits(0)).map(x => x._1.toString + x._2))
-						andThen (CharIn(".") andThen RepeatedDigits(1)).map(x => x._1.toString + x._2).repeat(0, 1).map(_.mkString)
-						andThen (CharIn("eE") andThen CharIn("+-").repeat(0, 1).map(_.mkString) andThen RepeatedDigits(1)).map({x => val ((a,b),c)=x; a.toString + b + c}).repeat(0, 1).map(_.mkString)
+						CharIn("-").repeat(0, 1)
+						andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
+						andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).repeat(0, 1)
+						andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").repeat(0, 1) andThen RepeatedDigits(1)).repeat(0, 1)
 					).map({x =>
-						val (((a, b), d), e) = x
-						val sum = a + b + d + e
 						c.Expr(c.universe.Select(
-							objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "fromString", List(c.literal(sum).tree)),
+							objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "fromString", List(c.literal(x).tree)),
 							c.universe.newTermName("get")
 						))
 					})
@@ -107,7 +116,7 @@ object MacroImpl {
 					))
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
-				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(_.mkString).map(x => c.literal(x))
+				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.literal(x))
 				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeOf[String]).map(x => c.Expr(x))
 				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, c.universe.newTermName("value"))))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat().map({x =>
