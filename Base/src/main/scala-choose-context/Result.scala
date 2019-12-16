@@ -1,6 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.collection.immutable.Seq
 import scala.reflect.macros.blackbox.Context
 
 /**
@@ -10,13 +9,17 @@ import scala.reflect.macros.blackbox.Context
 sealed trait Result[U <: Context with Singleton, +A] {
 	private[stringContextParserCombinator] def map[Z](fn:Function1[A, Z]):Result[U, Z] = this match {
 		case Success(v, r) => Success(fn(v), r)
-		case Failure(ex) => Failure(ex)
+		case Failure(found, expect) => Failure(found, expect)
 	}
 	private[stringContextParserCombinator] def orElse[Z >: A](other: => Result[U, Z]):Result[U, Z] = this match {
 		case Success(v, r) => Success(v, r)
-		case Failure(expected1) => other match {
+		case Failure(found1, expect1) => other match {
 			case Success(v, r) => Success(v, r)
-			case Failure(expected2) => Failure(expected1 ++: expected2)
+			case Failure(found2, expect2) => {
+				if (found1._2 == found2._2) {Failure(found1, Failure.Or(Seq(expect1, expect2)))}
+				else if (found1._2 > found2._2) {Failure(found1, expect1)}
+				else {Failure(found2, expect2)}
+			}
 		}
 	}
 }
@@ -33,5 +36,21 @@ final case class Success[U <: Context with Singleton, +A](
  * @group Result
  */
 final case class Failure[U <: Context with Singleton](
-	val expecting:Seq[String]
-) extends Result[U, Nothing]
+	val found:(String, PositionPoint),
+	val expecting:Failure.Expecting
+) extends Result[U, Nothing] {
+	def msg:String =  s"Found ${found._1} ; Expected $expecting"
+	def report(c:U):Nothing = {
+		c.abort(found._2.cast(c), msg)
+	}
+}
+
+object Failure {
+	sealed trait Expecting
+	final case class Leaf(x:String) extends Expecting {
+		override def toString:String = x
+	}
+	final case class Or(options:Seq[Expecting]) extends Expecting {
+		override def toString:String = options.mkString(" | ")
+	}
+}

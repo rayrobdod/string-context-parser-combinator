@@ -28,9 +28,9 @@ object MacroImpl {
 				),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => evalSimple(c)(x)})
+				strings.map({x => (evalSimple(c)(x), PositionPoint(x.tree.pos))})
 			}
-			case _ => c.abort(c.enclosingPosition, s"Cannot evaluate at compile time: " + c.universe.showRaw(self))
+			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(self))
 		}
 
 		/* Create the input to parse */
@@ -246,8 +246,8 @@ object MacroImpl {
 				//System.out.println(res)
 				res
 			}
-			case Failure(ex) => {
-				c.abort(c.enclosingPosition, ex.mkString("Expected: ", ", ", ""))
+			case f:Failure[_] => {
+				f.report(c)
 			}
 		}
 	}

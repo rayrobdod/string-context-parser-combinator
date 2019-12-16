@@ -15,16 +15,14 @@ trait Parser[U <: Context with Singleton, +A] {
 	def flatMap[Z](fn:Function1[A, Parser[U, Z]]):Parser[U, Z] = {
 		new FlatMap(this, fn)
 	}
-	def filter(fn:Function1[A, Boolean]):Parser[U, A] = new Parser[U, A] {
-		def parse(input:Input[U]):Result[U, A] = Parser.this.parse(input) match {
-			case Success(v, r) if fn(v) => Success(v, r)
-			case Success(_, _) => Failure(Seq("???"))
-			case Failure(ex) => Failure(ex)
-		}
-	}
 
 	def opaque(description:String):Parser[U, A] = new Parser[U, A] {
-		def parse(input:Input[U]):Result[U, A] = Parser.this.parse(input).orElse(Failure(Seq(description)))
+		def parse(input:Input[U]):Result[U, A] = {
+			Parser.this.parse(input) match {
+				case Success(v, r) => Success(v,r)
+				case Failure(f, _) => Failure(f, Failure.Leaf(description))
+			}
+		}
 	}
 
 	def andThen[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]):Parser[U, Z] = {
@@ -41,9 +39,9 @@ private[stringContextParserCombinator] final class AndThen[U <: Context with Sin
 		left.parse(input) match {
 			case Success(a, resa) => right.parse(resa) match {
 				case Success(b, resb) => Success(ev.aggregate(a,b), resb)
-				case Failure(ex) => Failure(ex)
+				case Failure(found, expect) => Failure(found, expect)
 			}
-			case Failure(ex) => Failure(ex)
+			case Failure(found, expect) => Failure(found, expect)
 		}
 	}
 }
@@ -52,7 +50,7 @@ private[stringContextParserCombinator] final class FlatMap[U <: Context with Sin
 	def parse(input:Input[U]):Result[U, Z] = {
 		left.parse(input) match {
 			case Success(a, resa) => right(a).parse(resa)
-			case Failure(ex) => Failure(ex)
+			case Failure(found, expect) => Failure(found, expect)
 		}
 	}
 }
@@ -65,7 +63,7 @@ final class CodepointWhere[U <: Context with Singleton](pred:Function1[CodePoint
 	def parse(input:Input[U]):Result[U, CodePoint] = input.consume(
 		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => pred(x._1)),
 		_ => None,
-		Seq("???")
+		Failure.Leaf("???")
 	)
 }
 
@@ -77,7 +75,7 @@ final class CharIn[U <: Context with Singleton](xs:Seq[Char]) extends Parser[U, 
 	def parse(input:Input[U]):Result[U, Char] = input.consume(
 		pt => Option((pt.charAt(0), 1)).filter(x => xs.contains(x._1)),
 		_ => None,
-		xs.map(x => s""""$x"""")
+		Failure.Or(xs.map(x => Failure.Leaf("\"" + x.toString + "\"")))
 	)
 }
 
@@ -89,7 +87,7 @@ final class CharWhere[U <: Context with Singleton](pred:Function1[Char, Boolean]
 	def parse(input:Input[U]):Result[U, Char] = input.consume(
 		pt => Option((pt.charAt(0), 1)).filter(x => pred(x._1)),
 		_ => None,
-		Seq("???")
+		Failure.Leaf("???")
 	)
 }
 
@@ -104,7 +102,7 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 		val accumulator = ev.init()
 		var remaining:Input[U] = input
 		var continue:Boolean = true
-		var innerExpecting:Seq[String] = Seq.empty
+		var innerExpecting:Failure[U] = null
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
@@ -113,8 +111,8 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 					ev.append(accumulator, a)
 					remaining = r
 				}
-				case Failure(ex) => {
-					innerExpecting = ex
+				case failure:Failure[U] => {
+					innerExpecting = failure
 					continue = false
 				}
 			}
@@ -122,23 +120,8 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 		if (min <= counter && counter <= max) {
 			return Success(ev.result(accumulator), remaining)
 		} else {
-			return Failure(Seq(expectingString(innerExpecting)))
+			return innerExpecting
 		}
-	}
-	def expectingString(innerExpecting:Seq[String]):String = {
-		val prefix = {
-			if (min == 0 && max == Integer.MAX_VALUE) {"Zero or more"} else
-			if (min == 0 && max == 1) {"Zero or one"} else
-			if (min == 1 && max == Integer.MAX_VALUE) {"One or more"} else
-			if (max == Integer.MAX_VALUE) {s"$min or more"} else
-			s"Between $min and $max"
-		}
-		val suffix = innerExpecting match {
-			case Seq() => "???"
-			case Seq(x) => x
-			case _ => innerExpecting.mkString("<", ", ", ">")
-		}
-		s"$prefix copies of $suffix"
 	}
 }
 
@@ -150,7 +133,7 @@ final class IsString[U <: Context with Singleton](str:String) extends Parser[U, 
 	def parse(input:Input[U]):Result[U, Unit] = input.consume(
 		pt => Option(((), str.length())).filter(_ => pt.startsWith(str)),
 		_ => None,
-		Seq(s""""$str"""")
+		Failure.Leaf("\"" + str + "\"")
 	)
 }
 
@@ -162,7 +145,7 @@ final class Regex[U <: Context with Singleton](reg:scala.util.matching.Regex) ex
 	def parse(input:Input[U]):Result[U, String] = input.consume(
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
 		_ => None,
-		Seq(s"s/${reg}/")
+		Failure.Leaf("s/" + reg.toString + "/")
 	)
 }
 
@@ -174,7 +157,7 @@ final class OfType[U <: Context with Singleton](tpe:U#Type) extends Parser[U, U#
 	def parse(input:Input[U]):Result[U, U#Tree] = input.consume(
 		_ => None,
 		arg => Some(arg).filter(x => x.actualType <:< tpe).map(_.tree),
-		Seq(tpe.toString)
+		Failure.Leaf(tpe.toString)
 	)
 }
 
@@ -191,5 +174,6 @@ final class DelayedConstruction[U <: Context with Singleton, A](inner:Function0[
  * @group Parser
  */
 final class End[U <: Context with Singleton] extends Parser[U, Unit] {
-	def parse(input:Input[U]):Result[U, Unit] = input.checkEmpty
+	def parse(input:Input[U]):Result[U, Unit] = if (input.isEmpty) {Success((), input)} else {Failure(input.next, this.expecting)}
+	def expecting:Failure.Expecting = Failure.Leaf("EOF")
 }

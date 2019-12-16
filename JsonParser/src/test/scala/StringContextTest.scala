@@ -170,6 +170,9 @@ final class StringContextTest extends FunSpec {
 			val exp = JObject(Map(("ab12cd", JNull)))
 			assertResult(exp)(json"""{"ab${arg}cd" : null}""")
 		}
+		it ("Reject Map with non-string keys") {
+			assertDoesNotCompile(""" json"{1:2}" """)
+		}
 
 		it ("Rejects trailing content") {
 			assertDoesNotCompile(""" json"true false" """)
