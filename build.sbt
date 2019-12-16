@@ -34,7 +34,7 @@ lazy val base = (project in file("Base"))
 	.enablePlugins(ChooseMacroContext)
 	.settings(sharedSettings)
 	.settings(
-		name := "base",
+		name := "string-context-parser-combinator",
 		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.10", "2.13.1"),
 		libraryDependencies ++= Seq(
 			"org.scala-lang" % "scala-reflect" % scalaVersion.value,

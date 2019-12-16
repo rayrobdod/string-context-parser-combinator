@@ -1,6 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.Predef.augmentString
 import scala.collection.immutable.Seq
 import scala.reflect.macros.blackbox.Context
 
@@ -8,16 +7,16 @@ import scala.reflect.macros.blackbox.Context
  * @group Parser
  */
 trait Parser[U <: Context with Singleton, +A] {
-	def parse(data:Data[U]):Result[U, A]
+	def parse(input:Input[U]):Result[U, A]
 
 	def map[Z](fn:Function1[A, Z]):Parser[U, Z] = new Parser[U, Z] {
-		def parse(data:Data[U]):Result[U, Z] = Parser.this.parse(data).map(fn)
+		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input).map(fn)
 	}
 	def flatMap[Z](fn:Function1[A, Parser[U, Z]]):Parser[U, Z] = {
 		new FlatMap(this, fn)
 	}
 	def filter(fn:Function1[A, Boolean]):Parser[U, A] = new Parser[U, A] {
-		def parse(data:Data[U]):Result[U, A] = Parser.this.parse(data) match {
+		def parse(input:Input[U]):Result[U, A] = Parser.this.parse(input) match {
 			case Success(v, r) if fn(v) => Success(v, r)
 			case Success(_, _) => Failure(Seq("???"))
 			case Failure(ex) => Failure(ex)
@@ -25,21 +24,21 @@ trait Parser[U <: Context with Singleton, +A] {
 	}
 
 	def opaque(description:String):Parser[U, A] = new Parser[U, A] {
-		def parse(data:Data[U]):Result[U, A] = Parser.this.parse(data).orElse(Failure(Seq(description)))
+		def parse(input:Input[U]):Result[U, A] = Parser.this.parse(input).orElse(Failure(Seq(description)))
 	}
 
 	def andThen[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]):Parser[U, Z] = {
 		new AndThen(this, rhs, ev)
 	}
 	def orElse[Z >: A](rhs:Parser[U, Z]):Parser[U, Z] = new Parser[U, Z] {
-		def parse(data:Data[U]):Result[U, Z] = Parser.this.parse(data).orElse(rhs.parse(data))
+		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input).orElse(rhs.parse(input))
 	}
 	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]):Parser[U, Z] = new Repeat(this, min, max, ev)
 }
 
 private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B, Z](left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A,B,Z]) extends Parser[U, Z] {
-	def parse(data:Data[U]):Result[U, Z] = {
-		left.parse(data) match {
+	def parse(input:Input[U]):Result[U, Z] = {
+		left.parse(input) match {
 			case Success(a, resa) => right.parse(resa) match {
 				case Success(b, resb) => Success(ev.aggregate(a,b), resb)
 				case Failure(ex) => Failure(ex)
@@ -50,8 +49,8 @@ private[stringContextParserCombinator] final class AndThen[U <: Context with Sin
 }
 
 private[stringContextParserCombinator] final class FlatMap[U <: Context with Singleton, A, Z](left:Parser[U, A], right:Function1[A, Parser[U, Z]]) extends Parser[U, Z] {
-	def parse(data:Data[U]):Result[U, Z] = {
-		left.parse(data) match {
+	def parse(input:Input[U]):Result[U, Z] = {
+		left.parse(input) match {
 			case Success(a, resa) => right(a).parse(resa)
 			case Failure(ex) => Failure(ex)
 		}
@@ -62,21 +61,12 @@ private[stringContextParserCombinator] final class FlatMap[U <: Context with Sin
  * Succeeds if the next codepoint is a member of the given function
  * @group Parser
  */
-final class CodepointWhere[U <: Context with Singleton](fn:Function1[Int, Boolean]) extends Parser[U, CodePoint] {
-	def parse(data:Data[U]):Result[U, CodePoint] = {
-		if (data._1.head.isEmpty) {
-			Failure(Seq("Something matching fn"))
-		} else {
-			val checking = data._1.head
-			val cp = checking.codePointAt(0)
-			val rest = checking.substring(checking.offsetByCodePoints(0, 1))
-			if (fn(cp)) {
-				Success(CodePoint(cp), (rest :: data._1.tail, data._2))
-			} else {
-				Failure(Seq("Something matching fn"))
-			}
-		}
-	}
+final class CodepointWhere[U <: Context with Singleton](pred:Function1[CodePoint, Boolean]) extends Parser[U, CodePoint] {
+	def parse(input:Input[U]):Result[U, CodePoint] = input.consume(
+		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => pred(x._1)),
+		_ => None,
+		Seq("???")
+	)
 }
 
 /**
@@ -84,16 +74,11 @@ final class CodepointWhere[U <: Context with Singleton](fn:Function1[Int, Boolea
  * @group Parser
  */
 final class CharIn[U <: Context with Singleton](xs:Seq[Char]) extends Parser[U, Char] {
-	def parse(data:Data[U]):Result[U, Char] = {
-		if (data._1.head.isEmpty) {
-			Failure(this.expecting)
-		} else if (xs contains data._1.head.head) {
-			Success(data._1.head.head, (data._1.head.tail :: data._1.tail, data._2))
-		} else {
-			Failure(this.expecting)
-		}
-	}
-	private def expecting:Seq[String] = xs.map(x => s"`$x`")
+	def parse(input:Input[U]):Result[U, Char] = input.consume(
+		pt => Option((pt.charAt(0), 1)).filter(x => xs.contains(x._1)),
+		_ => None,
+		xs.map(x => s""""$x"""")
+	)
 }
 
 /**
@@ -101,16 +86,11 @@ final class CharIn[U <: Context with Singleton](xs:Seq[Char]) extends Parser[U, 
  * @group Parser
  */
 final class CharWhere[U <: Context with Singleton](pred:Function1[Char, Boolean]) extends Parser[U, Char] {
-	def parse(data:Data[U]):Result[U, Char] = {
-		if (data._1.head.isEmpty) {
-			Failure(this.expecting)
-		} else if (pred(data._1.head.head)) {
-			Success(data._1.head.head, (data._1.head.tail :: data._1.tail, data._2))
-		} else {
-			Failure(this.expecting)
-		}
-	}
-	private def expecting:Seq[String] = Seq(s"???")
+	def parse(input:Input[U]):Result[U, Char] = input.consume(
+		pt => Option((pt.charAt(0), 1)).filter(x => pred(x._1)),
+		_ => None,
+		Seq("???")
+	)
 }
 
 private[stringContextParserCombinator] final class Repeat[U <: Context with Singleton, A, Z](
@@ -119,10 +99,10 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 	max:Int,
 	ev:Implicits.RepeatTypes[A, Z]
 ) extends Parser[U, Z] {
-	def parse(data:Data[U]):Result[U, Z] = {
+	def parse(input:Input[U]):Result[U, Z] = {
 		var counter:Int = 0
 		val accumulator = ev.init()
-		var remaining:Data[U] = data
+		var remaining:Input[U] = input
 		var continue:Boolean = true
 		var innerExpecting:Seq[String] = Seq.empty
 
@@ -167,15 +147,11 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
  * @group Parser
  */
 final class IsString[U <: Context with Singleton](str:String) extends Parser[U, Unit] {
-	def parse(data:Data[U]):Result[U, Unit] = {
-		if (data._1.head.isEmpty) {
-			Failure(Seq(str))
-		} else if (data._1.head.startsWith(str)) {
-			Success((), (data._1.head.drop(str.size) :: data._1.tail, data._2))
-		} else {
-			Failure(Seq(s"`$str`"))
-		}
-	}
+	def parse(input:Input[U]):Result[U, Unit] = input.consume(
+		pt => Option(((), str.length())).filter(_ => pt.startsWith(str)),
+		_ => None,
+		Seq(s""""$str"""")
+	)
 }
 
 /**
@@ -183,30 +159,23 @@ final class IsString[U <: Context with Singleton](str:String) extends Parser[U, 
  * @group Parser
  */
 final class Regex[U <: Context with Singleton](reg:scala.util.matching.Regex) extends Parser[U, String] {
-	def parse(data:Data[U]):Result[U, String] = {
-		reg.findPrefixMatchOf(data._1.head) match {
-			case Some(m) => Success(m.matched, (m.after.toString :: data._1.tail, data._2))
-			case None => Failure(Seq(s"s/${reg}/"))
-		}
-	}
+	def parse(input:Input[U]):Result[U, String] = input.consume(
+		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
+		_ => None,
+		Seq(s"s/${reg}/")
+	)
 }
 
 /**
- * Succeeds if the next data element is an `arg` with the given type
+ * Succeeds if the next input element is an `arg` with the given type
  * @group Parser
  */
 final class OfType[U <: Context with Singleton](tpe:U#Type) extends Parser[U, U#Tree] {
-	def parse(data:Data[U]):Result[U, U#Tree] = {
-		if (data._1.head.nonEmpty) {
-			Failure(Seq(tpe.toString))
-		} else if (data._2.isEmpty) {
-			Failure(Seq(tpe.toString))
-		} else if (data._2.head.actualType <:< tpe) {
-			Success(data._2.head.tree, (data._1.tail, data._2.tail))
-		} else {
-			Failure(Seq(tpe.toString))
-		}
-	}
+	def parse(input:Input[U]):Result[U, U#Tree] = input.consume(
+		_ => None,
+		arg => Some(arg).filter(x => x.actualType <:< tpe).map(_.tree),
+		Seq(tpe.toString)
+	)
 }
 
 /**
@@ -214,7 +183,7 @@ final class OfType[U <: Context with Singleton](tpe:U#Type) extends Parser[U, U#
  * @group Parser
  */
 final class DelayedConstruction[U <: Context with Singleton, A](inner:Function0[Parser[U, A]]) extends Parser[U, A] {
-	def parse(data:Data[U]):Result[U, A] = inner.apply.parse(data)
+	def parse(input:Input[U]):Result[U, A] = inner.apply.parse(input)
 }
 
 /**
@@ -222,11 +191,5 @@ final class DelayedConstruction[U <: Context with Singleton, A](inner:Function0[
  * @group Parser
  */
 final class End[U <: Context with Singleton] extends Parser[U, Unit] {
-	def parse(data:Data[U]):Result[U, Unit] = {
-		if (data._1 == Seq("") && data._2.isEmpty) {
-			Success((), data)
-		} else {
-			Failure(Seq("EOF"))
-		}
-	}
+	def parse(input:Input[U]):Result[U, Unit] = input.checkEmpty
 }

@@ -26,7 +26,7 @@ sealed trait Result[U <: Context with Singleton, +A] {
  */
 final case class Success[U <: Context with Singleton, +A](
 	val value:A,
-	val remaining:Data[U]
+	val remaining:Input[U]
 ) extends Result[U, A]
 
 /**
