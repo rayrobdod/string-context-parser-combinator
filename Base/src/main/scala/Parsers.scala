@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Seq
-import scala.reflect.macros.blackbox.Context
+import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * @group Parser

@@ -13,7 +13,7 @@ lazy val sharedSettings = Seq(
 	}),
 	scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" => Seq("-Yno-predef")
-		case "2.11" | "2.12" => Seq("-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-Yno-predef")
+		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-Yno-predef")
 		case _ => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit", "-Yno-predef")
 	}),
 	unmanagedSourceDirectories in Compile += (scalaBinaryVersion.value match {
@@ -31,7 +31,6 @@ lazy val sharedSettings = Seq(
 )
 
 lazy val base = (project in file("Base"))
-	.enablePlugins(ChooseMacroContext)
 	.settings(sharedSettings)
 	.settings(
 		name := "string-context-parser-combinator",
@@ -43,7 +42,6 @@ lazy val base = (project in file("Base"))
 
 lazy val json = (project in file("JsonParser"))
 	.dependsOn(base)
-	.enablePlugins(ChooseMacroContext)
 	.settings(sharedSettings)
 	.settings(
 		name := "json",

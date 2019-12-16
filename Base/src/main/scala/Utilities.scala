@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 
 import scala.Predef.refArrayOps
 import scala.reflect.api.Universe
-import scala.reflect.macros.blackbox.Context
+import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * Methods to make writing string context macros easier
@@ -17,7 +17,7 @@ object Utilities {
 
 	/** A Extractor that matches a Name whose string value is equal to `expecting` */
 	def decodedName(expecting:String):Extractor0[Universe#Name] = new Extractor0[Universe#Name] {
-		def unapply(res:Universe#Name):Boolean = expecting == res.decoded
+		def unapply(res:Universe#Name):Boolean = expecting == res.decodedName.toString
 	}
 	private[this] val ScalaName = decodedName("scala")
 	private[this] val StringContextName = decodedName("StringContext")
@@ -70,16 +70,8 @@ object Utilities {
 
 	def objectApply[T](c:Context)(prefix:c.Tree, methodName:String, params:List[c.Tree]):c.Tree = {
 		c.universe.Apply(
-			c.universe.Select(prefix, c.universe.newTermName(methodName)),
+			c.universe.Select(prefix, MacroCompat.newTermName(c)(methodName)),
 			params
 		)
-	}
-
-	/**
-	 * evaluate an Expr by calling c#eval.
-	 * Is a function since 2.10 requires an extra resetAttrs step that isn't available to 2.11+
-	 */
-	def evalSimple[A](c:Context)(expr:c.Expr[A]):A = {
-		com.rayrobdod.stringContextParserCombinator.Eval.simple(c)(expr)
 	}
 }

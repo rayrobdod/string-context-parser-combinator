@@ -1,6 +1,6 @@
 package com.rayrobdod
 
-import scala.reflect.macros.blackbox.Context
+import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * A parser combinator for StringContext handling

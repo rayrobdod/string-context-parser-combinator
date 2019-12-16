@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.reflect.macros.blackbox.Context
+import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * The result of a parse

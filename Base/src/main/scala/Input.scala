@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.reflect.macros.blackbox.Context
+import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 final class Input[U <: Context with Singleton](
 	private[stringContextParserCombinator] val parts:List[(String, PositionPoint)],

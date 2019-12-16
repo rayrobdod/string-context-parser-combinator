@@ -2,7 +2,8 @@ package com.rayrobdod.stringContextParserCombinator
 package example.json
 
 import scala.collection.immutable.{Map, Seq, Vector}
-import scala.reflect.macros.blackbox.Context
+import com.rayrobdod.stringContextParserCombinator.MacroCompat
+import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 import scalajson.ast._
 import com.rayrobdod.stringContextParserCombinator.Utilities._
 
@@ -15,6 +16,7 @@ object MacroImpl {
 		val JsonStringContextName = decodedName("JsonStringContext")
 		val JsonSelectChain = selectChain[c.type](c, "com.rayrobdod.stringContextParserCombinator.example.json")
 		val StringContextApply = stringContextApply[c.type](c)
+		val PackageName = MacroCompat.stdTermNames(c).PACKAGE
 
 		import c.universe._ // ApplyTag, SelectTag etc.
 		val strings = self.tree.duplicate match {
@@ -22,13 +24,13 @@ object MacroImpl {
 				c.universe.Select(
 					c.universe.Select(
 						JsonSelectChain(),
-						c.universe.nme.PACKAGE
+						PackageName
 					),
 					JsonStringContextName()
 				),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => (evalSimple(c)(x), PositionPoint(x.tree.pos))})
+				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
 			}
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(self))
 		}
@@ -92,8 +94,8 @@ object MacroImpl {
 						andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").repeat(0, 1) andThen RepeatedDigits(1)).repeat(0, 1)
 					).map({x =>
 						c.Expr(c.universe.Select(
-							objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "fromString", List(c.literal(x).tree)),
-							c.universe.newTermName("get")
+							objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "fromString", List(c.universe.Literal(c.universe.Constant(x)))),
+							MacroCompat.newTermName(c)("get")
 						))
 					})
 				}.opaque("Number Literal")
@@ -116,24 +118,24 @@ object MacroImpl {
 					))
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
-				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.literal(x))
+				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeOf[String]).map(x => c.Expr(x))
-				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, c.universe.newTermName("value"))))
+				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, MacroCompat.newTermName(c)("value"))))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat().map({x =>
 					val summedString:c.Tree = x match {
-						case Seq() => c.literal("").tree
+						case Seq() => c.universe.Literal(c.universe.Constant(""))
 						case Seq(x) => x.tree
 						case xs:Seq[_] => {
-							val accumulatorName = c.universe.newTermName("accumulator$")
+							val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
 							val accumulatorType = c.universe.Select(
 								c.universe.Select(
 									c.universe.Select(
-										c.universe.Ident(c.universe.newTermName("scala")),
-										c.universe.newTermName("collection")
+										c.universe.Ident(MacroCompat.newTermName(c)("scala")),
+										MacroCompat.newTermName(c)("collection")
 									),
-									c.universe.newTermName("mutable")
+									MacroCompat.newTermName(c)("mutable")
 								),
-								c.universe.newTypeName("StringBuilder")
+								MacroCompat.newTypeName(c)("StringBuilder")
 							)
 							val stats = scala.collection.mutable.Buffer[c.universe.Tree](
 								c.universe.ValDef(
@@ -143,7 +145,7 @@ object MacroImpl {
 									c.universe.Apply(
 										c.universe.Select(
 											c.universe.New(accumulatorType),
-											c.universe.nme.CONSTRUCTOR
+											MacroCompat.stdTermNames(c).CONSTRUCTOR
 										),
 										List()
 									)
@@ -154,7 +156,7 @@ object MacroImpl {
 								stats.toList,
 								c.universe.Select(
 									c.universe.Ident(accumulatorName),
-									c.universe.newTermName("toString")
+									MacroCompat.newTermName(c)("toString")
 								)
 							)
 						}
@@ -166,7 +168,7 @@ object MacroImpl {
 
 			val StringP:Parser[c.Expr[String]] = {
 				val ScalaVOuter:Parser[c.Expr[String]] = OfType(c.typeOf[String]).map(x => c.Expr(x))
-				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, c.universe.newTermName("value"))))
+				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, MacroCompat.newTermName(c)("value"))))
 				val Immediate:Parser[c.Expr[String]] = StringBase.map(x => c.Expr(x.tree))
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
