@@ -43,20 +43,8 @@ object MacroImpl {
 
 		// ArrayP, ObjectP and ValueP are mutually recursive; if they were not in an object
 		// there would be problems about `ValueP forward reference extends over definition of value ArrayP`
-		object ParserPieces {
-			// The scala compiler is not great at dealing with `c.type` as a type parameter.
-			// It seems to prefer to infer `Context` than `c.type`, despite `c.type` being
-			// necessary to handle `c.Expr` values; `Context#Expr` just won't work
-			// Shadow package factory methods with these factory methods to reduce the number of times I have to type `c.type`
-			type Parser[A] = com.rayrobdod.stringContextParserCombinator.Parser[c.type, A]
-			def CharIn(str:Seq[Char]) = new com.rayrobdod.stringContextParserCombinator.CharIn[c.type](str)
-			def CharIn(str:String) = new com.rayrobdod.stringContextParserCombinator.CharIn[c.type](scala.Predef.wrapString(str))
-			def CharWhere(fn:Function1[Char, Boolean]) = new com.rayrobdod.stringContextParserCombinator.CharWhere[c.type](fn)
-			def IsString(str:String) = new com.rayrobdod.stringContextParserCombinator.IsString[c.type](str)
-			def OfType(tpe:c.Type) = new com.rayrobdod.stringContextParserCombinator.OfType[c.type](tpe)
-			def End() = new com.rayrobdod.stringContextParserCombinator.End[c.type]()
-			def DelayedConstruction[A](fn:Function0[Parser[A]]) = new com.rayrobdod.stringContextParserCombinator.DelayedConstruction[c.type, A](fn)
-
+		object ParserPieces extends Parsers {
+			type ContextType = c.type
 
 			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
 
