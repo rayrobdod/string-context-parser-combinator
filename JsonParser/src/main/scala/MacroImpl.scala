@@ -68,18 +68,20 @@ object MacroImpl {
 					implicit object StringStringAndThenTypes extends Implicits.AndThenTypes[String, String, String] {
 						def aggregate(a:String, b:String):String = a + b
 					}
-					implicit object StringStringRepeatTypes extends Implicits.RepeatTypes[String, String] {
-						type Acc = StringBuilder
-						def init():Acc = new StringBuilder
-						def append(acc:Acc, elem:String):Unit = {acc ++= elem}
-						def result(acc:Acc):String = acc.toString
+					implicit object CharStringOptionallyTypes extends Implicits.OptionallyTypes[Char, String] {
+						def none():String = ""
+						def some(elem:Char):String = elem.toString
+					}
+					implicit object StringStringOptionallyTypes extends Implicits.OptionallyTypes[String, String] {
+						def none():String = ""
+						def some(elem:String):String = elem
 					}
 
 					(
-						CharIn("-").repeat(0, 1)
+						CharIn("-").optionally
 						andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
-						andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).repeat(0, 1)
-						andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").repeat(0, 1) andThen RepeatedDigits(1)).repeat(0, 1)
+						andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
+						andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
 					).map({x =>
 						c.Expr(c.universe.Select(
 							objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "fromString", List(c.universe.Literal(c.universe.Constant(x)))),

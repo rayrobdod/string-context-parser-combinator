@@ -32,6 +32,14 @@ trait Parser[U <: Context with Singleton, +A] {
 		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input).orElse(rhs.parse(input))
 	}
 	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]):Parser[U, Z] = new Repeat(this, min, max, ev)
+
+	def optionally[Z](implicit ev:Implicits.OptionallyTypes[A, Z]):Parser[U, Z] = new Repeat(this, 0, 1, new Implicits.RepeatTypes[A, Z] {
+		final class Box[BoxType](var value:BoxType)
+		type Acc = Box[Z]
+		def init():Acc = new Box(ev.none())
+		def append(acc:Acc, elem:A):Unit = acc.value = ev.some(elem)
+		def result(acc:Acc):Z = acc.value
+	})
 }
 
 /**

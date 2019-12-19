@@ -1,7 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.mutable.Builder
-import scala.collection.immutable.Seq
 
 object Implicits {
 	trait AndThenTypes[-A, -B, +Z] {
@@ -54,6 +53,24 @@ object Implicits {
 			def init():Acc = List.newBuilder[A]
 			def append(acc:Acc, elem:A):Unit = {acc += elem}
 			def result(acc:Acc):List[A] = acc.result()
+		}
+	}
+
+	trait OptionallyTypes[-A, +Z] {
+		def none():Z
+		def some(elem:A):Z
+	}
+	object OptionallyTypes extends LowPrioOptionallyTypes {
+		implicit object UnitOptionallyTypes extends OptionallyTypes[Unit, Unit] {
+			def none():Unit = ()
+			def some(elem:Unit):Unit = elem
+		}
+	}
+	trait LowPrioOptionallyTypes {
+		implicit def optionOptionallyTypes[A]:OptionallyTypes[A, Option[A]] = new OptionOptionallyTypes[A]
+		private final class OptionOptionallyTypes[A] extends OptionallyTypes[A, Option[A]] {
+			def none():Option[A] = None
+			def some(elem:A):Option[A] = Some(elem)
 		}
 	}
 }
