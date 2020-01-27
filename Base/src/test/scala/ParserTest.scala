@@ -12,8 +12,19 @@ final class ParserTest extends FunSpec {
 			case f:Failure[_] => assertResult(expected)(f.msg)
 		}
 	}
+	def assertParseSuccessValue(expected:Any)(dut:Parser[Nothing, _], inputStr:String):Unit = {
+		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
+		dut.parse(input) match {
+			case s:Success[_,_] => assertResult(expected)(s.value)
+			case _:Failure[_] => fail("Parse Failed")
+		}
+	}
 
 	describe("CharIn") {
+		it ("Single success value") {
+			val dut = CharIn("1")
+			assertParseSuccessValue('1')(dut, "1")
+		}
 		it ("Single failure message") {
 			val exp = "Found EOF ; Expected \"1\""
 			val dut = CharIn("1")
@@ -26,12 +37,17 @@ final class ParserTest extends FunSpec {
 		}
 	}
 	describe("AndThen") {
-		it ("First") {
+		it ("Success") {
+			val exp = ('1', '2')
+			val dut = CharIn("1") andThen CharIn("2")
+			assertParseSuccessValue(exp)(dut, "12")
+		}
+		it ("Failure on first subparser") {
 			val exp = "Found EOF ; Expected \"1\""
 			val dut = CharIn("1") andThen CharIn("2")
 			assertParseFailureMessage(exp)(dut, "")
 		}
-		it ("Second") {
+		it ("Failure on second subparser") {
 			val exp = "Found EOF ; Expected \"2\""
 			val dut = CharIn("1") andThen CharIn("2")
 			assertParseFailureMessage(exp)(dut, "1")
@@ -66,6 +82,10 @@ final class ParserTest extends FunSpec {
 			val exp = "Found EOF ; Expected \"a\" | \"b\""
 			val dut = CharIn("a").repeat() andThen CharIn("b")
 			assertParseFailureMessage(exp)(dut, "a")
+		}
+		ignore ("pattern.repeat andThen subset") {
+			val dut = CharIn("ab").repeat() andThen CharIn("a")
+			assertParseSuccessValue(("a",'a'))(dut, "aa")
 		}
 	}
 	describe("Repeat / OrElse chain") {

@@ -58,6 +58,7 @@ trait Parsers {
 	def CharIn(str:Seq[Char]):Parser[Char] = new scpc.CharIn[ContextType](str)
 	def CharIn(str:String):Parser[Char] = new scpc.CharIn[ContextType](scala.Predef.wrapString(str))
 	def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] = new scpc.CharWhere[ContextType](fn)
+	def CodepointIn(str:String):Parser[CodePoint] = this.CodepointWhere({x:CodePoint => str.codePoints.anyMatch(new IsCodepoint(x))})
 	def CodepointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] = new scpc.CodepointWhere[ContextType](fn)
 	def IsString(str:String):Parser[Unit] = new scpc.IsString[ContextType](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
@@ -66,6 +67,10 @@ trait Parsers {
 	def End():Parser[Unit] = new scpc.End[ContextType]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = new scpc.DelayedConstruction[ContextType, A](fn)
+}
+
+private[stringContextParserCombinator] final class IsCodepoint(x:CodePoint) extends java.util.function.IntPredicate {
+	def test(y:Int) = {y == x.value}
 }
 
 private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B, Z](left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A,B,Z]) extends Parser[U, Z] {
