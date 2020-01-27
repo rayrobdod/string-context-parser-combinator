@@ -111,48 +111,8 @@ object MacroImpl {
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeOf[String]).map(x => c.Expr(x))
 				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, MacroCompat.newTermName(c)("value"))))
-				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat().map({x =>
-					val summedString:c.Tree = x match {
-						case Seq() => c.universe.Literal(c.universe.Constant(""))
-						case Seq(x) => x.tree
-						case xs:Seq[_] => {
-							val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
-							val accumulatorType = c.universe.Select(
-								c.universe.Select(
-									c.universe.Select(
-										c.universe.Ident(MacroCompat.newTermName(c)("scala")),
-										MacroCompat.newTermName(c)("collection")
-									),
-									MacroCompat.newTermName(c)("mutable")
-								),
-								MacroCompat.newTypeName(c)("StringBuilder")
-							)
-							val stats = scala.collection.mutable.Buffer[c.universe.Tree](
-								c.universe.ValDef(
-									c.universe.NoMods,
-									accumulatorName,
-									accumulatorType,
-									c.universe.Apply(
-										c.universe.Select(
-											c.universe.New(accumulatorType),
-											MacroCompat.stdTermNames(c).CONSTRUCTOR
-										),
-										List()
-									)
-								)
-							)
-							xs.map(_.asInstanceOf[c.Expr[String]]).foreach({x => stats += objectApply(c)(c.universe.Ident(accumulatorName), "append", List(x.tree))})
-							c.universe.Block(
-								stats.toList,
-								c.universe.Select(
-									c.universe.Ident(accumulatorName),
-									MacroCompat.newTermName(c)("toString")
-								)
-							)
-						}
-					}
-					c.Expr(summedString)
-				})
+				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
+					.map(strs => Utilities.concatenateStrings(c)(strs))
 				(DelimiterP andThen Content andThen DelimiterP)
 			}
 

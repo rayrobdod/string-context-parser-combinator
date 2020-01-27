@@ -68,10 +68,58 @@ object Utilities {
 		}
 	}
 
-	def objectApply[T](c:Context)(prefix:c.Tree, methodName:String, params:List[c.Tree]):c.Tree = {
+	def objectApply(c:Context)(prefix:c.Tree, methodName:String, params:List[c.Tree]):c.Tree = {
 		c.universe.Apply(
 			c.universe.Select(prefix, MacroCompat.newTermName(c)(methodName)),
 			params
 		)
+	}
+
+	/**
+	 * Creates an Expr that represents the concatenation of the component Exprs
+	 */
+	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
+		val summedString:c.Tree = strings match {
+			case Seq() => c.universe.Literal(c.universe.Constant(""))
+			case Seq(x) => x.tree
+			case xs:Seq[_] => {
+				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorType = c.universe.Select(
+					c.universe.Select(
+						c.universe.Select(
+							c.universe.Ident(MacroCompat.newTermName(c)("scala")),
+							MacroCompat.newTermName(c)("collection")
+						),
+						MacroCompat.newTermName(c)("mutable")
+					),
+					MacroCompat.newTypeName(c)("StringBuilder")
+				)
+				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
+					c.universe.ValDef(
+						c.universe.NoMods,
+						accumulatorName,
+						accumulatorType,
+						c.universe.Apply(
+							c.universe.Select(
+								c.universe.New(accumulatorType),
+								MacroCompat.stdTermNames(c).CONSTRUCTOR
+							),
+							List()
+						)
+					)
+				)
+				xs.map(_.asInstanceOf[c.Expr[String]])
+					.foreach({x => stats += objectApply(c)(c.universe.Ident(accumulatorName), "append", List(x.tree))})
+
+				c.universe.Block(
+					stats.toList,
+					c.universe.Select(
+						c.universe.Ident(accumulatorName),
+						MacroCompat.newTermName(c)("toString")
+					)
+				)
+			}
+		}
+		c.Expr(summedString)
 	}
 }
