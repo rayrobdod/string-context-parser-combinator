@@ -24,8 +24,8 @@ object Utilities {
 	private[this] val ApplyName = decodedName("apply")
 
 	/** An Extractor that matches a StringContext's form */
-	def stringContextApply[U <: Context with Singleton](c:U):Extractor[U#Tree, List[U#Expr[String]]] = new Extractor[U#Tree, List[U#Expr[String]]] {
-		def unapply(tree:U#Tree):Option[List[U#Expr[String]]] = tree.duplicate match {
+	def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
+		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
 				c.universe.Select(
 					c.universe.Select(
@@ -43,19 +43,19 @@ object Utilities {
 	/**
 	 * Match a Tree of the type used for referencing type names
 	 */
-	def selectChain[U <: Context with Singleton](c:U, name:String):Extractor0[U#Tree] = new Extractor0[U#Tree] {
-		def unapply(tree:U#Tree):Boolean = {
+	def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
+		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
 				val (nameInit, nameLast) = {
 					val parts = name.split("\\.")
 					(String.join(".", parts.init:_*), parts.last)
 				}
 				val NameLast = decodedName(nameLast)
-				val NameInit = selectChain[U](c, nameInit)
+				val NameInit = selectChain(c, nameInit)
 				tree.duplicate match {
 					// I want to write `case c.universe.Select(NameInit(), NameLast())`, and I
 					// think I should be able to, but the compiler explodes whenever I attempt it
-					case c.universe.Select(init, NameLast()) if NameInit.unapply(init.asInstanceOf[U#Tree]) => true
+					case c.universe.Select(init, NameLast()) if NameInit.unapply(init) => true
 					case _ => false
 				}
 			} else {

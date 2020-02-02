@@ -14,8 +14,8 @@ object MacroImpl {
 		/* Extract the string context `parts`, to be used in the parse */
 
 		val JsonStringContextName = decodedName("JsonStringContext")
-		val JsonSelectChain = selectChain[c.type](c, "com.rayrobdod.stringContextParserCombinator.example.json")
-		val StringContextApply = stringContextApply[c.type](c)
+		val JsonSelectChain = selectChain(c, "com.rayrobdod.stringContextParserCombinator.example.json")
+		val StringContextApply = stringContextApply(c)
 		val PackageName = MacroCompat.stdTermNames(c).PACKAGE
 
 		import c.universe._ // ApplyTag, SelectTag etc.
