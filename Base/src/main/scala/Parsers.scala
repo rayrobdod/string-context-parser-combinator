@@ -75,7 +75,7 @@ trait Parsers {
 	def CodepointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] = new scpc.CodepointWhere[ContextType](fn)
 	def IsString(str:String):Parser[Unit] = new scpc.IsString[ContextType](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType(tpe:ContextType#Type):Parser[ContextType#Tree] = new scpc.OfType[ContextType](tpe)
+	def OfType[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = new scpc.OfType[ContextType, A](tpe)
 	/** A parser that succeeds iff the input is empty */
 	def End():Parser[Unit] = new scpc.End[ContextType]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
@@ -205,11 +205,11 @@ private[stringContextParserCombinator] final class Regex[U <: Context with Singl
  * Succeeds if the next input element is an `arg` with the given type
  * @group Parser
  */
-private[stringContextParserCombinator] final class OfType[U <: Context with Singleton](tpe:U#Type) extends Parser[U, U#Tree] {
-	def parse(input:Input[U]):Result[U, U#Tree] = input.consume(
+private[stringContextParserCombinator] final class OfType[U <: Context with Singleton, A](tpetag:U#TypeTag[A]) extends Parser[U, U#Expr[A]] {
+	def parse(input:Input[U]):Result[U, U#Expr[A]] = input.consume(
 		_ => None,
-		arg => Some(arg).filter(x => x.actualType <:< tpe).map(_.tree),
-		Failure.Leaf(tpe.toString)
+		arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[U#Expr[A]]),
+		Failure.Leaf(tpetag.tpe.toString)
 	)
 }
 

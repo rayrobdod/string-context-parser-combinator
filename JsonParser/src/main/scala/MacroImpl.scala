@@ -53,8 +53,8 @@ object MacroImpl {
 			val BooleanP:Parser[c.Expr[JBoolean]] = {
 				val TrueI = IsString("true").map(_ => c.universe.reify(scalajson.ast.JTrue))
 				val FalseI = IsString("false").map(_ => c.universe.reify(scalajson.ast.JFalse))
-				val ScalaV = OfType(c.typeOf[scala.Boolean]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JBoolean).tree, "apply", List(x))))
-				val AstV = OfType(c.typeOf[JBoolean]).map(x => c.Expr(x))
+				val ScalaV = OfType(c.typeTag[scala.Boolean]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JBoolean).tree, "apply", List(x.tree))))
+				val AstV = OfType(c.typeTag[JBoolean])
 				AstV orElse ScalaV orElse TrueI orElse FalseI
 			}
 
@@ -89,8 +89,8 @@ object MacroImpl {
 						))
 					})
 				}.opaque("Number Literal")
-				val AstV:Parser[c.Expr[JNumber]] = OfType(c.typeOf[JNumber]).map(x => c.Expr(x))
-				val ScalaIntV:Parser[c.Expr[JNumber]] = OfType(c.typeOf[scala.Int]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "apply", List(x))))
+				val AstV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[JNumber])
+				val ScalaIntV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[scala.Int]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "apply", List(x.tree))))
 				AstV orElse ScalaIntV orElse NumberI
 			}
 
@@ -109,23 +109,23 @@ object MacroImpl {
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
-				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeOf[String]).map(x => c.Expr(x))
-				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, MacroCompat.newTermName(c)("value"))))
+				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeTag[String])
+				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.Expr(c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
 					.map(strs => Utilities.concatenateStrings(c)(strs))
 				(DelimiterP andThen Content andThen DelimiterP)
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
-				val ScalaVOuter:Parser[c.Expr[String]] = OfType(c.typeOf[String]).map(x => c.Expr(x))
-				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeOf[JString]).map(x => c.Expr(c.universe.Select(x, MacroCompat.newTermName(c)("value"))))
+				val ScalaVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[String])
+				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.Expr(c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 				val Immediate:Parser[c.Expr[String]] = StringBase.map(x => c.Expr(x.tree))
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
 
 			val JStringP:Parser[c.Expr[JString]] = {
-				val ScalaVOuter:Parser[c.Expr[JString]] = OfType(c.typeOf[String]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JString).tree, "apply", List(x))))
-				val AstVOuter:Parser[c.Expr[JString]] = OfType(c.typeOf[JString]).map(x => c.Expr(x))
+				val ScalaVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[String]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JString).tree, "apply", List(x.tree))))
+				val AstVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[JString])
 				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JString).tree, "apply", List(x.tree))))
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
@@ -148,10 +148,10 @@ object MacroImpl {
 					))
 				)
 				val Elems2:Parser[c.Expr[Vector[JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Vector).tree, "apply", xs.map(_.tree))))
-				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeOf[Vector[JValue]]).map(x => c.Expr(x))
+				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeTag[Vector[JValue]])
 				val VectorP:Parser[c.Expr[Vector[JValue]]] = ScalaV orElse Elems2
 				val JArrayP:Parser[c.Expr[JArray]] = VectorP.map(x => c.Expr(objectApply(c)(c.universe.reify(JArray).tree, "apply", List(x.tree))))
-				val AstV:Parser[c.Expr[JArray]] = OfType(c.typeOf[JArray]).map(x => c.Expr(x))
+				val AstV:Parser[c.Expr[JArray]] = OfType(c.typeTag[JArray])
 				AstV orElse JArrayP
 			})
 
@@ -175,10 +175,10 @@ object MacroImpl {
 					))
 				)
 				val Elems2:Parser[c.Expr[Map[String, JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Map).tree, "apply", xs.map(_.tree))))
-				val ScalaV:Parser[c.Expr[Map[String, JValue]]] = OfType(c.typeOf[Map[String, JValue]]).map(x => c.Expr(x))
+				val ScalaV:Parser[c.Expr[Map[String, JValue]]] = OfType(c.typeTag[Map[String, JValue]])
 				val VectorP:Parser[c.Expr[Map[String, JValue]]] = ScalaV orElse Elems2
 				val JObjectP:Parser[c.Expr[JObject]] = VectorP.map(x => c.Expr(objectApply(c)(c.universe.reify(JObject).tree, "apply", List(x.tree))))
-				val AstV:Parser[c.Expr[JObject]] = OfType(c.typeOf[JObject]).map(x => c.Expr(x))
+				val AstV:Parser[c.Expr[JObject]] = OfType(c.typeTag[JObject])
 				AstV orElse JObjectP
 			})
 
