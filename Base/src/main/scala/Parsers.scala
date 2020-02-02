@@ -18,6 +18,15 @@ trait Parser[U <: Context with Singleton, +A] {
 	def flatMap[Z](fn:Function1[A, Parser[U, Z]]):Parser[U, Z] = {
 		new FlatMap(this, fn)
 	}
+	def filter(pred:Function1[A, Boolean], description:String):Parser[U, A] = new Parser[U, A] {
+		def parse(input:Input[U]):Result[U, A] = {
+			Parser.this.parse(input) match {
+				case Success(value, remain) if pred(value) => Success(value, remain)
+				case Success(_, _) => Failure(input.next, Failure.Leaf(description))
+				case Failure(found, exp) => Failure(found, exp)
+			}
+		}
+	}
 
 	def opaque(description:String):Parser[U, A] = new Parser[U, A] {
 		def parse(input:Input[U]):Result[U, A] = {
@@ -80,6 +89,21 @@ trait Parsers {
 	def End():Parser[Unit] = new scpc.End[ContextType]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = new scpc.DelayedConstruction[ContextType, A](fn)
+}
+
+trait ParsersImplictly extends Parsers {
+	implicit def str2parser(str:String):Parser[Unit] = this.IsString(str)
+	implicit def type2parser[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = this.OfType(tpe)
+	implicit def parserWithSymbolic[A](psr:Parser[A]) = new ParserWithSymbolic[ContextType, A](psr)
+	implicit def str2parserWithSymbolic(str:String) = this.parserWithSymbolic(this.str2parser(str))
+	implicit def type2parserWithSymbolic[A](tpe:ContextType#TypeTag[A]) = this.parserWithSymbolic(this.OfType(tpe))
+}
+
+class ParserWithSymbolic[U <: Context with Singleton, A](val backing:Parser[U, A]) extends AnyVal {
+	def ~[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]) = backing.andThen(rhs)(ev)
+	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
+	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]) = backing.repeat(min, max)(ev)
+	def opt[Z](implicit ev:Implicits.OptionallyTypes[A, Z]) = backing.optionally(ev)
 }
 
 private[stringContextParserCombinator] final class IsCodepoint(x:CodePoint) extends java.util.function.IntPredicate {

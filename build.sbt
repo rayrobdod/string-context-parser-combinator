@@ -50,3 +50,11 @@ lazy val json = (project in file("JsonParser"))
 			"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
 		),
 	)
+
+lazy val time = (project in file("TimeParser"))
+	.dependsOn(base)
+	.settings(sharedSettings)
+	.settings(
+		name := "time",
+		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.10", "2.13.1"),
+	)

@@ -14,6 +14,7 @@ object Utilities {
 	trait Extractor[A, Z] {
 		def unapply(a:A):Option[Z]
 	}
+	trait ExtractorApplicator0[A] extends Extractor0[A] with Function0[A]
 
 	/** A Extractor that matches a Name whose string value is equal to `expecting` */
 	def decodedName(expecting:String):Extractor0[Universe#Name] = new Extractor0[Universe#Name] {
@@ -43,7 +44,7 @@ object Utilities {
 	/**
 	 * Match a Tree of the type used for referencing type names
 	 */
-	def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
+	def selectChain(c:Context, name:String):ExtractorApplicator0[c.Tree] = new ExtractorApplicator0[c.Tree] {
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
 				val (nameInit, nameLast) = {
@@ -64,6 +65,22 @@ object Utilities {
 					case c.universe.Ident(MyName()) => true
 					case _ => false
 				}
+			}
+		}
+		def apply:c.Tree = {
+			if (name.contains(".")) {
+				val (nameInit, nameLast) = {
+					val parts = name.split("\\.")
+					(String.join(".", parts.init:_*), parts.last)
+				}
+				c.universe.Select(
+					selectChain(c, nameInit).apply,
+					MacroCompat.newTermName(c)(nameLast)
+				)
+			} else {
+				c.universe.Ident(
+					MacroCompat.newTermName(c)(name)
+				)
 			}
 		}
 	}
