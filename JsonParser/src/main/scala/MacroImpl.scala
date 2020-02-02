@@ -198,7 +198,7 @@ object MacroImpl {
 				//System.out.println(res)
 				res
 			}
-			case f:Failure[_] => {
+			case f:Failure => {
 				f.report(c)
 			}
 		}

@@ -10,7 +10,10 @@ trait Parser[U <: Context with Singleton, +A] {
 	def parse(input:Input[U]):Result[U, A]
 
 	def map[Z](fn:Function1[A, Z]):Parser[U, Z] = new Parser[U, Z] {
-		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input).map(fn)
+		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input) match {
+			case Success(v, r) => Success(fn(v), r)
+			case Failure(found, expect) => Failure(found, expect)
+		}
 	}
 	def flatMap[Z](fn:Function1[A, Parser[U, Z]]):Parser[U, Z] = {
 		new FlatMap(this, fn)
@@ -29,7 +32,17 @@ trait Parser[U <: Context with Singleton, +A] {
 		new AndThen(this, rhs, ev)
 	}
 	def orElse[Z >: A](rhs:Parser[U, Z]):Parser[U, Z] = new Parser[U, Z] {
-		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input).orElse(rhs.parse(input))
+		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input) match {
+			case Success(v, r) => Success(v, r)
+			case Failure(found1, expect1) => rhs.parse(input) match {
+				case Success(v, r) => Success(v, r)
+				case Failure(found2, expect2) => {
+					if (found1._2 == found2._2) {Failure(found1, Failure.Or(Seq(expect1, expect2)))}
+					else if (found1._2 > found2._2) {Failure(found1, expect1)}
+					else {Failure(found2, expect2)}
+				}
+			}
+		}
 	}
 	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]):Parser[U, Z] = new Repeat(this, min, max, ev)
 
@@ -141,7 +154,7 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 		val accumulator = ev.init()
 		var remaining:Input[U] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[U] = null
+		var innerExpecting:Failure = null
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
@@ -150,7 +163,7 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 					ev.append(accumulator, a)
 					remaining = r
 				}
-				case failure:Failure[U] => {
+				case failure:Failure => {
 					innerExpecting = failure
 					continue = false
 				}
