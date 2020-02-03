@@ -5,7 +5,7 @@ ThisBuild / organization := "com.rayrobdod"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %% "scalatest" % "3.0.8" % "test",
+		"org.scalatest" %% "scalatest" % "3.1.0" % "test",
 	),
 	scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" => Seq("-target:jvm-1.7")

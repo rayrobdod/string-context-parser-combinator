@@ -2,10 +2,10 @@ package com.rayrobdod.stringContextParserCombinator.example.jsonTest
 
 import scala.collection.immutable.{Map, Vector}
 import scalajson.ast._
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 import com.rayrobdod.stringContextParserCombinator.example.json.JsonStringContext
 
-final class StringContextTest extends FunSpec {
+final class StringContextTest extends AnyFunSpec {
 	describe("StringContext.json") {
 		it ("Accepts an immediate null") {
 			val exp = JNull

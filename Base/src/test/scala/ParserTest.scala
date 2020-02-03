@@ -1,8 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-final class ParserTest extends FunSpec {
+final class ParserTest extends AnyFunSpec {
 	def CharIn(x:String):Parser[Nothing, Char] = new CharIn(scala.Predef.wrapString(x))
 
 	def assertParseFailureMessage(expected:String)(dut:Parser[Nothing, _], inputStr:String):Unit = {
