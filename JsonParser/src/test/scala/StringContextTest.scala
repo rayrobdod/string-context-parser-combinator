@@ -48,7 +48,7 @@ final class StringContextTest extends AnyFunSpec {
 			assertResult(exp)(json"1.5")
 		}
 		it ("Accepts a literal 1e2") {
-			val exp = JNumber(1e2)
+			val exp = JNumber.fromString("1e2").get
 			assertResult(exp)(json"1e2")
 		}
 		it ("Accepts a literal 1e-2") {
@@ -56,7 +56,7 @@ final class StringContextTest extends AnyFunSpec {
 			assertResult(exp)(json"1e-2")
 		}
 		it ("Accepts a literal 1.5e+2") {
-			val exp = JNumber(15e1)
+			val exp = JNumber.fromString("1.5e+2").get
 			assertResult(exp)(json"1.5e+2")
 		}
 		it ("Accepts a JNumber 1.5") {
