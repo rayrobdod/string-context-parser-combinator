@@ -19,11 +19,12 @@ trait Parser[U <: Context with Singleton, +A] {
 		new FlatMap(this, fn)
 	}
 
-	def opaque(description:String):Parser[U, A] = new Parser[U, A] {
+	def opaque(description:String):Parser[U, A] = this.opaque(Failure.Leaf(description))
+	private[stringContextParserCombinator] def opaque(description:Failure.Expecting) = new Parser[U, A] {
 		def parse(input:Input[U]):Result[U, A] = {
 			Parser.this.parse(input) match {
 				case Success(v, r) => Success(v,r)
-				case Failure(f, _) => Failure(f, Failure.Leaf(description))
+				case Failure(f, _) => Failure(f, description)
 			}
 		}
 	}
@@ -71,8 +72,27 @@ trait Parsers {
 	def CharIn(str:Seq[Char]):Parser[Char] = new scpc.CharIn[ContextType](str)
 	def CharIn(str:String):Parser[Char] = new scpc.CharIn[ContextType](scala.Predef.wrapString(str))
 	def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] = new scpc.CharWhere[ContextType](fn)
-	def CodepointIn(str:String):Parser[CodePoint] = this.CodepointWhere({x:CodePoint => str.codePoints.anyMatch(new IsCodepoint(x))})
-	def CodepointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] = new scpc.CodepointWhere[ContextType](fn)
+	def CodePointIn(str:String):Parser[CodePoint] = {
+		/* XXX: lambdas instead of anonymous classes */
+		def IsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
+		val CodepointString = new java.util.function.IntFunction[String]{def apply(y:Int) = new String(Array[Int]('"', y, '"'), 0, 3)}
+		type ToExpectingBuffer = scala.collection.mutable.Builder[Failure.Expecting, Seq[Failure.Expecting]]
+		val ToExpecting = new java.util.stream.Collector[String, ToExpectingBuffer, Failure.Expecting]{
+			override def supplier = new java.util.function.Supplier[ToExpectingBuffer] {def get = Seq.newBuilder}
+			override def accumulator = new java.util.function.BiConsumer[ToExpectingBuffer, String]{def accept(buf:ToExpectingBuffer, a:String) = buf += Failure.Leaf(a)}
+			override def combiner = new java.util.function.BinaryOperator[ToExpectingBuffer]{def apply(lhs:ToExpectingBuffer, rhs:ToExpectingBuffer) = {lhs ++= rhs.result; lhs}}
+			override def finisher = new java.util.function.Function[ToExpectingBuffer, Failure.Expecting]{def apply(buf:ToExpectingBuffer) = Failure.Or(buf.result)}
+			override def characteristics = java.util.Collections.emptySet()
+		}
+
+		this.CodePointWhere({x:CodePoint => str.codePoints.anyMatch(IsCodePoint(x))})
+			.opaque(str
+				.codePoints
+				.mapToObj(CodepointString)
+				.collect[Failure.Expecting, ToExpectingBuffer](ToExpecting)
+			)
+	}
+	def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] = new scpc.CodepointWhere[ContextType](fn)
 	def IsString(str:String):Parser[Unit] = new scpc.IsString[ContextType](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
 	def OfType[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = new scpc.OfType[ContextType, A](tpe)
@@ -80,10 +100,6 @@ trait Parsers {
 	def End():Parser[Unit] = new scpc.End[ContextType]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = new scpc.DelayedConstruction[ContextType, A](fn)
-}
-
-private[stringContextParserCombinator] final class IsCodepoint(x:CodePoint) extends java.util.function.IntPredicate {
-	def test(y:Int) = {y == x.value}
 }
 
 private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B, Z](left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A,B,Z]) extends Parser[U, Z] {

@@ -11,7 +11,7 @@ package object stringContextParserCombinator {
 package stringContextParserCombinator {
 	/** A codepoint */
 	final case class CodePoint(val value:Int) extends AnyVal {
-		override def toString:String = new String(new Array[Int](value), 0, 1)
+		override def toString:String = new String(Array[Int](value), 0, 1)
 	}
 
 	/** A position's point - divorced from the position's context */

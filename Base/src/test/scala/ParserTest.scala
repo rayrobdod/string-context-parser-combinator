@@ -3,7 +3,10 @@ package com.rayrobdod.stringContextParserCombinator
 import org.scalatest.funspec.AnyFunSpec
 
 final class ParserTest extends AnyFunSpec {
-	def CharIn(x:String):Parser[Nothing, Char] = new CharIn(scala.Predef.wrapString(x))
+	object Parsers extends com.rayrobdod.stringContextParserCombinator.Parsers {
+		override type ContextType = Nothing
+	}
+	import Parsers.{CharIn, CodePointIn}
 
 	def assertParseFailureMessage(expected:String)(dut:Parser[Nothing, _], inputStr:String):Unit = {
 		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
@@ -16,6 +19,19 @@ final class ParserTest extends AnyFunSpec {
 		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case s:Success[_,_] => assertResult(expected)(s.value)
+			case _:Failure => fail("Parse Failed")
+		}
+	}
+	/* XXX: Scala 2.10 + scalatest: `assertResult(expected)(s.value)` compiles but fails at runtime with java.lang.NoSuchMethodError */
+	def assertParseSuccessValue(expected:CodePoint)(dut:Parser[Nothing, CodePoint], inputStr:String):Unit = {
+		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
+		dut.parse(input) match {
+			case s:Success[_,_] => {
+				val a:CodePoint = expected
+				val b:CodePoint = s.value
+				val eq = a == b
+				assertResult(true)(eq)
+			}
 			case _:Failure => fail("Parse Failed")
 		}
 	}
@@ -33,6 +49,22 @@ final class ParserTest extends AnyFunSpec {
 		it ("Two failure message") {
 			val exp = "Found EOF ; Expected \"1\" | \"2\""
 			val dut = CharIn("12")
+			assertParseFailureMessage(exp)(dut, "")
+		}
+	}
+	describe("CodePointIn") {
+		it ("Single success value") {
+			val dut = CodePointIn("1")
+			assertParseSuccessValue(CodePoint('1'))(dut, "1")
+		}
+		it ("Single failure message") {
+			val exp = "Found EOF ; Expected \"1\""
+			val dut = CodePointIn("1")
+			assertParseFailureMessage(exp)(dut, "")
+		}
+		it ("Two failure message") {
+			val exp = "Found EOF ; Expected \"1\" | \"2\""
+			val dut = CodePointIn("12")
 			assertParseFailureMessage(exp)(dut, "")
 		}
 	}
