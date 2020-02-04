@@ -86,7 +86,7 @@ final class ParserTest extends AnyFunSpec {
 		}
 	}
 	describe("OrElse") {
-		it ("asdf") {
+		it ("expected displays both halves") {
 			val exp = "Found EOF ; Expected \"1\" | \"2\""
 			val dut = CharIn("1") orElse CharIn("2")
 			assertParseFailureMessage(exp)(dut, "")
@@ -105,19 +105,33 @@ final class ParserTest extends AnyFunSpec {
 		}
 	}
 	describe("Repeat / AndThen chain") {
-		ignore ("First") {
+		it ("Zero-length input with any repeat") {
 			val exp = "Found EOF ; Expected \"a\" | \"b\""
 			val dut = CharIn("a").repeat() andThen CharIn("b")
 			assertParseFailureMessage(exp)(dut, "")
 		}
-		ignore ("Second") {
+		it ("Missing lhs with any repeat") {
 			val exp = "Found EOF ; Expected \"a\" | \"b\""
 			val dut = CharIn("a").repeat() andThen CharIn("b")
 			assertParseFailureMessage(exp)(dut, "a")
 		}
-		ignore ("pattern.repeat andThen subset") {
+		it ("Input too short for repeat") {
+			val exp = "Found EOF ; Expected \"a\""
+			val dut = CharIn("a").repeat(3, 5) andThen CharIn("b")
+			assertParseFailureMessage(exp)(dut, "a")
+		}
+		it ("Input too long for repeat") {
+			val exp = "Found \"aaa\" ; Expected \"b\""
+			val dut = CharIn("a").repeat(3, 5) andThen CharIn("b")
+			assertParseFailureMessage(exp)(dut, "aaaaaaaa")
+		}
+		it ("pattern.repeat andThen subset") {
 			val dut = CharIn("ab").repeat() andThen CharIn("a")
 			assertParseSuccessValue(("a",'a'))(dut, "aa")
+		}
+		it ("pattern.repeat andThen subset twice") {
+			val dut = CharIn("ab").repeat() andThen CharIn("a") andThen CharIn("a")
+			assertParseSuccessValue((("a",'a'),'a'))(dut, "aaa")
 		}
 	}
 	describe("Repeat / OrElse chain") {
