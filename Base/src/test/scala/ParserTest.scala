@@ -141,4 +141,10 @@ final class ParserTest extends AnyFunSpec {
 			assertParseFailureMessage(exp)(dut, "")
 		}
 	}
+	describe("Repeat / Repeat chain") {
+		it ("Should not hang indefinitely") {
+			val dut = CharIn("a").repeat().repeat()
+			assertParseSuccessValue(List(""))(dut, "v")
+		}
+	}
 }

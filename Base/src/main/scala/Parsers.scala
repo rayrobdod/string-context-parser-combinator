@@ -177,6 +177,7 @@ private[stringContextParserCombinator] final class Repeat[U <: Context with Sing
 				case Success(a, r) => {
 					counter += 1
 					ev.append(accumulator, a)
+					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
 				case failure:Failure => {
@@ -230,6 +231,7 @@ private[stringContextParserCombinator] final class RepeatAndThen[U <: Context wi
 					counter += 1
 					evL.append(accumulator, a)
 					states.push(Success(evL.result(accumulator), r))
+					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
 				case failure:Failure => {
