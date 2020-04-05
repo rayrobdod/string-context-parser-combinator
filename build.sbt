@@ -51,6 +51,14 @@ lazy val json = (project in file("JsonParser"))
 		),
 	)
 
+lazy val time = (project in file("TimeParser"))
+	.dependsOn(base)
+	.settings(sharedSettings)
+	.settings(
+		name := "time",
+		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.10", "2.13.1"),
+	)
+
 lazy val uri = (project in file("UriParser"))
 	.dependsOn(base)
 	.settings(sharedSettings)
