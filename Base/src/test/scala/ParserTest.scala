@@ -22,19 +22,6 @@ final class ParserTest extends AnyFunSpec {
 			case _:Failure => fail("Parse Failed")
 		}
 	}
-	/* XXX: Scala 2.10 + scalatest: `assertResult(expected)(s.value)` compiles but fails at runtime with java.lang.NoSuchMethodError */
-	def assertParseSuccessValue(expected:CodePoint)(dut:Parser[Nothing, CodePoint], inputStr:String):Unit = {
-		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
-		dut.parse(input) match {
-			case s:Success[_,_] => {
-				val a:CodePoint = expected
-				val b:CodePoint = s.value
-				val eq = a == b
-				assertResult(true)(eq)
-			}
-			case _:Failure => fail("Parse Failed")
-		}
-	}
 
 	describe("CharIn") {
 		it ("Single success value") {
@@ -102,6 +89,21 @@ final class ParserTest extends AnyFunSpec {
 			val exp = "Found EOF ; Expected \"3\""
 			val dut = CharIn("1") orElse (CharIn("2") andThen CharIn("3"))
 			assertParseFailureMessage(exp)(dut, "2")
+		}
+	}
+	describe("AndThen / Repeat chain") {
+		it ("First") {
+			val exp = "Found EOF ; Expected \"a\""
+			val dut = CharIn("a") andThen CharIn("a").repeat()
+			assertParseFailureMessage(exp)(dut, "")
+		}
+		it ("Second") {
+			val dut = CharIn("a") andThen CharIn("a").repeat()
+			assertParseSuccessValue(('a',""))(dut, "a")
+		}
+		it ("Fourth") {
+			val dut = CharIn("a") andThen CharIn("a").repeat()
+			assertParseSuccessValue(('a',"aa"))(dut, "aaa")
 		}
 	}
 	describe("Repeat / AndThen chain") {
