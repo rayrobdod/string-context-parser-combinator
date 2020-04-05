@@ -28,6 +28,10 @@ lazy val sharedSettings = Seq(
 		"-groups",
 		"-sourcepath", baseDirectory.value.toString,
 	),
+	Test / testOptions += Tests.Argument(
+		"-oS",
+		"-u", s"${crossTarget.value}/test-results-junit",
+	),
 )
 
 lazy val base = (project in file("Base"))
@@ -45,6 +49,7 @@ lazy val json = (project in file("JsonParser"))
 	.settings(sharedSettings)
 	.settings(
 		name := "json",
+		publish / skip := true,
 		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11"),
 		libraryDependencies ++= Seq(
 			"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
@@ -56,6 +61,7 @@ lazy val time = (project in file("TimeParser"))
 	.settings(sharedSettings)
 	.settings(
 		name := "time",
+		publish / skip := true,
 		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"),
 	)
 
@@ -64,5 +70,6 @@ lazy val uri = (project in file("UriParser"))
 	.settings(sharedSettings)
 	.settings(
 		name := "uri",
+		publish / skip := true,
 		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"),
 	)

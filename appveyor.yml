@@ -1,0 +1,36 @@
+version: 'yml-{build}'
+os: Windows Server 2012
+install:
+  - cmd: choco install sbt
+  - cmd: refreshenv
+  - cmd: sbt update
+environment:
+  matrix:
+  - SCALA_VERSION: 2.10.7
+    JAVA_HOME: C:\Program Files (x86)\Java\jdk1.7.0
+    SBT_CROSS_TARGET: scala-2.10
+  - SCALA_VERSION: 2.11.12
+    JAVA_HOME: C:\Program Files (x86)\Java\jdk1.7.0
+    SBT_CROSS_TARGET: scala-2.11
+  - SCALA_VERSION: 2.12.11
+    JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
+    SBT_CROSS_TARGET: scala-2.12
+  #- SCALA_VERSION: 2.13.1
+  #  JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
+  #  SBT_CROSS_TARGET: scala-2.13
+build_script:
+  - cmd: 'ECHO Global / publishTo := Some(Resolver.file("artifact", file("""C:\projects\string-context-parser-combinator\publish"""))) >publish-location.sbt'
+  - cmd: 'sbt ++%SCALA_VERSION% compile base/publish'
+test_script:
+  - cmd: 'sbt ++%SCALA_VERSION% test'
+  - ps: |
+      $wc = New-Object 'System.Net.WebClient'
+      foreach ($subproject in ("Base", "JsonParser", "TimeParser", "UriParser")) {
+        $files = get-childitem .\$subproject\target\$($env:SBT_CROSS_TARGET)\test-results-junit
+        foreach ($file in $files) {
+          $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\$subproject\target\$($env:SBT_CROSS_TARGET)\test-results-junit\$file))
+        }
+      }
+artifacts:
+  - path: publish
+    name: sbt_publish_directory
