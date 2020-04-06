@@ -181,41 +181,7 @@ object MacroImpl {
 		}
 	}
 
-	def stringContext_xxx[A](c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*)(parser:Parser[c.type, A]):A = {
-		val self:c.Expr[DateTimeStringContext] = c.prefix
-
-		/* Extract the string context `parts`, to be used in the parse */
-
-		val DateTimeSelectChain = selectChain(c, "com.rayrobdod.stringContextParserCombinator.example.datetime.package.DateTimeStringContext")
-		val StringContextApply = stringContextApply(c)
-
-		import c.universe._ // ApplyTag, SelectTag etc.
-		val strings = self.tree.duplicate match {
-			case c.universe.Apply(
-				DateTimeSelectChain(),
-				List(StringContextApply(strings))
-			) => {
-				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
-			}
-			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(self))
-		}
-
-		/* Create the input to parse */
-
-		val input = new Input[c.type](strings, args.toList)
-
-		/* Parse the input */
-
-		parser.parse(input) match {
-			case Success(res, _) => {
-				//System.out.println(res)
-				res
-			}
-			case f:Failure => {
-				f.report(c)
-			}
-		}
-	}
+	private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinator.example.datetime.package.DateTimeStringContext"
 
 	def stringContext_localdate(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDate] = {
 		object parsers extends Parsers {
@@ -225,7 +191,7 @@ object MacroImpl {
 			def Aggregate = (this.LocalDateP ~ this.End())
 		}
 
-		this.stringContext_xxx(c)(args:_*)(parsers.Aggregate)
+		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
 	}
 
 	def stringContext_localtime(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalTime] = {
@@ -236,7 +202,7 @@ object MacroImpl {
 			def Aggregate = (this.LocalTimeP ~ this.End())
 		}
 
-		this.stringContext_xxx(c)(args:_*)(parsers.Aggregate)
+		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
 	}
 
 	def stringContext_localdatetime(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDateTime] = {
@@ -247,6 +213,6 @@ object MacroImpl {
 			def Aggregate = (this.LocalDateTimeP ~ this.End())
 		}
 
-		this.stringContext_xxx(c)(args:_*)(parsers.Aggregate)
+		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
 	}
 }

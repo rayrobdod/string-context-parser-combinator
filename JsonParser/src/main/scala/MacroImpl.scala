@@ -9,38 +9,6 @@ import com.rayrobdod.stringContextParserCombinator.Utilities._
 
 object MacroImpl {
 	def stringContext_json(c:Context {type PrefixType = JsonStringContext})(args:c.Expr[Any]*):c.Expr[JValue] = {
-		val self:c.Expr[JsonStringContext] = c.prefix
-
-		/* Extract the string context `parts`, to be used in the parse */
-
-		val JsonStringContextName = decodedName("JsonStringContext")
-		val JsonSelectChain = selectChain(c, "com.rayrobdod.stringContextParserCombinator.example.json")
-		val StringContextApply = stringContextApply(c)
-		val PackageName = MacroCompat.stdTermNames(c).PACKAGE
-
-		import c.universe._ // ApplyTag, SelectTag etc.
-		val strings = self.tree.duplicate match {
-			case c.universe.Apply(
-				c.universe.Select(
-					c.universe.Select(
-						JsonSelectChain(),
-						PackageName
-					),
-					JsonStringContextName()
-				),
-				List(StringContextApply(strings))
-			) => {
-				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
-			}
-			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(self))
-		}
-
-		/* Create the input to parse */
-
-		val input = new Input[c.type](strings, args.toList)
-
-		/* Create the parser */
-
 		// ArrayP, ObjectP and ValueP are mutually recursive; if they were not in an object
 		// there would be problems about `ValueP forward reference extends over definition of value ArrayP`
 		object ParserPieces extends Parsers {
@@ -191,16 +159,7 @@ object MacroImpl {
 			val Aggregate = (ValueP andThen End())
 		}
 
-		/* Parse the input */
-
-		ParserPieces.Aggregate.parse(input) match {
-			case Success(res, _) => {
-				//System.out.println(res)
-				res
-			}
-			case f:Failure => {
-				f.report(c)
-			}
-		}
+		val className = "com.rayrobdod.stringContextParserCombinator.example.json.package.JsonStringContext"
+		macroimpl(c)(className, ParserPieces.Aggregate)(args.toList)
 	}
 }

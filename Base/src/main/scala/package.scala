@@ -1,14 +1,71 @@
 package com.rayrobdod
 
+import scala.collection.immutable.Seq
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * A library for implementing StringContext methods via Parser Combinators
  *
  * @groupprio Parser 100
- * @groupprio Input/Result 200
+ * @groupprio macro 200
+ * @groupprio Input/Result 300
  */
 package object stringContextParserCombinator {
+	/**
+	 * A macro impl scaffold, which takes care of extracting strings from a
+	 * StringContext prefix, creating a parser with that value, then interpreting
+	 * the parse result
+	 *
+	 * == Usage ==
+	 *
+	 * Given a StringContext extension class
+	 * {{{
+	 * package object \$package {
+	 * 	implicit final class \$extensionclass(val backing:StringContext) extends AnyVal {
+	 * 		def \$method(args:\$paramtype*):\$rettype = macro \$impl_method
+	 * 	}
+	 * }
+	 * }}}
+	 *
+	 * Then, macro implementation should consist of
+	 * {{{
+	 * def \$impl_method(c:Context)(args:c.Expr[\$paramtype]*):c.Expr[\$rettype] = {
+	 * 	val parser = ???
+	 * 	macroimpl(c)("\$package.package.\$extensionclass", parser)(args)
+	 * }
+	 * }}}
+	 *
+	 * @group macro
+	 */
+	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.type, c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
+		val ExtensionClassSelectChain = Utilities.selectChain(c, extensionClassName)
+		val StringContextApply = Utilities.stringContextApply(c)
+
+		import c.universe._ // ApplyTag, SelectTag etc.
+		val strings = c.prefix.tree.duplicate match {
+			case c.universe.Apply(
+				ExtensionClassSelectChain(),
+				List(StringContextApply(strings))
+			) => {
+				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
+			}
+			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
+		}
+
+		val input = new Input[c.type](strings, args.toList)
+
+		parser.parse(input) match {
+			case Success(res, _) => {
+				//System.out.println(res)
+				res
+			}
+			case f:Failure => {
+				f.report(c)
+			}
+		}
+	}
+
+
 }
 
 package stringContextParserCombinator {

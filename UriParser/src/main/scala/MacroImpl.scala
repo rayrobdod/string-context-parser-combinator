@@ -8,38 +8,6 @@ import com.rayrobdod.stringContextParserCombinator.Utilities._
 
 object MacroImpl {
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
-		val self:c.Expr[UriStringContext] = c.prefix
-
-		/* Extract the string context `parts`, to be used in the parse */
-
-		val UriStringContextName = decodedName("UriStringContext")
-		val UriSelectChain = selectChain(c, "com.rayrobdod.stringContextParserCombinator.example.uri")
-		val StringContextApply = stringContextApply(c)
-		val PackageName = MacroCompat.stdTermNames(c).PACKAGE
-
-		import c.universe._ // ApplyTag, SelectTag etc.
-		val strings = self.tree.duplicate match {
-			case c.universe.Apply(
-				c.universe.Select(
-					c.universe.Select(
-						UriSelectChain(),
-						PackageName
-					),
-					UriStringContextName()
-				),
-				List(StringContextApply(strings))
-			) => {
-				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
-			}
-			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(self))
-		}
-
-		/* Create the input to parse */
-
-		val input = new Input[c.type](strings, args.toList)
-
-		/* Create the parser */
-
 		object ParserPieces extends Parsers{
 			type ContextType = c.type
 			val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr(c.universe.Literal(c.universe.Constant(x)))}
@@ -213,9 +181,9 @@ object MacroImpl {
 
 					//val tupleConcatFun = q"""{ab => ab._1 + "=" + ab._2}"""
 					val tupleConcatFun = {
-						val a = c.universe.Select(Ident(MacroCompat.newTermName(c)("ab")), MacroCompat.newTermName(c)("_1"))
-						val b = c.universe.Select(Ident(MacroCompat.newTermName(c)("ab")), MacroCompat.newTermName(c)("_2"))
-						val eq = Literal(Constant("="))
+						val a = c.universe.Select(c.universe.Ident(MacroCompat.newTermName(c)("ab")), MacroCompat.newTermName(c)("_1"))
+						val b = c.universe.Select(c.universe.Ident(MacroCompat.newTermName(c)("ab")), MacroCompat.newTermName(c)("_2"))
+						val eq = c.universe.Literal(c.universe.Constant("="))
 						def concat(a:c.universe.Tree, b:c.universe.Tree) = objectApply(c)(a, "$plus", List(b))
 						val aeqb = concat(a, concat(eq, b))
 						val abParam = c.universe.ValDef(
@@ -349,16 +317,7 @@ object MacroImpl {
 			val Aggregate:Parser[c.Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End
 		}
 
-		/* Parse the input */
-
-		ParserPieces.Aggregate.parse(input) match {
-			case Success(res, _) => {
-				//System.out.println(res)
-				res
-			}
-			case f:Failure => {
-				f.report(c)
-			}
-		}
+		val extensionClassName = "com.rayrobdod.stringContextParserCombinator.example.uri.package.UriStringContext"
+		macroimpl(c)(extensionClassName, ParserPieces.Aggregate)(args.toList)
 	}
 }
