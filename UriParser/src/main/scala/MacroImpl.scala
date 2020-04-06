@@ -36,7 +36,7 @@ object MacroImpl {
 
 		/* Create the input to parse */
 
-		val input = Input[c.type](strings, args.toList)
+		val input = new Input[c.type](strings, args.toList)
 
 		/* Create the parser */
 
@@ -193,6 +193,7 @@ object MacroImpl {
 					.repeat()
 					.map(xs => Utilities.concatenateStrings(c)(xs))
 				val Mapping = {
+					import scala.language.implicitConversions
 					implicit def fn2then[A,B,Z](fn:(A,B) => Z):Implicits.AndThenTypes[A,B,Z] = new Implicits.AndThenTypes[A,B,Z]{
 						def aggregate(a:A, b:B):Z = fn(a,b)
 					}

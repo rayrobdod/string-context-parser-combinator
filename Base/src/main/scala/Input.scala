@@ -2,11 +2,16 @@ package com.rayrobdod.stringContextParserCombinator
 
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
+/**
+ * The input to a {@link Parser}
+ *
+ * @group Input/Result
+ */
 final class Input[U <: Context with Singleton](
 	private[stringContextParserCombinator] val parts:List[(String, PositionPoint)],
 	private[stringContextParserCombinator] val args:List[U#Expr[Any]]
 ) {
-	def consume[A](
+	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],
 		argsFn:U#Expr[Any] => Option[A],
 		expecting: => Failure.Expecting
@@ -30,12 +35,12 @@ final class Input[U <: Context with Singleton](
 	 * Returns a {@link Success} if this Input is empty; otherwise a
 	 * {@link Failure}
 	 */
-	def isEmpty:Boolean = parts.head._1.isEmpty && args.isEmpty
+	private[stringContextParserCombinator] def isEmpty:Boolean = parts.head._1.isEmpty && args.isEmpty
 
 	/**
 	 * Reports the next symbol, but only in a form suitable for the Failure's found parameter
 	 */
-	def next:(String, PositionPoint) = {
+	private[stringContextParserCombinator] def next:(String, PositionPoint) = {
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
 				(args.head.actualType.toString, PositionPoint(args.head.tree.pos))
@@ -47,8 +52,4 @@ final class Input[U <: Context with Singleton](
 			("\"" + headStr + "\"", headPos)
 		}
 	}
-}
-
-object Input {
-	def apply[U <: Context with Singleton](parts:List[(String, PositionPoint)], args:List[U#Expr[Any]]):Input[U] = new Input(parts, args)
 }

@@ -9,14 +9,14 @@ final class ParserTest extends AnyFunSpec {
 	import Parsers.{CharIn, CodePointIn}
 
 	def assertParseFailureMessage(expected:String)(dut:Parser[Nothing, _], inputStr:String):Unit = {
-		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
+		val input = new Input[Nothing](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case _:Success[_,_] => fail("Parse Succeeded")
 			case f:Failure => assertResult(expected)(f.msg)
 		}
 	}
 	def assertParseSuccessValue(expected:Any)(dut:Parser[Nothing, _], inputStr:String):Unit = {
-		val input = Input[Nothing](List((inputStr, PositionPoint(0))), List())
+		val input = new Input[Nothing](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case s:Success[_,_] => assertResult(expected)(s.value)
 			case _:Failure => fail("Parse Failed")

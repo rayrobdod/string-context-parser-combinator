@@ -37,7 +37,7 @@ object MacroImpl {
 
 		/* Create the input to parse */
 
-		val input = Input[c.type](strings, args.toList)
+		val input = new Input[c.type](strings, args.toList)
 
 		/* Create the parser */
 

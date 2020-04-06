@@ -4,13 +4,19 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * The result of a parse
- * @group Result
+ * @group Input/Result
  */
 sealed trait Result[+U <: Context with Singleton, +A] {
 }
 
 /**
- * @group Result
+ * The result of a successful parse
+ *
+ * @group Input/Result
+ *
+ * @constructor
+ * @param value the parsed value
+ * @param remaining input that was not consumed by the parser
  */
 final case class Success[U <: Context with Singleton, +A](
 	val value:A,
@@ -18,7 +24,13 @@ final case class Success[U <: Context with Singleton, +A](
 ) extends Result[U, A]
 
 /**
- * @group Result
+ * The result of a failed parse
+ *
+ * @group Input/Result
+ *
+ * @constructor
+ * @param found the value that was found
+ * @param expecting what the parser was expecting
  */
 final case class Failure(
 	val found:(String, PositionPoint),
