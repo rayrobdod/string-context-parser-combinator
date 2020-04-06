@@ -1,14 +1,13 @@
-package com.rayrobdod.stringContextParserCombinator
-package example.datetime
+package com.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinator.{Parsers => scpcParsers}
+import scala.Predef.charWrapper
+import com.rayrobdod.stringContextParserCombinator.{Parsers => scpcParsers, _}
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 import com.rayrobdod.stringContextParserCombinator.Utilities._
-import scala.Predef.charWrapper
 
 /** Implicit methods to convert things to parsers or to add symbolic methods to parsers */
-trait ParsersImplictly extends Parsers {
+trait ParsersImplictly extends scpcParsers {
 	import scala.language.implicitConversions
 	implicit def str2parser(str:String):Parser[Unit] = this.IsString(str)
 	implicit def type2parser[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = this.OfType(tpe)
@@ -181,7 +180,7 @@ object MacroImpl {
 		}
 	}
 
-	private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinator.example.datetime.package.DateTimeStringContext"
+	private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
 
 	def stringContext_localdate(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDate] = {
 		object parsers extends Parsers {

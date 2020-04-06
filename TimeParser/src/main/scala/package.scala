@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator.example
+package com.rayrobdod.stringContextParserCombinatorExample
 
 import scala.language.experimental.macros
 import java.time.{LocalTime, LocalDate, LocalDateTime}

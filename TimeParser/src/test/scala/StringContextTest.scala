@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinator.example.datetimeTest
+package com.rayrobdod.stringContextParserCombinatorExample.datetimeTest
 
 import java.time._
 import org.scalatest.funspec.AnyFunSpec
-import com.rayrobdod.stringContextParserCombinator.example.datetime.DateTimeStringContext
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.DateTimeStringContext
 
 final class StringContextTest extends AnyFunSpec {
 	describe("StringContext.localtime") {

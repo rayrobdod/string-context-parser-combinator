@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator.example
+package com.rayrobdod.stringContextParserCombinatorExample
 
 import java.net.URI
 import scala.language.experimental.macros

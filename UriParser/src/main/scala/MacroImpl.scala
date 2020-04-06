@@ -1,7 +1,7 @@
-package com.rayrobdod.stringContextParserCombinator
-package example.uri
+package com.rayrobdod.stringContextParserCombinatorExample.uri
 
 import java.net.URI
+import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.MacroCompat
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 import com.rayrobdod.stringContextParserCombinator.Utilities._
@@ -317,7 +317,7 @@ object MacroImpl {
 			val Aggregate:Parser[c.Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End
 		}
 
-		val extensionClassName = "com.rayrobdod.stringContextParserCombinator.example.uri.package.UriStringContext"
+		val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.uri.package.UriStringContext"
 		macroimpl(c)(extensionClassName, ParserPieces.Aggregate)(args.toList)
 	}
 }

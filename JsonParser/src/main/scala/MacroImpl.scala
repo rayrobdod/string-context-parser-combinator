@@ -1,10 +1,10 @@
-package com.rayrobdod.stringContextParserCombinator
-package example.json
+package com.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.{Map, Seq, Vector}
+import scalajson.ast._
+import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.MacroCompat
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-import scalajson.ast._
 import com.rayrobdod.stringContextParserCombinator.Utilities._
 
 object MacroImpl {
@@ -159,7 +159,7 @@ object MacroImpl {
 			val Aggregate = (ValueP andThen End())
 		}
 
-		val className = "com.rayrobdod.stringContextParserCombinator.example.json.package.JsonStringContext"
+		val className = "com.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"
 		macroimpl(c)(className, ParserPieces.Aggregate)(args.toList)
 	}
 }
