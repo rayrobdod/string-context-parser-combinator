@@ -2,12 +2,18 @@ package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.mutable.Builder
 
+/**
+ * Container for type-level logic
+ */
 object Implicits {
+	/** Describes how to combine two adjacent values into one value */
 	trait AndThenTypes[-A, -B, +Z] {
 		def aggregate(a:A, b:B):Z
 	}
+	/** Predefined implicit implementations of AndThenTypes */
 	object AndThenTypes extends LowPrioAndThenTypes {
-		implicit object andThenUnitBoth extends AndThenTypes[Unit, Unit, Unit] {
+		implicit def andThenUnitBoth:AndThenTypes[Unit, Unit, Unit] = new AndThenUnitBoth
+		private[this] final class AndThenUnitBoth extends AndThenTypes[Unit, Unit, Unit] {
 			def aggregate(a:Unit, b:Unit):Unit = ()
 		}
 		implicit def andThenUnitLeft[B]:AndThenTypes[Unit, B, B] = new AndThenUnitLeft
@@ -19,36 +25,51 @@ object Implicits {
 			def aggregate(a:A, u:Unit):A = a
 		}
 	}
-	trait LowPrioAndThenTypes {
-		implicit def andThenTypes2[A,B]:AndThenTypes[A, B, (A, B)] = new AndThenTypes2
-		private[this] final class AndThenTypes2[A, B] extends AndThenTypes[A, B, (A,B)] {
+	private[Implicits] trait LowPrioAndThenTypes {
+		implicit def andThenGeneric[A,B]:AndThenTypes[A, B, (A, B)] = new AndThenGeneric
+		private[this] final class AndThenGeneric[A, B] extends AndThenTypes[A, B, (A,B)] {
 			def aggregate(a:A, b:B):(A,B) = (a,b)
 		}
 	}
 
+	/** Describes the type that represents the repetition of a type */
 	trait RepeatTypes[-A, +Z] {
+		/** A mutable accumulator appropriate for holding `A` and transforming into `Z` */
 		type Acc
+		/** Returns an empty accumulator */
 		def init():Acc
+		/** Inserts `elem` into `acc` */
 		def append(acc:Acc, elem:A):Unit
+		/** Transforms `acc` into Z */
 		def result(acc:Acc):Z
 	}
+	/** Predefined implicit implementations of RepeatTypes */
 	object RepeatTypes extends LowPrioRepeatTypes {
-		implicit object CharRepeatTypes extends RepeatTypes[Char, String] {
+		implicit def repeatUnit:RepeatTypes[Unit, Unit] = new RepeatTypesUnit
+		private[this] final class RepeatTypesUnit extends RepeatTypes[Unit, Unit] {
+			type Acc = Unit
+			def init():Acc = ()
+			def append(acc:Acc, elem:Unit):Unit = {}
+			def result(acc:Acc):Unit = ()
+		}
+		implicit def repeatChar:RepeatTypes[Char, String] = new RepeatTypesChar
+		private[this] final class RepeatTypesChar extends RepeatTypes[Char, String] {
 			type Acc = StringBuilder
 			def init():Acc = new StringBuilder
 			def append(acc:Acc, elem:Char):Unit = {acc += elem}
 			def result(acc:Acc):String = acc.toString
 		}
-		implicit object CodePointRepeatTypes extends RepeatTypes[CodePoint, String] {
+		implicit def repeatCodepoint:RepeatTypes[CodePoint, String] = new RepeatTypesCodepoint
+		private[this] final class RepeatTypesCodepoint extends RepeatTypes[CodePoint, String] {
 			type Acc = java.lang.StringBuilder
 			def init():Acc = new java.lang.StringBuilder
 			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.value)}
 			def result(acc:Acc):String = acc.toString
 		}
 	}
-	trait LowPrioRepeatTypes {
-		implicit def seqRepeatTypes[A]:RepeatTypes[A, List[A]] = new SeqRepeatTypes
-		private[this] final class SeqRepeatTypes[A] extends RepeatTypes[A, List[A]] {
+	private[Implicits] trait LowPrioRepeatTypes {
+		implicit def repeatGenericToList[A]:RepeatTypes[A, List[A]] = new RepeatGenericToList
+		private[this] final class RepeatGenericToList[A] extends RepeatTypes[A, List[A]] {
 			type Acc = Builder[A, List[A]]
 			def init():Acc = List.newBuilder[A]
 			def append(acc:Acc, elem:A):Unit = {acc += elem}
@@ -56,19 +77,24 @@ object Implicits {
 		}
 	}
 
+	/** Describes the type that represents the option of a type */
 	trait OptionallyTypes[-A, +Z] {
+		/** Returns a `Z` value representing a missing `A` */
 		def none():Z
+		/** Returns a `Z` value representing the given `A` */
 		def some(elem:A):Z
 	}
+	/** Predefined implicit implementations of OptionallyTypes */
 	object OptionallyTypes extends LowPrioOptionallyTypes {
-		implicit object UnitOptionallyTypes extends OptionallyTypes[Unit, Unit] {
+		implicit def optionallyUnit:OptionallyTypes[Unit, Unit] = new OptionallyUnit
+		private[this] final class OptionallyUnit extends OptionallyTypes[Unit, Unit] {
 			def none():Unit = ()
 			def some(elem:Unit):Unit = elem
 		}
 	}
-	trait LowPrioOptionallyTypes {
-		implicit def optionOptionallyTypes[A]:OptionallyTypes[A, Option[A]] = new OptionOptionallyTypes[A]
-		private final class OptionOptionallyTypes[A] extends OptionallyTypes[A, Option[A]] {
+	private[Implicits] trait LowPrioOptionallyTypes {
+		implicit def optinallyGeneric[A]:OptionallyTypes[A, Option[A]] = new OptinallyGeneric[A]
+		private[this] final class OptinallyGeneric[A] extends OptionallyTypes[A, Option[A]] {
 			def none():Option[A] = None
 			def some(elem:A):Option[A] = Some(elem)
 		}

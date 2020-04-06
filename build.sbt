@@ -7,6 +7,7 @@ lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
 		"org.scalatest" %% "scalatest" % "3.1.1" % "test",
 	),
+	scalacOptions += "-feature",
 	scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" => Seq("-target:jvm-1.7")
 		case _ => Seq("-target:jvm-1.8")

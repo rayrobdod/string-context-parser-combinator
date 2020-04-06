@@ -303,7 +303,7 @@ private[stringContextParserCombinator] final class RepeatAndThen[U <: Context wi
 			this.min,
 			this.max,
 			this.evL,
-			this.rhs.andThen(newParser)(Implicits.AndThenTypes.andThenTypes2),
+			this.rhs.andThen(newParser)(Implicits.AndThenTypes.andThenGeneric),
 			new Implicits.AndThenTypes[AS, (B, C), Z2] {
 				def aggregate(as:AS, bc:(B, C)):Z2 = ev.aggregate(evR.aggregate(as, bc._1), bc._2)
 			}
