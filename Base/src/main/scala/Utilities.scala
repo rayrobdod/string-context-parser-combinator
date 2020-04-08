@@ -8,15 +8,19 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
  * Methods to make writing string context macros easier
  */
 object Utilities {
+	private[stringContextParserCombinator]
 	trait Extractor0[A] {
 		def unapply(a:A):Boolean
 	}
+	private[stringContextParserCombinator]
 	trait Extractor[A, Z] {
 		def unapply(a:A):Option[Z]
 	}
+	private[stringContextParserCombinator]
 	trait ExtractorApplicator0[A] extends Extractor0[A] with Function0[A]
 
 	/** A Extractor that matches a Name whose string value is equal to `expecting` */
+	private[stringContextParserCombinator]
 	def decodedName(expecting:String):Extractor0[Universe#Name] = new Extractor0[Universe#Name] {
 		def unapply(res:Universe#Name):Boolean = expecting == res.decodedName.toString
 	}
@@ -25,6 +29,7 @@ object Utilities {
 	private[this] val ApplyName = decodedName("apply")
 
 	/** An Extractor that matches a StringContext's form */
+	private[stringContextParserCombinator]
 	def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
@@ -44,6 +49,7 @@ object Utilities {
 	/**
 	 * Match a Tree of the type used for referencing type names
 	 */
+	private[stringContextParserCombinator]
 	def selectChain(c:Context, name:String):ExtractorApplicator0[c.Tree] = new ExtractorApplicator0[c.Tree] {
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
