@@ -3,7 +3,6 @@ package com.rayrobdod.stringContextParserCombinatorExample.json
 import scala.collection.immutable.{Map, Seq, Vector}
 import scalajson.ast._
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinator.MacroCompat
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 import com.rayrobdod.stringContextParserCombinator.Utilities._
 
@@ -21,7 +20,7 @@ object MacroImpl {
 			val BooleanP:Parser[c.Expr[JBoolean]] = {
 				val TrueI = IsString("true").map(_ => c.universe.reify(scalajson.ast.JTrue))
 				val FalseI = IsString("false").map(_ => c.universe.reify(scalajson.ast.JFalse))
-				val ScalaV = OfType(c.typeTag[scala.Boolean]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JBoolean).tree, "apply", List(x.tree))))
+				val ScalaV = OfType(c.typeTag[scala.Boolean]).map(x => c.universe.reify(scalajson.ast.JBoolean.apply(x.splice)))
 				val AstV = OfType(c.typeTag[JBoolean])
 				AstV orElse ScalaV orElse TrueI orElse FalseI
 			}
@@ -51,14 +50,12 @@ object MacroImpl {
 						andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
 						andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
 					).map({x =>
-						c.Expr(c.universe.Select(
-							objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "fromString", List(c.universe.Literal(c.universe.Constant(x)))),
-							MacroCompat.newTermName(c)("get")
-						))
+						val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
+						c.universe.reify(scalajson.ast.JNumber.fromString(xExpr.splice).get)
 					})
 				}.opaque("Number Literal")
 				val AstV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[JNumber])
-				val ScalaIntV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[scala.Int]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JNumber).tree, "apply", List(x.tree))))
+				val ScalaIntV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[scala.Int]).map(x => c.universe.reify(scalajson.ast.JNumber.apply(x.splice)))
 				AstV orElse ScalaIntV orElse NumberI
 			}
 
@@ -78,7 +75,7 @@ object MacroImpl {
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeTag[String])
-				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.Expr(c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
+				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.universe.reify(x.splice.value))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
 					.map(strs => Utilities.concatenateStrings(c)(strs))
 				(DelimiterP andThen Content andThen DelimiterP)
@@ -86,15 +83,15 @@ object MacroImpl {
 
 			val StringP:Parser[c.Expr[String]] = {
 				val ScalaVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[String])
-				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.Expr(c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
-				val Immediate:Parser[c.Expr[String]] = StringBase.map(x => c.Expr(x.tree))
+				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.universe.reify(x.splice.value))
+				val Immediate:Parser[c.Expr[String]] = StringBase
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
 
 			val JStringP:Parser[c.Expr[JString]] = {
-				val ScalaVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[String]).map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JString).tree, "apply", List(x.tree))))
+				val ScalaVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[String]).map(x => c.universe.reify(scalajson.ast.JString.apply(x.splice)))
 				val AstVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[JString])
-				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.Expr(objectApply(c)(c.universe.reify(scalajson.ast.JString).tree, "apply", List(x.tree))))
+				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.universe.reify(scalajson.ast.JString.apply(x.splice)))
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
 
@@ -118,7 +115,7 @@ object MacroImpl {
 				val Elems2:Parser[c.Expr[Vector[JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Vector).tree, "apply", xs.map(_.tree))))
 				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeTag[Vector[JValue]])
 				val VectorP:Parser[c.Expr[Vector[JValue]]] = ScalaV orElse Elems2
-				val JArrayP:Parser[c.Expr[JArray]] = VectorP.map(x => c.Expr(objectApply(c)(c.universe.reify(JArray).tree, "apply", List(x.tree))))
+				val JArrayP:Parser[c.Expr[JArray]] = VectorP.map(x => c.universe.reify(JArray.apply(x.splice)))
 				val AstV:Parser[c.Expr[JArray]] = OfType(c.typeTag[JArray])
 				AstV orElse JArrayP
 			})
@@ -132,7 +129,7 @@ object MacroImpl {
 				val KeyValuePair:Parser[c.Expr[(String, JValue)]] = (
 					(WhitespaceP andThen StringP andThen WhitespaceP andThen Separator andThen ValueP).map({x =>
 						val (k, v) = x
-						c.Expr(objectApply(c)(c.universe.reify(Tuple2).tree, "apply", List(k.tree, v.tree)))
+						c.universe.reify(Tuple2.apply(k.splice, v.splice))
 					})
 				)
 
@@ -145,7 +142,7 @@ object MacroImpl {
 				val Elems2:Parser[c.Expr[Map[String, JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Map).tree, "apply", xs.map(_.tree))))
 				val ScalaV:Parser[c.Expr[Map[String, JValue]]] = OfType(c.typeTag[Map[String, JValue]])
 				val VectorP:Parser[c.Expr[Map[String, JValue]]] = ScalaV orElse Elems2
-				val JObjectP:Parser[c.Expr[JObject]] = VectorP.map(x => c.Expr(objectApply(c)(c.universe.reify(JObject).tree, "apply", List(x.tree))))
+				val JObjectP:Parser[c.Expr[JObject]] = VectorP.map(x => c.universe.reify(JObject.apply(x.splice)))
 				val AstV:Parser[c.Expr[JObject]] = OfType(c.typeTag[JObject])
 				AstV orElse JObjectP
 			})

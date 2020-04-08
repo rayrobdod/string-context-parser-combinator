@@ -4,7 +4,6 @@ import java.time._
 import scala.Predef.charWrapper
 import com.rayrobdod.stringContextParserCombinator.{Parsers => scpcParsers, _}
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-import com.rayrobdod.stringContextParserCombinator.Utilities._
 
 /** Implicit methods to convert things to parsers or to add symbolic methods to parsers */
 trait ParsersImplictly extends scpcParsers {
@@ -48,16 +47,15 @@ object MacroImpl {
 			.filter(x => min <= x && x <= max, String.format(""""$1%02d" - "$2%02d"""", Integer.valueOf(min), Integer.valueOf(max)))
 
 		def YearP:Parser[ContextType#Expr[Year]] = {
-			val LiteralP:Parser[ContextType#Expr[Year]] = {
+			val LiteralP:Parser[ctx.Expr[Year]] = {
 				(CharIn("-+").opt ~ IsDigit.rep(1, 9).map(_.value))
 					.map({x => if (x._1 == Some('-')) {-x._2} else {x._2}})
 					.opaque("\"-999999999\"-\"999999999\"")
 					.map(x =>
-						ctx.Expr[Year](objectApply(ctx)(
-							selectChain(ctx, "java.time.Year").apply,
-							"of",
-							List(ctx.universe.Literal(ctx.universe.Constant(x)))
-						))
+						{
+							val xExpr = ctx.Expr[Int](ctx.universe.Literal(ctx.universe.Constant(x)))
+							ctx.universe.reify(java.time.Year.of(xExpr.splice))
+						}
 					)
 			}
 			val VariableP:Parser[ContextType#Expr[Year]] = OfType(ctx.typeTag[Year])
@@ -100,17 +98,19 @@ object MacroImpl {
 		}
 
 		def YearMonthP:Parser[ContextType#Expr[YearMonth]] = {
-			val PartsP:Parser[ContextType#Expr[YearMonth]] = (YearP ~ "-" ~ MonthP).map(x =>
-				ctx.Expr[YearMonth](Utilities.objectApply(ctx)(x._1.in(ctx.mirror).tree, "atMonth", List(x._2.in(ctx.mirror).tree)))
-			)
+			val PartsP:Parser[ctx.Expr[YearMonth]] = (YearP ~ "-" ~ MonthP).map(x => {
+				val (y, m) = x
+				ctx.universe.reify(y.splice.atMonth(m.splice))
+			})
 			val VariableP:Parser[ContextType#Expr[YearMonth]] = OfType(ctx.typeTag[YearMonth])
 			VariableP | PartsP
 		}
 
 		def LocalDateP:Parser[ContextType#Expr[LocalDate]] = {
-			val YearMonthVariantP:Parser[ContextType#Expr[LocalDate]] = (YearMonthP ~ "-" ~ Day31P).map(x =>
-				ctx.Expr[LocalDate](Utilities.objectApply(ctx)(x._1.in(ctx.mirror).tree, "atDay", List(x._2.in(ctx.mirror).tree)))
-			)
+			val YearMonthVariantP:Parser[ctx.Expr[LocalDate]] = (YearMonthP ~ "-" ~ Day31P).map(x => {
+				val (ym, day) = x
+				ctx.universe.reify(ym.splice.atDay(day.splice))
+			})
 			val VariableP:Parser[ContextType#Expr[LocalDate]] = OfType(ctx.typeTag[LocalDate])
 			VariableP | YearMonthVariantP
 		}
@@ -143,7 +143,7 @@ object MacroImpl {
 		}
 
 		def LocalTimeP:Parser[ContextType#Expr[LocalTime]] = {
-			val LiteralP = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
+			val LiteralP:Parser[ctx.Expr[LocalTime]] = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
 				.map({hmsn =>
 					val constZero = ctx.Expr(ctx.universe.Literal(ctx.universe.Constant(0)))
 					val (hm, sn) = hmsn
@@ -151,31 +151,17 @@ object MacroImpl {
 					val (second, n) = sn.getOrElse((constZero, None))
 					val nano = n.getOrElse(constZero)
 
-					ctx.Expr[LocalTime](objectApply(ctx)(
-						selectChain(ctx, "java.time.LocalTime").apply,
-						"of",
-						List(
-							hour.in(ctx.mirror).tree,
-							minute.in(ctx.mirror).tree,
-							second.in(ctx.mirror).tree,
-							nano.in(ctx.mirror).tree
-						)
-					))
+					ctx.universe.reify(java.time.LocalTime.of(hour.splice, minute.splice, second.splice, nano.splice))
 				})
 			val VariableP:Parser[ContextType#Expr[LocalTime]] = OfType(ctx.typeTag[LocalTime])
 			VariableP | LiteralP
 		}
 
-		def LocalDateTimeP:Parser[ContextType#Expr[LocalDateTime]] = {
+		def LocalDateTimeP:Parser[ctx.Expr[LocalDateTime]] = {
 			(LocalDateP ~ "T" ~ LocalTimeP)
 				.map({dt =>
 					val (date, time) = dt
-
-					ctx.Expr[LocalDateTime](objectApply(ctx)(
-						date.in(ctx.mirror).tree,
-						"atTime",
-						List(time.in(ctx.mirror).tree)
-					))
+					ctx.universe.reify(date.splice.atTime(time.splice))
 				})
 		}
 	}
