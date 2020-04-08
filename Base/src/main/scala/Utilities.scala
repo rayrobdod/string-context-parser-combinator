@@ -96,47 +96,37 @@ object Utilities {
 	 * Creates an Expr that represents the concatenation of the component Exprs
 	 */
 	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
-		val summedString:c.Tree = strings match {
-			case Seq() => c.universe.Literal(c.universe.Constant(""))
-			case Seq(x) => x.tree
-			case xs:Seq[_] => {
+		strings match {
+			case Seq() => c.universe.reify("")
+			case Seq(x) => x
+			case _ => {
 				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
-				val accumulatorType = c.universe.Select(
-					c.universe.Select(
-						c.universe.Select(
-							c.universe.Ident(MacroCompat.newTermName(c)("scala")),
-							MacroCompat.newTermName(c)("collection")
-						),
-						MacroCompat.newTermName(c)("mutable")
-					),
-					MacroCompat.newTypeName(c)("StringBuilder")
-				)
+				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
+				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
+				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
 				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
 					c.universe.ValDef(
 						c.universe.NoMods,
 						accumulatorName,
-						accumulatorType,
+						accumulatorTypeTree,
 						c.universe.Apply(
 							c.universe.Select(
-								c.universe.New(accumulatorType),
+								c.universe.New(accumulatorTypeTree),
 								MacroCompat.stdTermNames(c).CONSTRUCTOR
 							),
 							List()
 						)
 					)
 				)
-				xs.map(_.asInstanceOf[c.Expr[String]])
-					.foreach({x => stats += objectApply(c)(c.universe.Ident(accumulatorName), "append", List(x.tree))})
+				strings.foreach(x => stats += c.universe.reify(accumulatorExpr.splice.append(x.splice)).tree)
 
-				c.universe.Block(
-					stats.toList,
-					c.universe.Select(
-						c.universe.Ident(accumulatorName),
-						MacroCompat.newTermName(c)("toString")
+				c.Expr[String](
+					c.universe.Block(
+						stats.toList,
+						c.universe.reify(accumulatorExpr.splice.toString).tree
 					)
 				)
 			}
 		}
-		c.Expr(summedString)
 	}
 }
