@@ -40,10 +40,10 @@ object MacroImpl {
 				def result(acc:Acc):String = acc.toString
 			}
 
-			val HexChar:Parser[Char] = CharWhere(c => '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F').opaque("HexChar")
+			val HexChar:Parser[Char] = CharWhere(c => '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F', "HexChar")
 
-			val AlphaChar:Parser[CodePoint] = CodePointWhere(c => 'a' <= c.value && c.value <= 'z' || 'A' <= c.value && c.value <= 'Z').opaque("AlphaChar")
-			val DigitChar:Parser[CodePoint] = CodePointWhere(c => '0' <= c.value && c.value <= '9').opaque("DigitChar")
+			val AlphaChar:Parser[CodePoint] = CodePointWhere(c => 'a' <= c.value && c.value <= 'z' || 'A' <= c.value && c.value <= 'Z', "AlphaChar")
+			val DigitChar:Parser[CodePoint] = CodePointWhere(c => '0' <= c.value && c.value <= '9', "DigitChar")
 			val AlphaNumChar:Parser[CodePoint] = AlphaChar orElse DigitChar
 			val UnreservedChar:Parser[CodePoint] = AlphaNumChar orElse CodePointIn("-_.!~*'()")
 

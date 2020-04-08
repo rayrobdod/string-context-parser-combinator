@@ -4,68 +4,6 @@ import scala.collection.immutable.Seq
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
- * @group Parser
- */
-trait Parser[U <: Context with Singleton, +A] {
-	def parse(input:Input[U]):Result[U, A]
-
-	def map[Z](fn:Function1[A, Z]):Parser[U, Z] = new Parser[U, Z] {
-		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input) match {
-			case Success(v, r) => Success(fn(v), r)
-			case Failure(found, expect) => Failure(found, expect)
-		}
-	}
-	def flatMap[Z](fn:Function1[A, Parser[U, Z]]):Parser[U, Z] = {
-		new FlatMap(this, fn)
-	}
-	def filter(pred:Function1[A, Boolean], description:String):Parser[U, A] = new Parser[U, A] {
-		def parse(input:Input[U]):Result[U, A] = {
-			Parser.this.parse(input) match {
-				case Success(value, remain) if pred(value) => Success(value, remain)
-				case Success(_, _) => Failure(input.next, Failure.Leaf(description))
-				case Failure(found, exp) => Failure(found, exp)
-			}
-		}
-	}
-
-	def opaque(description:String):Parser[U, A] = this.opaque(Failure.Leaf(description))
-	private[stringContextParserCombinator] def opaque(description:Failure.Expecting) = new Parser[U, A] {
-		def parse(input:Input[U]):Result[U, A] = {
-			Parser.this.parse(input) match {
-				case Success(v, r) => Success(v,r)
-				case Failure(f, _) => Failure(f, description)
-			}
-		}
-	}
-
-	def andThen[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]):Parser[U, Z] = {
-		new AndThen(this, rhs, ev)
-	}
-	def orElse[Z >: A](rhs:Parser[U, Z]):Parser[U, Z] = new Parser[U, Z] {
-		def parse(input:Input[U]):Result[U, Z] = Parser.this.parse(input) match {
-			case Success(v, r) => Success(v, r)
-			case Failure(found1, expect1) => rhs.parse(input) match {
-				case Success(v, r) => Success(v, r)
-				case Failure(found2, expect2) => {
-					if (found1._2 == found2._2) {Failure(found1, Failure.Or(Seq(expect1, expect2)))}
-					else if (found1._2 > found2._2) {Failure(found1, expect1)}
-					else {Failure(found2, expect2)}
-				}
-			}
-		}
-	}
-	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]):Parser[U, Z] = new Repeat(this, min, max, ev)
-
-	def optionally[Z](implicit ev:Implicits.OptionallyTypes[A, Z]):Parser[U, Z] = new Repeat(this, 0, 1, new Implicits.RepeatTypes[A, Z] {
-		final class Box[BoxType](var value:BoxType)
-		type Acc = Box[Z]
-		def init():Acc = new Box(ev.none())
-		def append(acc:Acc, elem:A):Unit = acc.value = ev.some(elem)
-		def result(acc:Acc):Z = acc.value
-	})
-}
-
-/**
  * A mixin that provides Parser factory methods that conform to a particular `U` parameter.
  *
  * Exists to reduce the need to repeatedly explicitly specify `c.type` as the U parameter,
@@ -78,280 +16,46 @@ trait Parsers {
 	import com.rayrobdod.{stringContextParserCombinator => scpc}
 	type ContextType <: Context with Singleton
 	type Parser[A] = scpc.Parser[ContextType, A]
-	def CharIn(str:Seq[Char]):Parser[Char] = new scpc.CharIn[ContextType](str)
-	def CharIn(str:String):Parser[Char] = new scpc.CharIn[ContextType](scala.Predef.wrapString(str))
-	def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] = new scpc.CharWhere[ContextType](fn)
-	def CodePointIn(str:String):Parser[CodePoint] = {
-		/* XXX: lambdas instead of anonymous classes */
-		def IsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
-		val CodepointString = new java.util.function.IntFunction[String]{def apply(y:Int) = new String(Array[Int]('"', y, '"'), 0, 3)}
-		type ToExpectingBuffer = scala.collection.mutable.Builder[Failure.Expecting, Seq[Failure.Expecting]]
-		val ToExpecting = new java.util.stream.Collector[String, ToExpectingBuffer, Failure.Expecting]{
-			override def supplier = new java.util.function.Supplier[ToExpectingBuffer] {def get = Seq.newBuilder}
-			override def accumulator = new java.util.function.BiConsumer[ToExpectingBuffer, String]{def accept(buf:ToExpectingBuffer, a:String) = buf += Failure.Leaf(a)}
-			override def combiner = new java.util.function.BinaryOperator[ToExpectingBuffer]{def apply(lhs:ToExpectingBuffer, rhs:ToExpectingBuffer) = {lhs ++= rhs.result; lhs}}
-			override def finisher = new java.util.function.Function[ToExpectingBuffer, Failure.Expecting]{def apply(buf:ToExpectingBuffer) = Failure.Or(buf.result)}
-			override def characteristics = java.util.Collections.emptySet()
-		}
-
-		this.CodePointWhere({x:CodePoint => str.codePoints.anyMatch(IsCodePoint(x))})
-			.opaque(str
-				.codePoints
-				.mapToObj(CodepointString)
-				.collect[Failure.Expecting, ToExpectingBuffer](ToExpecting)
-			)
-	}
-	def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] = new scpc.CodepointWhere[ContextType](fn)
-	def IsString(str:String):Parser[Unit] = new scpc.IsString[ContextType](str)
+	/** Succeeds if the next character is a member of the given String; captures that character */
+	def CharIn(str:Seq[Char]):Parser[Char] = parsers.CharIn[ContextType](str)
+	/** Succeeds if the next character is a member of the given Seq; captures that character */
+	def CharIn(str:String):Parser[Char] = parsers.CharIn[ContextType](scala.Predef.wrapString(str))
+	/** Succeeds if the next character matches the given predicate; captures that character */
+	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] = parsers.CharWhere[ContextType](fn, Failure.Leaf(description))
+	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
+	def CodePointIn(str:String):Parser[CodePoint] = parsers.CodePointIn(str)
+	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
+	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] = parsers.CodePointWhere(fn, Failure.Leaf(description))
+	/** Succeeds if the next set of characters in the input is equal to the given string */
+	def IsString(str:String):Parser[Unit] = parsers.IsString[ContextType](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = new scpc.OfType[ContextType, A](tpe)
+	def OfType[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = parsers.OfType[ContextType, A](tpe)
 	/** A parser that succeeds iff the input is empty */
-	def End():Parser[Unit] = new scpc.End[ContextType]()
+	def End():Parser[Unit] = parsers.End[ContextType]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
-	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = new scpc.DelayedConstruction[ContextType, A](fn)
-}
-
-private[stringContextParserCombinator] final class IsCodepoint(x:CodePoint) extends java.util.function.IntPredicate {
-	def test(y:Int) = {y == x.value}
+	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = parsers.DelayedConstruction(fn)
 }
 
 /**
- * @group Parser
+ * Methods to create leaf parsers
  */
-private[stringContextParserCombinator] final class AndThen[U <: Context with Singleton, A, B, Z](left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A,B,Z]) extends Parser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
-		left.parse(input) match {
-			case Success(a, resa) => right.parse(resa) match {
-				case Success(b, resb) => Success(ev.aggregate(a,b), resb)
-				case Failure(found, expect) => Failure(found, expect)
-			}
-			case Failure(found, expect) => Failure(found, expect)
-		}
-	}
-}
-
-/**
- * @group Parser
- */
-private[stringContextParserCombinator] final class FlatMap[U <: Context with Singleton, A, Z](left:Parser[U, A], right:Function1[A, Parser[U, Z]]) extends Parser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
-		left.parse(input) match {
-			case Success(a, resa) => right(a).parse(resa)
-			case Failure(found, expect) => Failure(found, expect)
-		}
-	}
-}
-
-/**
- * Succeeds if the next codepoint is a member of the given function
- * @group Parser
- */
-private[stringContextParserCombinator] final class CodepointWhere[U <: Context with Singleton](pred:Function1[CodePoint, Boolean]) extends Parser[U, CodePoint] {
-	def parse(input:Input[U]):Result[U, CodePoint] = input.consume(
-		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => pred(x._1)),
-		_ => None,
-		Failure.Leaf("???")
-	)
-}
-
-/**
- * Succeeds if the next character is a member of the given Seq
- * @group Parser
- */
-private[stringContextParserCombinator] final class CharIn[U <: Context with Singleton](xs:Seq[Char]) extends Parser[U, Char] {
-	def parse(input:Input[U]):Result[U, Char] = input.consume(
-		pt => Option((pt.charAt(0), 1)).filter(x => xs.contains(x._1)),
-		_ => None,
-		Failure.Or(xs.map(x => Failure.Leaf("\"" + x.toString + "\"")))
-	)
-}
-
-/**
- * Succeeds if the next character is a member of the given function
- * @group Parser
- */
-private[stringContextParserCombinator] final class CharWhere[U <: Context with Singleton](pred:Function1[Char, Boolean]) extends Parser[U, Char] {
-	def parse(input:Input[U]):Result[U, Char] = input.consume(
-		pt => Option((pt.charAt(0), 1)).filter(x => pred(x._1)),
-		_ => None,
-		Failure.Leaf("???")
-	)
-}
-
-private[stringContextParserCombinator] final class Repeat[U <: Context with Singleton, A, Z](
-	inner:Parser[U, A],
-	min:Int,
-	max:Int,
-	ev:Implicits.RepeatTypes[A, Z]
-) extends Parser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
-		var counter:Int = 0
-		val accumulator = ev.init()
-		var remaining:Input[U] = input
-		var continue:Boolean = true
-		var innerExpecting:Failure = null
-
-		while (continue && counter < max) {
-			inner.parse(remaining) match {
-				case Success(a, r) => {
-					counter += 1
-					ev.append(accumulator, a)
-					continue = (remaining != r) // quit if inner seems to be making no progress
-					remaining = r
-				}
-				case failure:Failure => {
-					innerExpecting = failure
-					continue = false
-				}
-			}
-		}
-		if (min <= counter && counter <= max) {
-			return Success(ev.result(accumulator), remaining)
-		} else {
-			return innerExpecting
-		}
-	}
-
-	override def andThen[B, Z2](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[Z,B,Z2]):Parser[U, Z2] = {
-		new RepeatAndThen[U, A, Z, B, Z2](this.inner, this.min, this.max, this.ev, rhs, ev)
-	}
-}
-
-/**
- * `Repeat(inner, min, max, evL).andThen(rhs)(evR)`
- *
- * Required since Repeat is greedy, and AndThen doesn't know how to make a Repeat backtrack.
- *
- * e.x. `"1".repeat().andThen("1")` would fail to match "11", since the repeat would match the entire
- * string, leaving nothing for the andThen, which will not match an EOF and the entire expression fails.
- * With this, after failing to match when the repeat sucks up everything, this will try again with the
- * repeat accepting one less "1" than before, which then allows the rest of the parser to succeed
- */
-private[stringContextParserCombinator] final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
-	inner:Parser[U, A],
-	min:Int,
-	max:Int,
-	evL:Implicits.RepeatTypes[A, AS],
-	rhs:Parser[U, B],
-	evR:Implicits.AndThenTypes[AS, B, Z]
-) extends Parser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
-		var counter:Int = 0
-		val accumulator = evL.init()
-		var remaining:Input[U] = input
-		var continue:Boolean = true
-		var innerExpecting:Failure = null
-		val states = scala.collection.mutable.Stack[Success[U, AS]]()
-
-		states.push(Success(evL.result(accumulator), input))
-		while (continue && counter < max) {
-			inner.parse(remaining) match {
-				case Success(a, r) => {
-					counter += 1
-					evL.append(accumulator, a)
-					states.push(Success(evL.result(accumulator), r))
-					continue = (remaining != r) // quit if inner seems to be making no progress
-					remaining = r
-				}
-				case failure:Failure => {
-					innerExpecting = failure
-					continue = false
-				}
-			}
-		}
-
-		var rhsExpecting:Failure = null
-		while (counter >= min && states.nonEmpty) {
-			val top = states.pop()
-			rhs.parse(top.remaining) match {
-				case Success(a, r) => {
-					return Success(evR.aggregate(top.value, a), r)
-				}
-				case failure:Failure => {
-					if (rhsExpecting == null) {
-						rhsExpecting = failure
-					}
-					counter = counter - 1
-					// try next
-				}
-			}
-		}
-
-		if (null == innerExpecting) {
-			// means that input saturates the repeat portion of this aggregate
-			rhsExpecting
-		} else if (null == rhsExpecting) {
-			// means that input does not meet minimum requirements the repeat portion of this aggregate
-			innerExpecting
-		} else {
-			Failure(innerExpecting.found, Failure.Or(Seq(innerExpecting.expecting, rhsExpecting.expecting)))
-		}
-	}
-
-	override def andThen[C, Z2](newParser:Parser[U, C])(implicit ev:Implicits.AndThenTypes[Z,C,Z2]):Parser[U, Z2] = {
-		new RepeatAndThen[U, A, AS, (B, C), Z2](
-			this.inner,
-			this.min,
-			this.max,
-			this.evL,
-			this.rhs.andThen(newParser)(Implicits.AndThenTypes.andThenGeneric),
-			new Implicits.AndThenTypes[AS, (B, C), Z2] {
-				def aggregate(as:AS, bc:(B, C)):Z2 = ev.aggregate(evR.aggregate(as, bc._1), bc._2)
-			}
-		)
-	}
-}
-
-
-/**
- * Succeeds if the next character data is equal to the given string
- * @group Parser
- */
-private[stringContextParserCombinator] final class IsString[U <: Context with Singleton](str:String) extends Parser[U, Unit] {
-	def parse(input:Input[U]):Result[U, Unit] = input.consume(
-		pt => Option(((), str.length())).filter(_ => pt.startsWith(str)),
-		_ => None,
-		Failure.Leaf("\"" + str + "\"")
-	)
-}
-
-/**
- * Succeeds if the next character data matches the given Regex, and captures the matched string
- * @group Parser
- */
-private[stringContextParserCombinator] final class Regex[U <: Context with Singleton](reg:scala.util.matching.Regex) extends Parser[U, String] {
-	def parse(input:Input[U]):Result[U, String] = input.consume(
-		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
-		_ => None,
-		Failure.Leaf("s/" + reg.toString + "/")
-	)
-}
-
-/**
- * Succeeds if the next input element is an `arg` with the given type
- * @group Parser
- */
-private[stringContextParserCombinator] final class OfType[U <: Context with Singleton, A](tpetag:U#TypeTag[A]) extends Parser[U, U#Expr[A]] {
-	def parse(input:Input[U]):Result[U, U#Expr[A]] = input.consume(
-		_ => None,
-		arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[U#Expr[A]]),
-		Failure.Leaf(tpetag.tpe.toString)
-	)
-}
-
-/**
- * Used to allow mutually recursive parsers
- * @group Parser
- */
-private[stringContextParserCombinator] final class DelayedConstruction[U <: Context with Singleton, A](inner:Function0[Parser[U, A]]) extends Parser[U, A] {
-	def parse(input:Input[U]):Result[U, A] = inner.apply.parse(input)
-}
-
-/**
- * Succeeds only at the end of the given input
- * @group Parser
- */
-private[stringContextParserCombinator] final class End[U <: Context with Singleton] extends Parser[U, Unit] {
-	def parse(input:Input[U]):Result[U, Unit] = if (input.isEmpty) {Success((), input)} else {Failure(input.next, this.expecting)}
-	def expecting:Failure.Expecting = Failure.Leaf("EOF")
+object Parsers {
+	/** Succeeds if the next character is a member of the given String; captures that character */
+	def CharIn[U <: Context with Singleton](str:Seq[Char]):Parser[U, Char] = parsers.CharIn[U](str)
+	/** Succeeds if the next character is a member of the given Seq; captures that character */
+	def CharIn[U <: Context with Singleton](str:String):Parser[U, Char] = parsers.CharIn[U](scala.Predef.wrapString(str))
+	/** Succeeds if the next character matches the given predicate; captures that character */
+	def CharWhere[U <: Context with Singleton](fn:Function1[Char, Boolean], description:String):Parser[U, Char] = parsers.CharWhere[U](fn, Failure.Leaf(description))
+	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
+	def CodePointIn[U <: Context with Singleton](str:String):Parser[U, CodePoint] = parsers.CodePointIn(str)
+	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
+	def CodePointWhere[U <: Context with Singleton](fn:Function1[CodePoint, Boolean], description:String):Parser[U, CodePoint] = parsers.CodePointWhere(fn, Failure.Leaf(description))
+	/** Succeeds if the next set of characters in the input is equal to the given string */
+	def IsString[U <: Context with Singleton](str:String):Parser[U, Unit] = parsers.IsString[U](str)
+	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
+	def OfType[U <: Context with Singleton, A](tpe:U#TypeTag[A]):Parser[U, U#Expr[A]] = parsers.OfType[U, A](tpe)
+	/** A parser that succeeds iff the input is empty */
+	def End[U <: Context with Singleton]():Parser[U, Unit] = parsers.End[U]()
+	/** Indirectly refers to a parser, to allow for mutual-recursion */
+	def DelayedConstruction[U <: Context with Singleton, A](fn:Function0[Parser[U, A]]):Parser[U, A] = parsers.DelayedConstruction(fn)
 }
