@@ -4,7 +4,6 @@ import scala.collection.immutable.{Map, Seq, Vector}
 import scalajson.ast._
 import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-import com.rayrobdod.stringContextParserCombinator.Utilities._
 
 object MacroImpl {
 	def stringContext_json(c:Context {type PrefixType = JsonStringContext})(args:c.Expr[Any]*):c.Expr[JValue] = {
@@ -112,7 +111,17 @@ object MacroImpl {
 						((ValueP andThen (Delim andThen ValueP).repeat()) andThen Suffix)
 					))
 				)
-				val Elems2:Parser[c.Expr[Vector[JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Vector).tree, "apply", xs.map(_.tree))))
+				val Elems2:Parser[c.Expr[Vector[JValue]]] = Elems.map(xs =>
+					c.Expr[Vector[JValue]](
+						c.universe.Apply(
+							c.universe.Select(
+								c.universe.reify(Vector).tree,
+								MacroCompat.newTermName(c)("apply")
+							),
+							xs.map(_.tree)
+						)
+					)
+				)
 				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeTag[Vector[JValue]])
 				val VectorP:Parser[c.Expr[Vector[JValue]]] = ScalaV orElse Elems2
 				val JArrayP:Parser[c.Expr[JArray]] = VectorP.map(x => c.universe.reify(JArray.apply(x.splice)))
@@ -139,7 +148,17 @@ object MacroImpl {
 						(KeyValuePair andThen (Delim andThen KeyValuePair).repeat() andThen Suffix)
 					))
 				)
-				val Elems2:Parser[c.Expr[Map[String, JValue]]] = Elems.map(xs => c.Expr(objectApply(c)(c.universe.reify(Map).tree, "apply", xs.map(_.tree))))
+				val Elems2:Parser[c.Expr[Map[String, JValue]]] = Elems.map(xs =>
+					c.Expr[Map[String, JValue]](
+						c.universe.Apply(
+							c.universe.Select(
+								c.universe.reify(Map).tree,
+								MacroCompat.newTermName(c)("apply")
+							),
+							xs.map(_.tree)
+						)
+					)
+				)
 				val ScalaV:Parser[c.Expr[Map[String, JValue]]] = OfType(c.typeTag[Map[String, JValue]])
 				val VectorP:Parser[c.Expr[Map[String, JValue]]] = ScalaV orElse Elems2
 				val JObjectP:Parser[c.Expr[JObject]] = VectorP.map(x => c.universe.reify(JObject.apply(x.splice)))

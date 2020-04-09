@@ -91,13 +91,6 @@ object Utilities {
 		}
 	}
 
-	def objectApply(c:Context)(prefix:c.Tree, methodName:String, params:List[c.Tree]):c.Tree = {
-		c.universe.Apply(
-			c.universe.Select(prefix, MacroCompat.newTermName(c)(methodName)),
-			params
-		)
-	}
-
 	/**
 	 * Creates an Expr that represents the concatenation of the component Exprs
 	 */
