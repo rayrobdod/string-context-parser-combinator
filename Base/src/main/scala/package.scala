@@ -13,22 +13,19 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
  * @groupprio Input/Result 300
  */
 package object stringContextParserCombinator {
-	private[this] def decodedName(expecting:String):Extractor0[Universe#Name] = new Extractor0[Universe#Name] {
-		def unapply(res:Universe#Name):Boolean = expecting == res.decodedName.toString
+	private[this] val Name = new Extractor[Universe#Name, String] {
+		def unapply(input:Universe#Name):Option[String] = Option(input.decodedName.toString)
 	}
-	private[this] val ScalaName = decodedName("scala")
-	private[this] val StringContextName = decodedName("StringContext")
-	private[this] val ApplyName = decodedName("apply")
 
 	private[this] def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
 				c.universe.Select(
 					c.universe.Select(
-						c.universe.Ident(ScalaName()),
-						StringContextName()
+						c.universe.Ident(Name("scala")),
+						Name("StringContext")
 					),
-					ApplyName()
+					Name("apply")
 				),
 				strings
 			) => Option(strings.map(x => c.Expr(x)))
@@ -43,18 +40,16 @@ package object stringContextParserCombinator {
 					val parts = name.split("\\.")
 					(String.join(".", parts.init:_*), parts.last)
 				}
-				val NameLast = decodedName(nameLast)
 				val NameInit = selectChain(c, nameInit)
 				tree.duplicate match {
 					// I want to write `case c.universe.Select(NameInit(), NameLast())`, and I
 					// think I should be able to, but the compiler explodes whenever I attempt it
-					case c.universe.Select(init, NameLast()) if NameInit.unapply(init) => true
+					case c.universe.Select(init, Name(`nameLast`)) if NameInit.unapply(init) => true
 					case _ => false
 				}
 			} else {
-				val MyName = decodedName(name)
 				tree.duplicate match {
-					case c.universe.Ident(MyName()) => true
+					case c.universe.Ident(Name(`name`)) => true
 					case _ => false
 				}
 			}
