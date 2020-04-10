@@ -44,6 +44,49 @@ object MacroImpl {
 		}
 	}
 
+	trait CollectionAssembly[A, CC] {
+		type Builder
+		def builderType(c:Context):c.universe.TypeTag[Builder]
+		def newBuilder(c:Context):c.Expr[Builder]
+		def insertOne(c:Context)(builder:c.Expr[Builder], item:c.Expr[A]):c.Expr[_]
+		def insertMany(c:Context)(builder:c.Expr[Builder], items:c.Expr[TraversableOnce[A]]):c.Expr[_]
+		def result(c:Context)(builder:c.Expr[Builder]):c.Expr[CC]
+	}
+
+	object VectorCollectionAssembly extends CollectionAssembly[JValue, Vector[JValue]] {
+		type Builder = scala.collection.mutable.Builder[JValue, Vector[JValue]]
+		override def builderType(c:Context):c.universe.TypeTag[Builder] = c.universe.typeTag[scala.collection.mutable.Builder[JValue, Vector[JValue]]]
+		override def newBuilder(c:Context):c.Expr[Builder] = c.universe.reify(Vector.newBuilder)
+		override def insertOne(c:Context)(builder:c.Expr[Builder], item:c.Expr[JValue]):c.Expr[_] = c.universe.reify(builder.splice.+=(item.splice))
+		override def insertMany(c:Context)(builder:c.Expr[Builder], items:c.Expr[TraversableOnce[JValue]]):c.Expr[_] = c.universe.reify(builder.splice.++=(items.splice))
+		override def result(c:Context)(builder:c.Expr[Builder]):c.Expr[Vector[JValue]] = c.universe.reify(builder.splice.result)
+	}
+
+	def assembleCollection[A, CC](c:Context)(assembly:CollectionAssembly[A, CC])(parts:List[Either[c.Expr[A], c.Expr[TraversableOnce[A]]]]):c.Expr[CC] = {
+		val builderName = MacroCompat.freshName(c)(MacroCompat.newTermName(c)("builder"))
+		val builderType = assembly.builderType(c)
+		val builderTypeTree = c.universe.TypeTree(builderType.tpe)
+		val builderExpr = c.Expr(c.universe.Ident(builderName))(builderType)
+
+		val createBuilder = c.universe.ValDef(
+			c.universe.NoMods,
+			builderName,
+			builderTypeTree,
+			assembly.newBuilder(c).tree
+		)
+		val insertBuilder = parts.map(part => part match {
+			case Left(single) => assembly.insertOne(c)(builderExpr, single).tree
+			case Right(group) => assembly.insertMany(c)(builderExpr, group).tree
+		})
+
+		c.Expr[CC](
+			c.universe.Block(
+				createBuilder :: insertBuilder,
+				assembly.result(c)(builderExpr).tree
+			)
+		)
+	}
+
 	def stringContext_json(c:Context {type PrefixType = JsonStringContext})(args:c.Expr[Any]*):c.Expr[JValue] = {
 		// ArrayP, ObjectP and ValueP are mutually recursive; if they were not in an object
 		// there would be problems about `ValueP forward reference extends over definition of value ArrayP`
@@ -143,25 +186,21 @@ object MacroImpl {
 				val Delim:Parser[Unit] = IsString(",")
 				val Suffix:Parser[Unit] = IsString("]")
 
-				val Elems:Parser[List[c.Expr[JValue]]] = (
+				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = (
+					ValueP.map(x => Left(x)) orElse
+					(WhitespaceP andThen IsString("..") andThen OfType(c.typeTag[Vector[JValue]])
+						andThen WhitespaceP).map(x => Right(x))
+				)
+				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
 					(Prefix andThen WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						((ValueP andThen (Delim andThen ValueP).repeat()) andThen Suffix)
+						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
 					))
 				)
-				val Elems2:Parser[c.Expr[Vector[JValue]]] = Elems.map(xs =>
-					c.Expr[Vector[JValue]](
-						c.universe.Apply(
-							c.universe.Select(
-								c.universe.reify(Vector).tree,
-								MacroCompat.newTermName(c)("apply")
-							),
-							xs.map(_.tree)
-						)
-					)
-				)
+				val Literal:Parser[c.Expr[Vector[JValue]]] = LiteralPresplice.map(xs => assembleCollection(c)(VectorCollectionAssembly)(xs))
+
 				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeTag[Vector[JValue]])
-				val VectorP:Parser[c.Expr[Vector[JValue]]] = ScalaV orElse Elems2
+				val VectorP:Parser[c.Expr[Vector[JValue]]] = ScalaV orElse Literal
 				val JArrayP:Parser[c.Expr[JArray]] = VectorP.map(x => c.universe.reify(JArray.apply(x.splice)))
 				val AstV:Parser[c.Expr[JArray]] = OfType(c.typeTag[JArray])
 				AstV orElse JArrayP

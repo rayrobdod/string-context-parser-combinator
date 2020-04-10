@@ -124,6 +124,16 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JArray(Vector(arg1, arg2))
 			assertResult(exp)(json""" [ $arg1 , $arg2 ] """)
 		}
+		it ("Vector inside a literal vector is kept as vector") {
+			val arg = Vector(JNumber(2), JNumber(3))
+			val exp = JArray(Vector(JNumber(1), JArray(arg), JNumber(4)))
+			assertResult(exp)(json""" [ 1 , $arg , 4 ] """)
+		}
+		it ("Disassembled vector inside a literal vector is flattened") {
+			val arg = Vector(JNumber(2), JNumber(3))
+			val exp = JArray(Vector(JNumber(1), JNumber(2), JNumber(3), JNumber(4)))
+			assertResult(exp)(json""" [ 1 , ..$arg , 4 ] """)
+		}
 		it ("Accepts nested array") {
 			val num2 = 2
 			val arg1 = JArray(Vector(JNumber(1), JNumber(num2), JNumber(3)))
