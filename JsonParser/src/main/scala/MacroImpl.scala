@@ -6,6 +6,44 @@ import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 object MacroImpl {
+	/**
+	 * Creates an Expr that represents the concatenation of the component Exprs
+	 */
+	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
+		strings match {
+			case Seq() => c.universe.reify("")
+			case Seq(x) => x
+			case _ => {
+				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
+				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
+				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
+				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
+					c.universe.ValDef(
+						c.universe.NoMods,
+						accumulatorName,
+						accumulatorTypeTree,
+						c.universe.Apply(
+							c.universe.Select(
+								c.universe.New(accumulatorTypeTree),
+								MacroCompat.stdTermNames(c).CONSTRUCTOR
+							),
+							List()
+						)
+					)
+				)
+				strings.foreach(x => stats += c.universe.reify(accumulatorExpr.splice.append(x.splice)).tree)
+
+				c.Expr[String](
+					c.universe.Block(
+						stats.toList,
+						c.universe.reify(accumulatorExpr.splice.toString).tree
+					)
+				)
+			}
+		}
+	}
+
 	def stringContext_json(c:Context {type PrefixType = JsonStringContext})(args:c.Expr[Any]*):c.Expr[JValue] = {
 		// ArrayP, ObjectP and ValueP are mutually recursive; if they were not in an object
 		// there would be problems about `ValueP forward reference extends over definition of value ArrayP`
@@ -76,7 +114,7 @@ object MacroImpl {
 				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeTag[String])
 				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.universe.reify(x.splice.value))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
-					.map(strs => Utilities.concatenateStrings(c)(strs))
+					.map(strs => concatenateStrings(c)(strs))
 				(DelimiterP andThen Content andThen DelimiterP)
 			}
 

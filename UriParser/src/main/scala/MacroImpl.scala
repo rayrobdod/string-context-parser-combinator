@@ -5,6 +5,44 @@ import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 object MacroImpl {
+	/**
+	 * Creates an Expr that represents the concatenation of the component Exprs
+	 */
+	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
+		strings match {
+			case Seq() => c.universe.reify("")
+			case Seq(x) => x
+			case _ => {
+				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
+				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
+				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
+				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
+					c.universe.ValDef(
+						c.universe.NoMods,
+						accumulatorName,
+						accumulatorTypeTree,
+						c.universe.Apply(
+							c.universe.Select(
+								c.universe.New(accumulatorTypeTree),
+								MacroCompat.stdTermNames(c).CONSTRUCTOR
+							),
+							List()
+						)
+					)
+				)
+				strings.foreach(x => stats += c.universe.reify(accumulatorExpr.splice.append(x.splice)).tree)
+
+				c.Expr[String](
+					c.universe.Block(
+						stats.toList,
+						c.universe.reify(accumulatorExpr.splice.toString).tree
+					)
+				)
+			}
+		}
+	}
+
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
 		object ParserPieces extends Parsers{
 			type ContextType = c.type
@@ -147,7 +185,7 @@ object MacroImpl {
 			val OpaquePartP:Parser[c.Expr[String]] = {
 				val Variable:Parser[c.Expr[String]] = OfType(c.typeTag[String])
 				val Literal:Parser[c.Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).map(constExpr)
-				(Variable orElse Literal).repeat().map(xs => Utilities.concatenateStrings(c)(xs))
+				(Variable orElse Literal).repeat().map(xs => concatenateStrings(c)(xs))
 			}
 
 
@@ -159,7 +197,7 @@ object MacroImpl {
 			val FragmentOrQueryString:Parser[c.Expr[String]] = {
 				val Arbitrary = (OfType(c.typeTag[String]) orElse UriChar.repeat(1).map(constExpr))
 					.repeat()
-					.map(xs => Utilities.concatenateStrings(c)(xs))
+					.map(xs => concatenateStrings(c)(xs))
 				val Mapping = {
 					import scala.language.implicitConversions
 					implicit def fn2then[A,B,Z](fn:(A,B) => Z):Implicits.AndThenTypes[A,B,Z] = new Implicits.AndThenTypes[A,B,Z]{
@@ -196,7 +234,7 @@ object MacroImpl {
 					val mapOrPair:Parser[List[c.Expr[String]]] = map orElse pair2
 
 					(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
-						.map(xs => Utilities.concatenateStrings(c)(xs))
+						.map(xs => concatenateStrings(c)(xs))
 				}
 				Mapping orElse Arbitrary
 			}
