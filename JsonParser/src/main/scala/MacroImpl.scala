@@ -48,7 +48,7 @@ object MacroImpl {
 		// ArrayP, ObjectP and ValueP are mutually recursive; if they were not in an object
 		// there would be problems about `ValueP forward reference extends over definition of value ArrayP`
 		object ParserPieces extends Parsers {
-			type ContextType = c.type
+			val ctx:c.type = c
 
 			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
 

@@ -4,19 +4,19 @@ import org.scalatest.funspec.AnyFunSpec
 
 final class ParserTest extends AnyFunSpec {
 	object Parsers extends com.rayrobdod.stringContextParserCombinator.Parsers {
-		override type ContextType = Nothing
+		val ctx = null
 	}
 	import Parsers.{CharIn, CodePointIn}
 
-	def assertParseFailureMessage(expected:String)(dut:Parser[Nothing, _], inputStr:String):Unit = {
-		val input = new Input[Nothing](List((inputStr, PositionPoint(0))), List())
+	def assertParseFailureMessage(expected:String)(dut:Parser[Parsers.ctx.type, _], inputStr:String):Unit = {
+		val input = new Input[Parsers.ctx.type](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case _:Success[_,_] => fail("Parse Succeeded")
 			case f:Failure => assertResult(expected)(f.msg)
 		}
 	}
-	def assertParseSuccessValue(expected:Any)(dut:Parser[Nothing, _], inputStr:String):Unit = {
-		val input = new Input[Nothing](List((inputStr, PositionPoint(0))), List())
+	def assertParseSuccessValue(expected:Any)(dut:Parser[Parsers.ctx.type, _], inputStr:String):Unit = {
+		val input = new Input[Parsers.ctx.type](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case s:Success[_,_] => assertResult(expected)(s.value)
 			case _:Failure => fail("Parse Failed")
