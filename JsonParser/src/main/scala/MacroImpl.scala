@@ -87,11 +87,31 @@ object MacroImpl {
 		)
 	}
 
+	import scala.language.higherKinds
+	def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]](c:Context):LiftFunction[c.type, Lifter, Z] = {
+		new LiftFunction[c.type, Lifter, Z] {
+			def apply[A](lifter:c.Expr[Lifter[A]], a:c.Expr[A]):c.Expr[Z] = {
+				c.Expr(
+					c.universe.Apply(
+						c.universe.Select(
+							lifter.tree,
+							MacroCompat.newTermName(c)("apply")
+						),
+						List(a.tree)
+					)
+				)
+			}
+		}
+	}
+
 	def stringContext_json(c:Context {type PrefixType = JsonStringContext})(args:c.Expr[Any]*):c.Expr[JValue] = {
 		// ArrayP, ObjectP and ValueP are mutually recursive; if they were not in an object
 		// there would be problems about `ValueP forward reference extends over definition of value ArrayP`
 		object ParserPieces extends Parsers {
 			val ctx:c.type = c
+
+			// not just so that the type is only computed once; around JArray, it suddenly looses its Lift TypeTag
+			val liftTypeConstructor = c.typeOf[Lift[_,_]].typeConstructor
 
 			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
 
@@ -100,9 +120,12 @@ object MacroImpl {
 			val BooleanP:Parser[c.Expr[JBoolean]] = {
 				val TrueI = IsString("true").map(_ => c.universe.reify(scalajson.ast.JTrue))
 				val FalseI = IsString("false").map(_ => c.universe.reify(scalajson.ast.JFalse))
-				val ScalaV = OfType(c.typeTag[scala.Boolean]).map(x => c.universe.reify(scalajson.ast.JBoolean.apply(x.splice)))
-				val AstV = OfType(c.typeTag[JBoolean])
-				AstV orElse ScalaV orElse TrueI orElse FalseI
+				val LiftedV = Lifted[Lift.Boolean, JBoolean](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JBoolean])),
+					myLiftFunction[JBoolean, Lift.Boolean](c),
+					Failure.Leaf("A for Lift[A, JBoolean]")
+				)
+				LiftedV orElse TrueI orElse FalseI
 			}
 
 			val NumberP:Parser[c.Expr[JNumber]] = {
@@ -135,8 +158,12 @@ object MacroImpl {
 					})
 				}.opaque("Number Literal")
 				val AstV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[JNumber])
-				val ScalaIntV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[scala.Int]).map(x => c.universe.reify(scalajson.ast.JNumber.apply(x.splice)))
-				AstV orElse ScalaIntV orElse NumberI
+				val LiftedV = Lifted[Lift.Number, JNumber](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JNumber])),
+					myLiftFunction[JNumber, Lift.Number](c),
+					Failure.Leaf("A for Lift[A, JNumber]")
+				)
+				AstV orElse LiftedV orElse NumberI
 			}
 
 			val StringBase:Parser[c.Expr[String]] = {
@@ -186,9 +213,16 @@ object MacroImpl {
 				val Delim:Parser[Unit] = IsString(",")
 				val Suffix:Parser[Unit] = IsString("]")
 
+				val LiftedArrayV = Lifted[Lift.Array, JArray](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JArray])),
+					myLiftFunction[JArray, Lift.Array](c),
+					Failure.Leaf("A for Lift[A, JArray]")
+				)
+				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
+
 				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = (
 					ValueP.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThen OfType(c.typeTag[Vector[JValue]])
+					(WhitespaceP andThen IsString("..") andThen LiftedArrayV2
 						andThen WhitespaceP).map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
@@ -197,13 +231,13 @@ object MacroImpl {
 						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
 					))
 				)
-				val Literal:Parser[c.Expr[Vector[JValue]]] = LiteralPresplice.map(xs => assembleCollection(c)(VectorCollectionAssembly)(xs))
+				val Literal:Parser[c.Expr[JArray]] = (
+					LiteralPresplice
+						.map(xs => assembleCollection(c)(VectorCollectionAssembly)(xs))
+						.map(x => c.universe.reify(JArray.apply(x.splice)))
+				)
 
-				val ScalaV:Parser[c.Expr[Vector[JValue]]] = OfType(c.typeTag[Vector[JValue]])
-				val VectorP:Parser[c.Expr[Vector[JValue]]] = ScalaV orElse Literal
-				val JArrayP:Parser[c.Expr[JArray]] = VectorP.map(x => c.universe.reify(JArray.apply(x.splice)))
-				val AstV:Parser[c.Expr[JArray]] = OfType(c.typeTag[JArray])
-				AstV orElse JArrayP
+				LiftedArrayV orElse Literal
 			})
 
 			val ObjectP:Parser[c.Expr[JObject]] = DelayedConstruction(() => {

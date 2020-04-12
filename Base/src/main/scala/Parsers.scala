@@ -1,6 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Seq
+import scala.language.higherKinds
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
@@ -30,6 +31,12 @@ trait Parsers {
 	def IsString(str:String):Parser[Unit] = parsers.IsString[ctx.type](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
 	def OfType[A](tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] = parsers.OfType[ctx.type, A](tpe)
+	/** A parser that succeeds if a "lift" type can be implicitly summoned
+	 *
+	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input
+	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+	 */
+	def Lifted[Lifter[A], Z](lifterType:Function1[ctx.Type, ctx.Type], lift:LiftFunction[ctx.type, Lifter, Z], description:Failure.Expecting):Parser[ctx.Expr[Z]] = parsers.Lifted(ctx)(lifterType, lift, description)
 	/** A parser that succeeds iff the input is empty */
 	def End():Parser[Unit] = parsers.End[ctx.type]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
@@ -54,6 +61,12 @@ object Parsers {
 	def IsString[U <: Context with Singleton](str:String):Parser[U, Unit] = parsers.IsString[U](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
 	def OfType[U <: Context with Singleton, A](tpe:U#TypeTag[A]):Parser[U, U#Expr[A]] = parsers.OfType[U, A](tpe)
+	/** A parser that succeeds if a "lift" type can be implicitly summoned
+	 *
+	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input
+	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+	 */
+	def Lifted[Lifter[A], Z](c:Context)(lifterType:Function1[c.Type, c.Type], lift:LiftFunction[c.type, Lifter, Z], description:Failure.Expecting):Parser[c.type, c.Expr[Z]] = parsers.Lifted(c)(lifterType, lift, description)
 	/** A parser that succeeds iff the input is empty */
 	def End[U <: Context with Singleton]():Parser[U, Unit] = parsers.End[U]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
