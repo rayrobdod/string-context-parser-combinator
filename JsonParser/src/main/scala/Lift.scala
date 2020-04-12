@@ -9,7 +9,7 @@ trait Lift[-A, +Z]{
 object Lift {
 	def apply[A, Z](fn:Function1[A, Z]):Lift[A, Z] = new Lift[A, Z] {def apply(value:A) = fn(value)}
 
-	implicit def jvalue[A]:Lift[A, A] =
+	implicit def jvalue[A <: JValue]:Lift[A, A] =
 		Lift(scala.Predef.identity)
 
 	type Boolean[A] = Lift[A, JBoolean]
@@ -34,6 +34,12 @@ object Lift {
 	implicit def seq[A](implicit child:Lift[A, JValue]) =
 		Lift[scala.collection.immutable.Seq[A], JArray](
 			xs => JArray(xs.map(child.apply _).toVector)
+		)
+
+	type KeyValue[A] = Lift[A, (java.lang.String, JValue)]
+	implicit def keyValue[K, V](implicit liftKey:Lift[K, JString], liftValue:Lift[V, JValue]) =
+		Lift[Tuple2[K, V], Tuple2[java.lang.String, JValue]](
+			kv => (liftKey(kv._1).value, liftValue(kv._2))
 		)
 
 	type Object[A] = Lift[A, JObject]

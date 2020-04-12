@@ -62,6 +62,15 @@ object MacroImpl {
 		override def result(c:Context)(builder:c.Expr[Builder]):c.Expr[Vector[JValue]] = c.universe.reify(builder.splice.result)
 	}
 
+	object MapCollectionAssembly extends CollectionAssembly[(String, JValue), Map[String, JValue]] {
+		type Builder = scala.collection.mutable.Builder[(String, JValue), Map[String, JValue]]
+		override def builderType(c:Context):c.universe.TypeTag[Builder] = c.universe.typeTag[Builder]
+		override def newBuilder(c:Context):c.Expr[Builder] = c.universe.reify(Map.newBuilder)
+		override def insertOne(c:Context)(builder:c.Expr[Builder], item:c.Expr[(String, JValue)]):c.Expr[_] = c.universe.reify(builder.splice.+=(item.splice))
+		override def insertMany(c:Context)(builder:c.Expr[Builder], items:c.Expr[TraversableOnce[(String, JValue)]]):c.Expr[_] = c.universe.reify(builder.splice.++=(items.splice))
+		override def result(c:Context)(builder:c.Expr[Builder]):c.Expr[Map[String, JValue]] = c.universe.reify(builder.splice.result)
+	}
+
 	def assembleCollection[A, CC](c:Context)(assembly:CollectionAssembly[A, CC])(parts:List[Either[c.Expr[A], c.Expr[TraversableOnce[A]]]]):c.Expr[CC] = {
 		val builderName = MacroCompat.freshName(c)(MacroCompat.newTermName(c)("builder"))
 		val builderType = assembly.builderType(c)
@@ -246,35 +255,44 @@ object MacroImpl {
 				val Delim:Parser[Unit] = IsString(",")
 				val Suffix:Parser[Unit] = IsString("}")
 
-				val KeyValuePair:Parser[c.Expr[(String, JValue)]] = (
-					(WhitespaceP andThen StringP andThen WhitespaceP andThen Separator andThen ValueP).map({x =>
-						val (k, v) = x
-						c.universe.reify(Tuple2.apply(k.splice, v.splice))
-					})
+				val ObjectV = Lifted[Lift.Object, JObject](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JObject])),
+					myLiftFunction[JObject, Lift.Object](c),
+					Failure.Leaf("A for Lift[A, JObject]")
+				)
+				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
+
+				val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
+					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
+					Failure.Leaf("A for Lift[A, (String, JValue)]")
 				)
 
-				val Elems:Parser[List[c.Expr[(String, JValue)]]] = (
+				val KeyV = WhitespaceP andThen StringP andThen WhitespaceP
+
+
+				val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = (
+					(WhitespaceP andThen KeyValueV andThen WhitespaceP)
+						.map(x => Left(x)) orElse
+					(KeyV andThen Separator andThen ValueP)
+						.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
+						.map(x => Left(x)) orElse
+					(WhitespaceP andThen IsString("..") andThen ObjectV2 andThen WhitespaceP)
+						.map(x => Right(x))
+				)
+				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
 					(Prefix andThen WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						(KeyValuePair andThen (Delim andThen KeyValuePair).repeat() andThen Suffix)
+						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
 					))
 				)
-				val Elems2:Parser[c.Expr[Map[String, JValue]]] = Elems.map(xs =>
-					c.Expr[Map[String, JValue]](
-						c.universe.Apply(
-							c.universe.Select(
-								c.universe.reify(Map).tree,
-								MacroCompat.newTermName(c)("apply")
-							),
-							xs.map(_.tree)
-						)
-					)
+				val Literal:Parser[c.Expr[JObject]] = (
+					LiteralPresplice
+						.map(xs => assembleCollection(c)(MapCollectionAssembly)(xs))
+						.map(x => c.universe.reify(JObject.apply(x.splice)))
 				)
-				val ScalaV:Parser[c.Expr[Map[String, JValue]]] = OfType(c.typeTag[Map[String, JValue]])
-				val VectorP:Parser[c.Expr[Map[String, JValue]]] = ScalaV orElse Elems2
-				val JObjectP:Parser[c.Expr[JObject]] = VectorP.map(x => c.universe.reify(JObject.apply(x.splice)))
-				val AstV:Parser[c.Expr[JObject]] = OfType(c.typeTag[JObject])
-				AstV orElse JObjectP
+
+				ObjectV orElse Literal
 			})
 
 			val ValueP:Parser[c.Expr[JValue]] = {

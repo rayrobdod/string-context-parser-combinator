@@ -178,13 +178,24 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JObject(arg)
 			assertResult(exp)(json"$arg")
 		}
-		it ("Accepts an empty Map") {
+		it ("Accepts an empty literal Map") {
 			val exp = JObject(Map.empty)
 			assertResult(exp)(json"{}")
 		}
-		it ("Accepts a single-item Map") {
+		it ("Accepts a single-item literal Map") {
 			val exp = JObject(Map(("a", JNumber(123))))
-			assertResult(exp)(json"""{"a":123}""")
+			assertResult(exp)(json""" { "a" : 123 } """)
+		}
+		it ("Accepts a single-item key and value Map") {
+			val key = "key"
+			val value = "value"
+			val exp = JObject(Map((key, JString(value))))
+			assertResult(exp)(json""" { $key : $value } """)
+		}
+		it ("Accepts a single-item keyvalue Map") {
+			val param = ("a", JNumber(1))
+			val exp = JObject(Map(param))
+			assertResult(exp)(json""" { $param } """)
 		}
 		it ("Accepts a two-item Map with immediate values") {
 			val exp = JObject(Map(("a", JNumber(123)), ("b", JNull)))
@@ -210,6 +221,18 @@ final class StringContextTest extends AnyFunSpec {
 			val arg = "12"
 			val exp = JObject(Map(("ab12cd", JNull)))
 			assertResult(exp)(json"""{"ab${arg}cd" : null}""")
+		}
+		it ("Splicing") {
+			val param = Map(("a", JString("A")), ("b", JString("B")))
+			val exp = JObject(param ++ Map(("c", JString("C"))))
+			assertResult(exp)(json"""{ ..$param , "c" : "C" }""")
+		}
+		it ("Splicing using custom lift") {
+			case class Foo(bar:Int, baz:Boolean)
+			implicit val liftFoo:Lift[Foo, JObject] = Lift(x => JObject(Map(("foo", JNumber(x.bar)), ("baz", JBoolean(x.baz)))))
+			val param = Foo(42, false)
+			val exp = JObject(Map(("_type", JString("Foo")), ("foo", JNumber(42)), ("baz", JFalse)))
+			assertResult(exp)(json"""{ "_type": "Foo", ..$param }""")
 		}
 		it ("Reject Map with non-string keys") {
 			assertDoesNotCompile(""" json"{1:2}" """)
