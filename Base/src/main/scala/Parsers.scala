@@ -14,24 +14,24 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
  */
 trait Parsers {
 	import com.rayrobdod.{stringContextParserCombinator => scpc}
-	type ContextType <: Context with Singleton
-	type Parser[A] = scpc.Parser[ContextType, A]
+	val ctx:Context
+	type Parser[A] = scpc.Parser[ctx.type, A]
 	/** Succeeds if the next character is a member of the given String; captures that character */
-	def CharIn(str:Seq[Char]):Parser[Char] = parsers.CharIn[ContextType](str)
+	def CharIn(str:Seq[Char]):Parser[Char] = parsers.CharIn[ctx.type](str)
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
-	def CharIn(str:String):Parser[Char] = parsers.CharIn[ContextType](scala.Predef.wrapString(str))
+	def CharIn(str:String):Parser[Char] = parsers.CharIn[ctx.type](scala.Predef.wrapString(str))
 	/** Succeeds if the next character matches the given predicate; captures that character */
-	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] = parsers.CharWhere[ContextType](fn, Failure.Leaf(description))
+	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] = parsers.CharWhere[ctx.type](fn, Failure.Leaf(description))
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	def CodePointIn(str:String):Parser[CodePoint] = parsers.CodePointIn(str)
 	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] = parsers.CodePointWhere(fn, Failure.Leaf(description))
 	/** Succeeds if the next set of characters in the input is equal to the given string */
-	def IsString(str:String):Parser[Unit] = parsers.IsString[ContextType](str)
+	def IsString(str:String):Parser[Unit] = parsers.IsString[ctx.type](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType[A](tpe:ContextType#TypeTag[A]):Parser[ContextType#Expr[A]] = parsers.OfType[ContextType, A](tpe)
+	def OfType[A](tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] = parsers.OfType[ctx.type, A](tpe)
 	/** A parser that succeeds iff the input is empty */
-	def End():Parser[Unit] = parsers.End[ContextType]()
+	def End():Parser[Unit] = parsers.End[ctx.type]()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = parsers.DelayedConstruction(fn)
 }

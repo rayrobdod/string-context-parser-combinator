@@ -2,14 +2,51 @@ package com.rayrobdod.stringContextParserCombinatorExample.uri
 
 import java.net.URI
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinator.MacroCompat
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-import com.rayrobdod.stringContextParserCombinator.Utilities._
 
 object MacroImpl {
+	/**
+	 * Creates an Expr that represents the concatenation of the component Exprs
+	 */
+	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
+		strings match {
+			case Seq() => c.universe.reify("")
+			case Seq(x) => x
+			case _ => {
+				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
+				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
+				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
+				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
+					c.universe.ValDef(
+						c.universe.NoMods,
+						accumulatorName,
+						accumulatorTypeTree,
+						c.universe.Apply(
+							c.universe.Select(
+								c.universe.New(accumulatorTypeTree),
+								MacroCompat.stdTermNames(c).CONSTRUCTOR
+							),
+							List()
+						)
+					)
+				)
+				strings.foreach(x => stats += c.universe.reify(accumulatorExpr.splice.append(x.splice)).tree)
+
+				c.Expr[String](
+					c.universe.Block(
+						stats.toList,
+						c.universe.reify(accumulatorExpr.splice.toString).tree
+					)
+				)
+			}
+		}
+	}
+
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
 		object ParserPieces extends Parsers{
-			type ContextType = c.type
+			val ctx:c.type = c
+
 			val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr(c.universe.Literal(c.universe.Constant(x)))}
 			val constNullExpr:c.Expr[Null] = c.Expr(c.universe.Literal(c.universe.Constant(null)))
 			val constNegOneExpr:c.Expr[Int] = c.Expr(c.universe.Literal(c.universe.Constant(-1)))
@@ -120,12 +157,14 @@ object MacroImpl {
 				}
 				/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 				val VariableInetAddress:Parser[c.Expr[String]] = OfType(c.typeTag[java.net.InetAddress])
-					.map(x => c.Expr[String](Utilities.objectApply(c)(x.tree, "getHostName", List())))
+					.map(x => c.universe.reify(x.splice.getHostName()))
 				VariableInetAddress orElse LiteralIpv4 orElse LiteralIpv6 orElse LiteralName
 			}
 
 			val PortP:Parser[c.Expr[Int]] = {
-				val Literal:Parser[c.Expr[Int]] = DigitChar.repeat(1).map({x => java.lang.Integer.parseInt(x)}).map({x => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
+				val Literal:Parser[c.Expr[Int]] = DigitChar.repeat(1)
+					.map({x => java.lang.Integer.parseInt(x)})
+					.map({x => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
 				val LiteralEmpty:Parser[c.Expr[Int]] = IsString("").map({_ => constNegOneExpr})
 				val Variable:Parser[c.Expr[Int]] = OfType(c.typeTag[Int])
 				Variable orElse Literal orElse LiteralEmpty
@@ -133,11 +172,11 @@ object MacroImpl {
 
 			val HostPortP:Parser[(c.Expr[String], c.Expr[Int])] = {
 				val Literal = HostP andThen (IsString(":") andThen PortP)
-					.optionally.map(_.getOrElse(c.Expr[Int](c.universe.Literal(c.universe.Constant(-1)))))
+					.optionally.map(_.getOrElse(c.universe.reify(-1)))
 				val SockAddr = OfType(c.typeTag[java.net.InetSocketAddress])
 					.map(x => (
-						c.Expr[String](Utilities.objectApply(c)(x.tree, "getHostString", List())),
-						c.Expr[Int](Utilities.objectApply(c)(x.tree, "getPort", List()))
+						c.universe.reify(x.splice.getHostString()),
+						c.universe.reify(x.splice.getPort())
 					))
 				SockAddr orElse Literal
 			}
@@ -147,7 +186,7 @@ object MacroImpl {
 			val OpaquePartP:Parser[c.Expr[String]] = {
 				val Variable:Parser[c.Expr[String]] = OfType(c.typeTag[String])
 				val Literal:Parser[c.Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).map(constExpr)
-				(Variable orElse Literal).repeat().map(xs => Utilities.concatenateStrings(c)(xs))
+				(Variable orElse Literal).repeat().map(xs => concatenateStrings(c)(xs))
 			}
 
 
@@ -159,7 +198,7 @@ object MacroImpl {
 			val FragmentOrQueryString:Parser[c.Expr[String]] = {
 				val Arbitrary = (OfType(c.typeTag[String]) orElse UriChar.repeat(1).map(constExpr))
 					.repeat()
-					.map(xs => Utilities.concatenateStrings(c)(xs))
+					.map(xs => concatenateStrings(c)(xs))
 				val Mapping = {
 					import scala.language.implicitConversions
 					implicit def fn2then[A,B,Z](fn:(A,B) => Z):Implicits.AndThenTypes[A,B,Z] = new Implicits.AndThenTypes[A,B,Z]{
@@ -179,38 +218,24 @@ object MacroImpl {
 					val EqualsChar = CodePointIn("=").map(x => constExpr(x.toString))
 					val AndChar = CodePointIn("&").map(x => constExpr(x.toString))
 
-					//val tupleConcatFun = q"""{ab => ab._1 + "=" + ab._2}"""
-					val tupleConcatFun = {
-						val a = c.universe.Select(c.universe.Ident(MacroCompat.newTermName(c)("ab")), MacroCompat.newTermName(c)("_1"))
-						val b = c.universe.Select(c.universe.Ident(MacroCompat.newTermName(c)("ab")), MacroCompat.newTermName(c)("_2"))
-						val eq = c.universe.Literal(c.universe.Constant("="))
-						def concat(a:c.universe.Tree, b:c.universe.Tree) = objectApply(c)(a, "$plus", List(b))
-						val aeqb = concat(a, concat(eq, b))
-						val abParam = c.universe.ValDef(
-							c.universe.Modifiers(c.universe.Flag.PARAM),
-							MacroCompat.newTermName(c)("ab"),
-							c.universe.TypeTree(),
-							c.universe.EmptyTree)
-
-						c.universe.Function(List(abParam), aeqb)
-					}
+					val tupleConcatFun = c.universe.reify( {ab:Tuple2[String, String] => ab._1 + "=" + ab._2} )
 					val lit:Parser[c.Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().map(constExpr)
 					val str:Parser[c.Expr[String]] = OfType(c.typeTag[String])
 					val str2:Parser[c.Expr[String]] = str orElse lit
 					val pair:Parser[List[c.Expr[String]]] = OfType(c.typeTag[scala.Tuple2[String, String]])
 						.map(x => List(
-							c.Expr(c.universe.Select(x.tree, MacroCompat.newTermName(c)("_1"))),
+							c.universe.reify(x.splice._1),
 							constExpr("="),
-							c.Expr(c.universe.Select(x.tree, MacroCompat.newTermName(c)("_2")))
+							c.universe.reify(x.splice._2)
 						))
 					val pair2:Parser[List[c.Expr[String]]] = pair orElse (str2 andThen EqualsChar andThen str2)
 					val map:Parser[List[c.Expr[String]]] = OfType(c.typeTag[scala.collection.Map[String, String]])
-						.map(x => c.Expr[Iterable[String]](objectApply(c)(x.tree, "map", List(tupleConcatFun))))
-						.map(x => List(c.Expr[String](objectApply(c)(x.tree, "mkString", List(constExpr("&").tree)))))
+						.map(x => c.universe.reify(x.splice.map(tupleConcatFun.splice)))
+						.map(x => List(c.universe.reify(x.splice.mkString("&"))))
 					val mapOrPair:Parser[List[c.Expr[String]]] = map orElse pair2
 
 					(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
-						.map(xs => Utilities.concatenateStrings(c)(xs))
+						.map(xs => concatenateStrings(c)(xs))
 				}
 				Mapping orElse Arbitrary
 			}
@@ -238,40 +263,24 @@ object MacroImpl {
 						QueryP andThen
 						FragmentP
 					).map({case ((((user, (host, port)), path), query), fragment) =>
-						c.Expr[URI](
-							c.universe.Apply(
-								c.universe.Select(
-									c.universe.New(
-										c.universe.Select(
-											c.universe.Select(
-												c.universe.Ident(MacroCompat.newTermName(c)("java")),
-												MacroCompat.newTermName(c)("net")
-											),
-											MacroCompat.newTypeName(c)("URI")
-										)
-									),
-									MacroCompat.stdTermNames(c).CONSTRUCTOR
-								),
-								List(scheme.tree, user.tree, host.tree, port.tree, path.tree, query.tree, fragment.tree)
+						c.universe.reify(
+							new java.net.URI(
+								scheme.splice,
+								user.splice,
+								host.splice,
+								port.splice,
+								path.splice,
+								query.splice,
+								fragment.splice
 							)
 						)
 					}) orElse
 					(OpaquePartP andThen FragmentP).map({case (ssp, frag) =>
-						c.Expr[URI](
-							c.universe.Apply(
-								c.universe.Select(
-									c.universe.New(
-										c.universe.Select(
-											c.universe.Select(
-												c.universe.Ident(MacroCompat.newTermName(c)("java")),
-												MacroCompat.newTermName(c)("net")
-											),
-											MacroCompat.newTypeName(c)("URI")
-										)
-									),
-									MacroCompat.stdTermNames(c).CONSTRUCTOR
-								),
-								List(scheme.tree, ssp.tree, frag.tree)
+						c.universe.reify(
+							new java.net.URI(
+								scheme.splice,
+								ssp.splice,
+								frag.splice
 							)
 						)
 					})
@@ -286,21 +295,15 @@ object MacroImpl {
 					andThen QueryP
 					andThen FragmentP
 					).map({case ((((user, (host, port)), path), query), fragment) =>
-						c.Expr[URI](
-							c.universe.Apply(
-								c.universe.Select(
-									c.universe.New(
-										c.universe.Select(
-											c.universe.Select(
-												c.universe.Ident(MacroCompat.newTermName(c)("java")),
-												MacroCompat.newTermName(c)("net")
-											),
-											MacroCompat.newTypeName(c)("URI")
-										)
-									),
-									MacroCompat.stdTermNames(c).CONSTRUCTOR
-								),
-								List(constNullExpr.tree, user.tree, host.tree, port.tree, path.tree, query.tree, fragment.tree)
+						c.universe.reify(
+							new java.net.URI(
+								constNullExpr.splice,
+								user.splice,
+								host.splice,
+								port.splice,
+								path.splice,
+								query.splice,
+								fragment.splice
 							)
 						)
 					})
@@ -310,7 +313,7 @@ object MacroImpl {
 			val ResolvedUriP:Parser[c.Expr[URI]] = {
 				(OfType(c.typeTag[URI]) andThen RelativeUriP)map({params =>
 					val (base, resolvant) = params
-					c.Expr[URI](Utilities.objectApply(c)(base.tree, "resolve", List(resolvant.tree)))
+					c.universe.reify(base.splice.resolve(resolvant.splice))
 				})
 			}
 
