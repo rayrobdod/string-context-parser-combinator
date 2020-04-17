@@ -2,6 +2,7 @@ package com.rayrobdod
 
 import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
+import scala.language.higherKinds
 import scala.reflect.api.Universe
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
@@ -119,6 +120,8 @@ package stringContextParserCombinator {
 	private[stringContextParserCombinator] trait Extractor0[A] {def unapply(a:A):Boolean}
 	/** An object that can be a pattern-match pattern */
 	private[stringContextParserCombinator] trait Extractor[A,Z] {def unapply(a:A):Option[Z]}
+	/** Support for Parsers.Lifted; represents a macro-level function that combines a CC[A] and an A. */
+	trait LiftFunction[U <: Context with Singleton, CC[A], Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):U#Expr[Z]}
 
 
 	// CodePoint extending AnyVal, parameterized methods, and using CodePoint::toString results in a

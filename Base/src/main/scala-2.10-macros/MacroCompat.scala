@@ -8,6 +8,7 @@ object MacroCompat {
 	def newTermName(c:Context)(name:String) = c.universe.newTermName(name)
 	def newTypeName(c:Context)(name:String) = c.universe.newTypeName(name)
 	def stdTermNames(c:Context) = c.universe.nme
+	def freshName(c:Context)(prefix:c.universe.TermName):c.universe.TermName = c.fresh(prefix)
 	def declaration(c:Context)(t:c.universe.Type)(arg:c.TermName) = t.declaration(arg)
 	def paramLists(c:Context)(m:c.universe.MethodSymbol) = m.paramss
 	def untypecheck(c:Context)(t:c.universe.Tree) = c.resetAllAttrs(t)

@@ -4,6 +4,7 @@ import scala.collection.immutable.{Map, Vector}
 import scalajson.ast._
 import org.scalatest.funspec.AnyFunSpec
 import com.rayrobdod.stringContextParserCombinatorExample.json.JsonStringContext
+import com.rayrobdod.stringContextParserCombinatorExample.json.Lift
 
 final class StringContextTest extends AnyFunSpec {
 	describe("StringContext.json") {
@@ -68,6 +69,17 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JNumber(100)
 			assertResult(exp)(json"$param")
 		}
+		it ("Accepts an BigDecimal 4.20") {
+			val param = BigDecimal("4.20")
+			val exp = JNumber.fromString("4.20").get
+			assertResult(exp)(json"$param")
+		}
+		it ("Accepts a custom lift") {
+			object Pi {}
+			implicit val liftPi:Lift[Pi.type, JNumber] = Lift(_ => JNumber.fromString("3.14").get)
+			val exp = JNumber.fromString("3.14").get
+			assertResult(exp)(json"$Pi")
+		}
 
 		it ("Accepts a String string") {
 			val param = "abcd"
@@ -106,30 +118,59 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JArray(arg)
 			assertResult(exp)(json"$arg")
 		}
-		it ("Accepts an empty array") {
+		it ("Accepts a provided Range") {
+			import scala.Predef.intWrapper
+			val exp = JArray(Vector(JNumber(1), JNumber(2), JNumber(3), JNumber(4)))
+			assertResult(exp)(json"${1 to 4}")
+		}
+		it ("Accepts an literal empty array") {
 			val exp = JArray(Vector.empty)
 			assertResult(exp)(json"[]")
 		}
-		it ("Accepts a single-item array") {
+		it ("Accepts a literal array with a single immediate value") {
 			val exp = JArray(Vector(JNumber(123)))
 			assertResult(exp)(json" [ 123 ] ")
 		}
-		it ("Accepts a two-item array with immediate values") {
+		it ("Accepts an array with two different immediate values") {
 			val exp = JArray(Vector(JNumber(123), JString("abc")))
 			assertResult(exp)(json""" [ 123 , "abc" ] """)
 		}
-		it ("Accepts a two-item array with variable values") {
+		it ("Accepts an array with two variable values") {
 			val arg1 = JNumber(123)
 			val arg2 = JString("abc")
 			val exp = JArray(Vector(arg1, arg2))
 			assertResult(exp)(json""" [ $arg1 , $arg2 ] """)
 		}
-		it ("Accepts nested array") {
-			val num2 = 2
-			val arg1 = JArray(Vector(JNumber(1), JNumber(num2), JNumber(3)))
+		it ("Vector inside a literal vector is kept as vector") {
+			val arg = Vector(JNumber(2), JNumber(3))
+			val exp = JArray(Vector(JNumber(1), JArray(arg), JNumber(4)))
+			assertResult(exp)(json""" [ 1 , $arg , 4 ] """)
+		}
+		it ("Splicing a JArray flattens the values") {
+			val arg = JArray(Vector(JNumber(2), JNumber(3)))
+			val exp = JArray(Vector(JNumber(1), JNumber(2), JNumber(3), JNumber(4)))
+			assertResult(exp)(json""" [ 1 , ..$arg , 4 ] """)
+		}
+		it ("Splicing a vector of jvalues flattens the values") {
+			val arg = Vector(JNumber(2), JNumber(3))
+			val exp = JArray(Vector(JNumber(1), JNumber(2), JNumber(3), JNumber(4)))
+			assertResult(exp)(json""" [ 1 , ..$arg , 4 ] """)
+		}
+		it ("Splicing a vector of ints flattens the values") {
+			val arg = Vector(2, 3)
+			val exp = JArray(Vector(JNumber(1), JNumber(2), JNumber(3), JNumber(4)))
+			assertResult(exp)(json""" [ 1 , ..$arg , 4 ] """)
+		}
+		it ("Splicing a range") {
+			import scala.Predef.intWrapper
+			val exp = JArray(Vector(JNumber(1), JNumber(2), JNumber(3), JNumber(4)))
+			assertResult(exp)(json""" [ 1, ..${2 to 4} ] """)
+		}
+		it ("Accepts nested literal arrays") {
+			val arg1 = JArray(Vector(JNumber(1), JNumber(2), JNumber(3)))
 			val arg2 = JArray(Vector(JNumber(4), JNumber(5), JNumber(6)))
 			val exp = JArray(Vector(arg1, arg2))
-			assertResult(exp)(json""" [ [1,$num2,3], [4,5,6] ] """)
+			assertResult(exp)(json""" [ [1,2,3], [4,5,6] ] """)
 		}
 
 		it ("Accepts a provided Map") {
@@ -137,13 +178,24 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JObject(arg)
 			assertResult(exp)(json"$arg")
 		}
-		it ("Accepts an empty Map") {
+		it ("Accepts an empty literal Map") {
 			val exp = JObject(Map.empty)
 			assertResult(exp)(json"{}")
 		}
-		it ("Accepts a single-item Map") {
+		it ("Accepts a single-item literal Map") {
 			val exp = JObject(Map(("a", JNumber(123))))
-			assertResult(exp)(json"""{"a":123}""")
+			assertResult(exp)(json""" { "a" : 123 } """)
+		}
+		it ("Accepts a single-item key and value Map") {
+			val key = "key"
+			val value = "value"
+			val exp = JObject(Map((key, JString(value))))
+			assertResult(exp)(json""" { $key : $value } """)
+		}
+		it ("Accepts a single-item keyvalue Map") {
+			val param = ("a", JNumber(1))
+			val exp = JObject(Map(param))
+			assertResult(exp)(json""" { $param } """)
 		}
 		it ("Accepts a two-item Map with immediate values") {
 			val exp = JObject(Map(("a", JNumber(123)), ("b", JNull)))
@@ -169,6 +221,18 @@ final class StringContextTest extends AnyFunSpec {
 			val arg = "12"
 			val exp = JObject(Map(("ab12cd", JNull)))
 			assertResult(exp)(json"""{"ab${arg}cd" : null}""")
+		}
+		it ("Splicing") {
+			val param = Map(("a", JString("A")), ("b", JString("B")))
+			val exp = JObject(param ++ Map(("c", JString("C"))))
+			assertResult(exp)(json"""{ ..$param , "c" : "C" }""")
+		}
+		it ("Splicing using custom lift") {
+			case class Foo(bar:Int, baz:Boolean)
+			implicit val liftFoo:Lift[Foo, JObject] = Lift(x => JObject(Map(("foo", JNumber(x.bar)), ("baz", JBoolean(x.baz)))))
+			val param = Foo(42, false)
+			val exp = JObject(Map(("_type", JString("Foo")), ("foo", JNumber(42)), ("baz", JFalse)))
+			assertResult(exp)(json"""{ "_type": "Foo", ..$param }""")
 		}
 		it ("Reject Map with non-string keys") {
 			assertDoesNotCompile(""" json"{1:2}" """)
