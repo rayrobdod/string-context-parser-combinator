@@ -30,7 +30,7 @@ trait Parsers {
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	def IsString(str:String):Parser[Unit] = parsers.IsString[ctx.type](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType[A](tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] = parsers.OfType[ctx.type, A](tpe)
+	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] = parsers.OfType[ctx.type, A](tpe)
 	/** A parser that succeeds if a "lift" type can be implicitly summoned
 	 *
 	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input
@@ -60,7 +60,7 @@ object Parsers {
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	def IsString[U <: Context with Singleton](str:String):Parser[U, Unit] = parsers.IsString[U](str)
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType[U <: Context with Singleton, A](tpe:U#TypeTag[A]):Parser[U, U#Expr[A]] = parsers.OfType[U, A](tpe)
+	def OfType[U <: Context with Singleton, A](implicit tpe:U#TypeTag[A]):Parser[U, U#Expr[A]] = parsers.OfType[U, A](tpe)
 	/** A parser that succeeds if a "lift" type can be implicitly summoned
 	 *
 	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input

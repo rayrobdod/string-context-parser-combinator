@@ -8,8 +8,8 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
  * @group Input/Result
  */
 final class Input[U <: Context with Singleton](
-	private[stringContextParserCombinator] val parts:List[(String, PositionPoint)],
-	private[stringContextParserCombinator] val args:List[U#Expr[Any]]
+	parts:List[(String, PositionPoint)],
+	args:List[U#Expr[Any]]
 ) {
 	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],

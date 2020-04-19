@@ -166,7 +166,7 @@ object MacroImpl {
 					.map({x => java.lang.Integer.parseInt(x)})
 					.map({x => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
 				val LiteralEmpty:Parser[c.Expr[Int]] = IsString("").map({_ => constNegOneExpr})
-				val Variable:Parser[c.Expr[Int]] = OfType(c.typeTag[Int])
+				val Variable:Parser[c.Expr[Int]] = OfType[Int]
 				Variable orElse Literal orElse LiteralEmpty
 			}
 
@@ -184,7 +184,7 @@ object MacroImpl {
 				(UserInfoP andThen IsString("@")).optionally.map(_.getOrElse(constNullExpr)) andThen HostPortP
 
 			val OpaquePartP:Parser[c.Expr[String]] = {
-				val Variable:Parser[c.Expr[String]] = OfType(c.typeTag[String])
+				val Variable:Parser[c.Expr[String]] = OfType[String]
 				val Literal:Parser[c.Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).map(constExpr)
 				(Variable orElse Literal).repeat().map(xs => concatenateStrings(c)(xs))
 			}
@@ -196,7 +196,7 @@ object MacroImpl {
 
 
 			val FragmentOrQueryString:Parser[c.Expr[String]] = {
-				val Arbitrary = (OfType(c.typeTag[String]) orElse UriChar.repeat(1).map(constExpr))
+				val Arbitrary = (OfType[String] orElse UriChar.repeat(1).map(constExpr))
 					.repeat()
 					.map(xs => concatenateStrings(c)(xs))
 				val Mapping = {
@@ -220,7 +220,7 @@ object MacroImpl {
 
 					val tupleConcatFun = c.universe.reify( {ab:Tuple2[String, String] => ab._1 + "=" + ab._2} )
 					val lit:Parser[c.Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().map(constExpr)
-					val str:Parser[c.Expr[String]] = OfType(c.typeTag[String])
+					val str:Parser[c.Expr[String]] = OfType[String]
 					val str2:Parser[c.Expr[String]] = str orElse lit
 					val pair:Parser[List[c.Expr[String]]] = OfType(c.typeTag[scala.Tuple2[String, String]])
 						.map(x => List(
@@ -311,7 +311,7 @@ object MacroImpl {
 			}
 
 			val ResolvedUriP:Parser[c.Expr[URI]] = {
-				(OfType(c.typeTag[URI]) andThen RelativeUriP)map({params =>
+				(OfType[URI] andThen RelativeUriP).map({params =>
 					val (base, resolvant) = params
 					c.universe.reify(base.splice.resolve(resolvant.splice))
 				})

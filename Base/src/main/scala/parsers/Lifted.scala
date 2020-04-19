@@ -4,6 +4,7 @@ package parsers
 import scala.language.higherKinds
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
+private[stringContextParserCombinator]
 object Lifted {
 	def apply[Lifter[A], Z](
 		c:Context)(

@@ -166,7 +166,7 @@ object MacroImpl {
 						c.universe.reify(scalajson.ast.JNumber.fromString(xExpr.splice).get)
 					})
 				}.opaque("Number Literal")
-				val AstV:Parser[c.Expr[JNumber]] = OfType(c.typeTag[JNumber])
+				val AstV:Parser[c.Expr[JNumber]] = OfType[JNumber]
 				val LiftedV = Lifted[Lift.Number, JNumber](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JNumber])),
 					myLiftFunction[JNumber, Lift.Number](c),
@@ -190,23 +190,23 @@ object MacroImpl {
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
-				val ScalaVInner:Parser[c.Expr[String]] = OfType(c.typeTag[String])
-				val AstVInner:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.universe.reify(x.splice.value))
+				val ScalaVInner:Parser[c.Expr[String]] = OfType[String]
+				val AstVInner:Parser[c.Expr[String]] = OfType[JString].map(x => c.universe.reify(x.splice.value))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
 					.map(strs => concatenateStrings(c)(strs))
 				(DelimiterP andThen Content andThen DelimiterP)
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
-				val ScalaVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[String])
-				val AstVOuter:Parser[c.Expr[String]] = OfType(c.typeTag[JString]).map(x => c.universe.reify(x.splice.value))
+				val ScalaVOuter:Parser[c.Expr[String]] = OfType[String]
+				val AstVOuter:Parser[c.Expr[String]] = OfType[JString].map(x => c.universe.reify(x.splice.value))
 				val Immediate:Parser[c.Expr[String]] = StringBase
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
 
 			val JStringP:Parser[c.Expr[JString]] = {
-				val ScalaVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[String]).map(x => c.universe.reify(scalajson.ast.JString.apply(x.splice)))
-				val AstVOuter:Parser[c.Expr[JString]] = OfType(c.typeTag[JString])
+				val ScalaVOuter:Parser[c.Expr[JString]] = OfType[String].map(x => c.universe.reify(scalajson.ast.JString.apply(x.splice)))
+				val AstVOuter:Parser[c.Expr[JString]] = OfType[JString]
 				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.universe.reify(scalajson.ast.JString.apply(x.splice)))
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
