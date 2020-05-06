@@ -16,7 +16,7 @@ jobs:
       - name: sbt update
         run: sbt update
       - name: sbt publish
-        run: sbt +publish
+        run: sbt publish
       - name: Archive published
         uses: actions/upload-artifact@v1
         with:

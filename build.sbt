@@ -1,5 +1,3 @@
-ThisBuild / scalaVersion := "2.12.11"
-ThisBuild / crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11")
 ThisBuild / version := "-SNAPSHOT"
 ThisBuild / organization := "com.rayrobdod"
 
@@ -31,46 +29,45 @@ lazy val sharedSettings = Seq(
 	),
 	Test / testOptions += Tests.Argument(
 		"-oS",
-		"-u", s"${crossTarget.value}/test-results-junit",
 	),
 )
 
-lazy val base = (project in file("Base"))
+lazy val base = (projectMatrix in file("Base"))
 	.settings(sharedSettings)
 	.settings(
 		name := "string-context-parser-combinator",
-		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"),
 		libraryDependencies ++= Seq(
 			"org.scala-lang" % "scala-reflect" % scalaVersion.value,
 		),
 	)
+	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"))
 
-lazy val json = (project in file("JsonParser"))
+lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)
 	.settings(sharedSettings)
 	.settings(
 		name := "json",
 		publish / skip := true,
-		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11"),
 		libraryDependencies ++= Seq(
 			"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
 		),
 	)
+	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11"))
 
-lazy val time = (project in file("TimeParser"))
+lazy val time = (projectMatrix in file("TimeParser"))
 	.dependsOn(base)
 	.settings(sharedSettings)
 	.settings(
 		name := "time",
 		publish / skip := true,
-		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"),
 	)
+	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"))
 
-lazy val uri = (project in file("UriParser"))
+lazy val uri = (projectMatrix in file("UriParser"))
 	.dependsOn(base)
 	.settings(sharedSettings)
 	.settings(
 		name := "uri",
 		publish / skip := true,
-		crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"),
 	)
+	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"))

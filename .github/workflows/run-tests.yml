@@ -17,4 +17,4 @@ jobs:
       - name: sbt update
         run: sbt update
       - name: sbt tests
-        run: sbt +test
+        run: sbt test
