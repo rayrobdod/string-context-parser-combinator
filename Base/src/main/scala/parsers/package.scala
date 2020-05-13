@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.collection.immutable.Seq
+import scala.collection.immutable.{Seq, Set}
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 package parsers {
@@ -24,6 +24,15 @@ package parsers {
 
 package object parsers {
 	/* * * Leaf parsers * * */
+
+	/** Succeeds if the next character is a member of the given Set; captures that character */
+	private[stringContextParserCombinator]
+	def CharIn[U <: Context with Singleton](
+		chooseFrom:Set[Char]
+	):Parser[U, Char] = CharWhere(
+		chooseFrom.contains _,
+		Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")).toSeq)
+	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
 	private[stringContextParserCombinator]
@@ -62,6 +71,28 @@ package object parsers {
 		this.CodePointWhere(
 			{x:CodePoint => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
 			chooseFrom.codePoints.mapToObj(CodePointString).collect(ToExpecting)
+		)
+	}
+
+	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
+	private[stringContextParserCombinator]
+	def CodePointIn[U <: Context with Singleton](
+		chooseFrom:Set[CodePoint]
+	):Parser[U, CodePoint] = {
+		this.CodePointWhere(
+			chooseFrom.contains _,
+			Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")).toSeq)
+		)
+	}
+
+	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
+	private[stringContextParserCombinator]
+	def CodePointIn[U <: Context with Singleton](
+		chooseFrom:Seq[CodePoint]
+	):Parser[U, CodePoint] = {
+		this.CodePointWhere(
+			chooseFrom.contains _,
+			Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")))
 		)
 	}
 

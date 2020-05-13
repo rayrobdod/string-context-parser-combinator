@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.collection.immutable.Seq
+import scala.collection.immutable.{Seq, Set}
 import scala.language.higherKinds
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
@@ -17,15 +17,21 @@ trait Parsers {
 	import com.rayrobdod.{stringContextParserCombinator => scpc}
 	val ctx:Context
 	type Parser[A] = scpc.Parser[ctx.type, A]
-	/** Succeeds if the next character is a member of the given String; captures that character */
-	def CharIn(str:Seq[Char]):Parser[Char] = parsers.CharIn[ctx.type](str)
+	/** Succeeds if the next character is a member of the given Set; captures that character */
+	def CharIn(str:Set[Char]):Parser[Char] = parsers.CharIn[ctx.type](str)
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
+	def CharIn(str:Seq[Char]):Parser[Char] = parsers.CharIn[ctx.type](str)
+	/** Succeeds if the next character is a member of the given String; captures that character */
 	def CharIn(str:String):Parser[Char] = parsers.CharIn[ctx.type](scala.Predef.wrapString(str))
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] = parsers.CharWhere[ctx.type](fn, Failure.Leaf(description))
+	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
+	def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] = parsers.CodePointIn(str)
+	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
+	def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] = parsers.CodePointIn(str)
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	def CodePointIn(str:String):Parser[CodePoint] = parsers.CodePointIn(str)
-	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
+	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] = parsers.CodePointWhere(fn, Failure.Leaf(description))
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	def IsString(str:String):Parser[Unit] = parsers.IsString[ctx.type](str)
@@ -47,15 +53,21 @@ trait Parsers {
  * Methods to create leaf parsers
  */
 object Parsers {
-	/** Succeeds if the next character is a member of the given String; captures that character */
-	def CharIn[U <: Context with Singleton](str:Seq[Char]):Parser[U, Char] = parsers.CharIn[U](str)
+	/** Succeeds if the next character is a member of the given Set; captures that character */
+	def CharIn[U <: Context with Singleton](str:Set[Char]):Parser[U, Char] = parsers.CharIn[U](str)
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
+	def CharIn[U <: Context with Singleton](str:Seq[Char]):Parser[U, Char] = parsers.CharIn[U](str)
+	/** Succeeds if the next character is a member of the given String; captures that character */
 	def CharIn[U <: Context with Singleton](str:String):Parser[U, Char] = parsers.CharIn[U](scala.Predef.wrapString(str))
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	def CharWhere[U <: Context with Singleton](fn:Function1[Char, Boolean], description:String):Parser[U, Char] = parsers.CharWhere[U](fn, Failure.Leaf(description))
+	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
+	def CodePointIn[U <: Context with Singleton](str:Set[CodePoint]):Parser[U, CodePoint] = parsers.CodePointIn(str)
+	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
+	def CodePointIn[U <: Context with Singleton](str:Seq[CodePoint]):Parser[U, CodePoint] = parsers.CodePointIn(str)
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	def CodePointIn[U <: Context with Singleton](str:String):Parser[U, CodePoint] = parsers.CodePointIn(str)
-	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
+	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	def CodePointWhere[U <: Context with Singleton](fn:Function1[CodePoint, Boolean], description:String):Parser[U, CodePoint] = parsers.CodePointWhere(fn, Failure.Leaf(description))
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	def IsString[U <: Context with Singleton](str:String):Parser[U, Unit] = parsers.IsString[U](str)
