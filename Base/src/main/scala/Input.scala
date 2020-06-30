@@ -1,5 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
+import scala.reflect.api.Exprs
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
@@ -40,16 +41,35 @@ final class Input[U <: Context with Singleton](
 	/**
 	 * Reports the next symbol, but only in a form suitable for the Failure's found parameter
 	 */
-	private[stringContextParserCombinator] def next:(String, PositionPoint) = {
+	private[stringContextParserCombinator] def next:Input.Next = {
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
-				(args.head.actualType.toString, PositionPoint(args.head.tree.pos))
+				Input.Arg(args.head)
 			} else {
-				("EOF", parts.head._2)
+				Input.Eof(parts.head._2)
 			}
 		} else {
 			val (headStr, headPos) = parts.head
-			("\"" + headStr + "\"", headPos)
+			Input.Part(headStr, headPos)
 		}
 	}
+}
+
+private[stringContextParserCombinator] object Input {
+        sealed trait Next {
+                def description:String
+                def position:PositionPoint
+        }
+        final case class Eof(pos:PositionPoint) extends Next {
+                override def description:String = "end of input"
+                override def position:PositionPoint = pos
+        }
+        final case class Part(str:String, pos:PositionPoint) extends Next {
+                override def description:String = "\"" + str + "\""
+                override def position:PositionPoint = pos
+        }
+        final case class Arg(expr:Exprs#Expr[_]) extends Next {
+                override def description:String = expr.actualType.toString
+                override def position:PositionPoint = PositionPoint(expr.tree.pos)
+        }
 }

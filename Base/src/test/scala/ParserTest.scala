@@ -29,12 +29,12 @@ final class ParserTest extends AnyFunSpec {
 			assertParseSuccessValue('1')(dut, "1")
 		}
 		it ("Single failure message") {
-			val exp = "Found EOF ; Expected \"1\""
+			val exp = "Found end of input ; Expected \"1\""
 			val dut = CharIn("1")
 			assertParseFailureMessage(exp)(dut, "")
 		}
 		it ("Two failure message") {
-			val exp = "Found EOF ; Expected \"1\" | \"2\""
+			val exp = "Found end of input ; Expected \"1\" | \"2\""
 			val dut = CharIn("12")
 			assertParseFailureMessage(exp)(dut, "")
 		}
@@ -45,12 +45,12 @@ final class ParserTest extends AnyFunSpec {
 			assertParseSuccessValue(CodePoint('1'))(dut, "1")
 		}
 		it ("Single failure message") {
-			val exp = "Found EOF ; Expected \"1\""
+			val exp = "Found end of input ; Expected \"1\""
 			val dut = CodePointIn("1")
 			assertParseFailureMessage(exp)(dut, "")
 		}
 		it ("Two failure message") {
-			val exp = "Found EOF ; Expected \"1\" | \"2\""
+			val exp = "Found end of input ; Expected \"1\" | \"2\""
 			val dut = CodePointIn("12")
 			assertParseFailureMessage(exp)(dut, "")
 		}
@@ -62,38 +62,38 @@ final class ParserTest extends AnyFunSpec {
 			assertParseSuccessValue(exp)(dut, "12")
 		}
 		it ("Failure on first subparser") {
-			val exp = "Found EOF ; Expected \"1\""
+			val exp = "Found end of input ; Expected \"1\""
 			val dut = CharIn("1") andThen CharIn("2")
 			assertParseFailureMessage(exp)(dut, "")
 		}
 		it ("Failure on second subparser") {
-			val exp = "Found EOF ; Expected \"2\""
+			val exp = "Found end of input ; Expected \"2\""
 			val dut = CharIn("1") andThen CharIn("2")
 			assertParseFailureMessage(exp)(dut, "1")
 		}
 	}
 	describe("OrElse") {
 		it ("expected displays both halves") {
-			val exp = "Found EOF ; Expected \"1\" | \"2\""
+			val exp = "Found end of input ; Expected \"1\" | \"2\""
 			val dut = CharIn("1") orElse CharIn("2")
 			assertParseFailureMessage(exp)(dut, "")
 		}
 	}
 	describe("OrElse / AndThen chain") {
 		it ("First") {
-			val exp = "Found EOF ; Expected \"1\" | \"2\""
+			val exp = "Found end of input ; Expected \"1\" | \"2\""
 			val dut = CharIn("1") orElse (CharIn("2") andThen CharIn("3"))
 			assertParseFailureMessage(exp)(dut, "")
 		}
 		it ("Second") {
-			val exp = "Found EOF ; Expected \"3\""
+			val exp = "Found end of input ; Expected \"3\""
 			val dut = CharIn("1") orElse (CharIn("2") andThen CharIn("3"))
 			assertParseFailureMessage(exp)(dut, "2")
 		}
 	}
 	describe("AndThen / Repeat chain") {
 		it ("First") {
-			val exp = "Found EOF ; Expected \"a\""
+			val exp = "Found end of input ; Expected \"a\""
 			val dut = CharIn("a") andThen CharIn("a").repeat()
 			assertParseFailureMessage(exp)(dut, "")
 		}
@@ -108,17 +108,17 @@ final class ParserTest extends AnyFunSpec {
 	}
 	describe("Repeat / AndThen chain") {
 		it ("Zero-length input with any repeat") {
-			val exp = "Found EOF ; Expected \"a\" | \"b\""
+			val exp = "Found end of input ; Expected \"a\" | \"b\""
 			val dut = CharIn("a").repeat() andThen CharIn("b")
 			assertParseFailureMessage(exp)(dut, "")
 		}
 		it ("Missing lhs with any repeat") {
-			val exp = "Found EOF ; Expected \"a\" | \"b\""
+			val exp = "Found end of input ; Expected \"a\" | \"b\""
 			val dut = CharIn("a").repeat() andThen CharIn("b")
 			assertParseFailureMessage(exp)(dut, "a")
 		}
 		it ("Input too short for repeat") {
-			val exp = "Found EOF ; Expected \"a\""
+			val exp = "Found end of input ; Expected \"a\""
 			val dut = CharIn("a").repeat(3, 5) andThen CharIn("b")
 			assertParseFailureMessage(exp)(dut, "a")
 		}
@@ -138,7 +138,7 @@ final class ParserTest extends AnyFunSpec {
 	}
 	describe("Repeat / OrElse chain") {
 		it ("First") {
-			val exp = "Found EOF ; Expected \"a\" | \"b\""
+			val exp = "Found end of input ; Expected \"a\" | \"b\""
 			val dut = CharIn("a").repeat(1) orElse CharIn("b")
 			assertParseFailureMessage(exp)(dut, "")
 		}

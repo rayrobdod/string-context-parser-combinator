@@ -14,8 +14,8 @@ final class OrElse[U <: Context with Singleton, A](
 			case Failure(expect1, remain1) => right.parse(input) match {
 				case Success(v, r) => Success(v, r)
 				case Failure(expect2, remain2) => {
-					if (remain1.next._2 == remain2.next._2) {Failure(Failure.Or(Seq(expect1, expect2)), remain1)}
-					else if (remain1.next._2 > remain2.next._2) {Failure(expect1, remain1)}
+					if (remain1.next.position == remain2.next.position) {Failure(Failure.Or(Seq(expect1, expect2)), remain1)}
+					else if (remain1.next.position > remain2.next.position) {Failure(expect1, remain1)}
 					else {Failure(expect2, remain2)}
 				}
 			}

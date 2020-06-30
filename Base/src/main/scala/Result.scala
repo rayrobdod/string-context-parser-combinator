@@ -36,10 +36,10 @@ final case class Failure[U <: Context with Singleton](
 	val expecting:Failure.Expecting,
 	val remaining:Input[U]
 ) extends Result[U, Nothing] {
-	private[this] def found = remaining.next
-	private[stringContextParserCombinator] def msg:String = s"Found ${found._1} ; Expected $expecting"
+	private[this] def found:Input.Next = remaining.next
+	private[stringContextParserCombinator] def msg:String = s"Found ${found.description} ; Expected $expecting"
 	def report(c:Context):Nothing = {
-		c.abort(found._2.cast(c), msg)
+		c.abort(found.position.cast(c), msg)
 	}
 }
 
