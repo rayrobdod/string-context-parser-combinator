@@ -11,12 +11,12 @@ final class OrElse[U <: Context with Singleton, A](
 	def parse(input:Input[U]):Result[U, A] = {
 		left.parse(input) match {
 			case Success(v, r) => Success(v, r)
-			case Failure(found1, expect1) => right.parse(input) match {
+			case Failure(expect1, remain1) => right.parse(input) match {
 				case Success(v, r) => Success(v, r)
-				case Failure(found2, expect2) => {
-					if (found1._2 == found2._2) {Failure(found1, Failure.Or(Seq(expect1, expect2)))}
-					else if (found1._2 > found2._2) {Failure(found1, expect1)}
-					else {Failure(found2, expect2)}
+				case Failure(expect2, remain2) => {
+					if (remain1.next._2 == remain2.next._2) {Failure(Failure.Or(Seq(expect1, expect2)), remain1)}
+					else if (remain1.next._2 > remain2.next._2) {Failure(expect1, remain1)}
+					else {Failure(expect2, remain2)}
 				}
 			}
 		}

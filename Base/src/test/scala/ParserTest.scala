@@ -12,14 +12,14 @@ final class ParserTest extends AnyFunSpec {
 		val input = new Input[Parsers.ctx.type](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case _:Success[_,_] => fail("Parse Succeeded")
-			case f:Failure => assertResult(expected)(f.msg)
+			case f:Failure[_] => assertResult(expected)(f.msg)
 		}
 	}
 	def assertParseSuccessValue(expected:Any)(dut:Parser[Parsers.ctx.type, _], inputStr:String):Unit = {
 		val input = new Input[Parsers.ctx.type](List((inputStr, PositionPoint(0))), List())
 		dut.parse(input) match {
 			case s:Success[_,_] => assertResult(expected)(s.value)
-			case _:Failure => fail("Parse Failed")
+			case _:Failure[_] => fail("Parse Failed")
 		}
 	}
 

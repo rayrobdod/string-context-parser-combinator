@@ -32,11 +32,12 @@ final case class Success[U <: Context with Singleton, +A](
  * @param found the value that was found
  * @param expecting what the parser was expecting
  */
-final case class Failure(
-	val found:(String, PositionPoint),
-	val expecting:Failure.Expecting
-) extends Result[Nothing, Nothing] {
-	def msg:String =  s"Found ${found._1} ; Expected $expecting"
+final case class Failure[U <: Context with Singleton](
+	val expecting:Failure.Expecting,
+	val remaining:Input[U]
+) extends Result[U, Nothing] {
+	private[this] def found = remaining.next
+	private[stringContextParserCombinator] def msg:String = s"Found ${found._1} ; Expected $expecting"
 	def report(c:Context):Nothing = {
 		c.abort(found._2.cast(c), msg)
 	}

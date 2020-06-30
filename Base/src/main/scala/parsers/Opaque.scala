@@ -9,7 +9,7 @@ private[parsers] final class Opaque[U <: Context with Singleton, A](
 	def parse(input:Input[U]):Result[U, A] = {
 		backing.parse(input) match {
 			case Success(v, r) => Success(v,r)
-			case Failure(f, _) => Failure(f, description)
+			case Failure(_, rest) => Failure(description, rest)
 		}
 	}
 }

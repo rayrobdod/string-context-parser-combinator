@@ -106,7 +106,7 @@ package object stringContextParserCombinator {
 				//System.out.println(res)
 				res
 			}
-			case f:Failure => {
+			case f:Failure[_] => {
 				f.report(c)
 			}
 		}

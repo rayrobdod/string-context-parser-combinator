@@ -9,7 +9,7 @@ private[parsers] final class Filter[U <: Context with Singleton, A](
 	def parse(input:Input[U]):Result[U, A] = {
 		backing.parse(input) match {
 			case Success(value, remain) if predicate(value) => Success(value, remain)
-			case Success(_, _) => Failure(input.next, description)
+			case Success(_, _) => Failure(description, input)
 			case Failure(found, exp) => Failure(found, exp)
 		}
 	}

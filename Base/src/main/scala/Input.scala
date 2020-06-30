@@ -16,7 +16,7 @@ final class Input[U <: Context with Singleton](
 		argsFn:U#Expr[Any] => Option[A],
 		expecting: => Failure.Expecting
 	):Result[U, A] = {
-		def failure = Failure(this.next, expecting)
+		def failure = Failure(expecting, this)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
 				def success(x:A) = Success(x, new Input(parts.tail, args.tail))

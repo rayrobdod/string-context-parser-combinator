@@ -15,7 +15,7 @@ final class Repeat[U <: Context with Singleton, A, Z](
 		val accumulator = ev.init()
 		var remaining:Input[U] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure = null
+		var innerExpecting:Failure[U] = null
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
@@ -25,7 +25,7 @@ final class Repeat[U <: Context with Singleton, A, Z](
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
-				case failure:Failure => {
+				case failure:Failure[U] => {
 					innerExpecting = failure
 					continue = false
 				}

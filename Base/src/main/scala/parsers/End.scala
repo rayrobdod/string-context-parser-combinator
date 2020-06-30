@@ -9,7 +9,7 @@ extends AbstractParser[U, Unit] {
 		if (input.isEmpty) {
 			Success((), input)
 		} else {
-			Failure(input.next, this.expecting)
+			Failure(this.expecting, input)
 		}
 	}
 	def expecting:Failure.Expecting = Failure.Leaf("EOF")

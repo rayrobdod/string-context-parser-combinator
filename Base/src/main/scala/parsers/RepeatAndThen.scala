@@ -28,7 +28,7 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 		val accumulator = evL.init()
 		var remaining:Input[U] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure = null
+		var innerExpecting:Failure[U] = null
 		val states = scala.collection.mutable.Stack[Success[U, AS]]()
 
 		states.push(Success(evL.result(accumulator), input))
@@ -41,21 +41,21 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
-				case failure:Failure => {
+				case failure:Failure[U] => {
 					innerExpecting = failure
 					continue = false
 				}
 			}
 		}
 
-		var rhsExpecting:Failure = null
+		var rhsExpecting:Failure[U] = null
 		while (counter >= min && states.nonEmpty) {
 			val top = states.pop()
 			rhs.parse(top.remaining) match {
 				case Success(a, r) => {
 					return Success(evR.aggregate(top.value, a), r)
 				}
-				case failure:Failure => {
+				case failure:Failure[U] => {
 					if (rhsExpecting == null) {
 						rhsExpecting = failure
 					}
@@ -72,7 +72,7 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 			// means that input does not meet minimum requirements the repeat portion of this aggregate
 			innerExpecting
 		} else {
-			Failure(innerExpecting.found, Failure.Or(Seq(innerExpecting.expecting, rhsExpecting.expecting)))
+			Failure(Failure.Or(Seq(innerExpecting.expecting, rhsExpecting.expecting)), innerExpecting.remaining)
 		}
 	}
 
