@@ -13,7 +13,7 @@ object Lifted {
 		description:Failure.Expecting
 	):AbstractParser[c.type, c.Expr[Z]] = {
 		new AbstractParser[c.type, c.Expr[Z]] {
-			def parse(input:Input[c.type]):Result[c.type, c.Expr[Z]] = {
+			def parse(input:Input[c.Expr[_]]):Result[c.Expr[_], c.Expr[Z]] = {
 				input.consume(
 					_ => None,
 					arg => (Some(arg)

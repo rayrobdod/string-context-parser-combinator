@@ -12,7 +12,7 @@ package parsers {
 		partsFn:String => Option[(A, Int)],
 		expecting: => Failure.Expecting
 	) extends AbstractParser[U, A] {
-		def parse(input:Input[U]):Result[U, A] = {
+		def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], A] = {
 			input.consume(
 				partsFn,
 				_ => None,

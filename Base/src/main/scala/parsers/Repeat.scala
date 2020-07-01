@@ -10,12 +10,12 @@ final class Repeat[U <: Context with Singleton, A, Z](
 	max:Int,
 	ev:Implicits.RepeatTypes[A, Z]
 ) extends AbstractParser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
+	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], Z] = {
 		var counter:Int = 0
 		val accumulator = ev.init()
-		var remaining:Input[U] = input
+		var remaining:Input[U#Expr[_]] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[U] = null
+		var innerExpecting:Failure[U#Expr[_]] = null
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
@@ -25,8 +25,8 @@ final class Repeat[U <: Context with Singleton, A, Z](
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
-				case failure:Failure[U] => {
-					innerExpecting = failure
+				case Failure(expect, rest) => {
+					innerExpecting = Failure(expect, rest)
 					continue = false
 				}
 			}

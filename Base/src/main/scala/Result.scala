@@ -1,12 +1,13 @@
 package com.rayrobdod.stringContextParserCombinator
 
+import scala.reflect.api.Exprs
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * The result of a parse
  * @group Input/Result
  */
-sealed trait Result[+U <: Context with Singleton, +A] {
+sealed trait Result[+Expr, +A] {
 }
 
 /**
@@ -18,10 +19,10 @@ sealed trait Result[+U <: Context with Singleton, +A] {
  * @param value the parsed value
  * @param remaining input that was not consumed by the parser
  */
-final case class Success[U <: Context with Singleton, +A](
+final case class Success[+Expr, +A](
 	val value:A,
-	val remaining:Input[U]
-) extends Result[U, A]
+	val remaining:Input[Expr]
+) extends Result[Expr, A]
 
 /**
  * The result of a failed parse
@@ -32,14 +33,13 @@ final case class Success[U <: Context with Singleton, +A](
  * @param found the value that was found
  * @param expecting what the parser was expecting
  */
-final case class Failure[U <: Context with Singleton](
+final case class Failure[+Expr](
 	val expecting:Failure.Expecting,
-	val remaining:Input[U]
-) extends Result[U, Nothing] {
-	private[this] def found:Input.Next = remaining.next
-	private[stringContextParserCombinator] def msg:String = s"Found ${found.description} ; Expected $expecting"
-	def report(c:Context):Nothing = {
-		c.abort(found.position.cast(c), msg)
+	val remaining:Input[Expr]
+) extends Result[Expr, Nothing] {
+	private[stringContextParserCombinator] def msg(implicit ev:Expr <:< Exprs#Expr[_]):String = s"Found ${remaining.description} ; Expected $expecting"
+	def report(c:Context)(implicit ev:Expr <:< c.Expr[_]):Nothing = {
+		c.abort(remaining.position.cast(c), msg)
 	}
 }
 

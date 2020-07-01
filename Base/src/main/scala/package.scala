@@ -99,7 +99,7 @@ package object stringContextParserCombinator {
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[c.type](strings, args.toList)
+		val input = new Input[c.Expr[Any]](strings, args.toList)
 
 		parser.parse(input) match {
 			case Success(res, _) => {

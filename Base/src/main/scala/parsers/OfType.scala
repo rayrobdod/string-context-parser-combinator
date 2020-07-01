@@ -7,7 +7,7 @@ private[parsers]
 final class OfType[U <: Context with Singleton, A](
 	tpetag:U#TypeTag[A]
 ) extends AbstractParser[U, U#Expr[A]] {
-	def parse(input:Input[U]):Result[U, U#Expr[A]] = {
+	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], U#Expr[A]] = {
 		input.consume(
 			_ => None,
 			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[U#Expr[A]]),

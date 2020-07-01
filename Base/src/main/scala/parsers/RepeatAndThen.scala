@@ -23,13 +23,13 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 	rhs:Parser[U, B],
 	evR:Implicits.AndThenTypes[AS, B, Z]
 ) extends AbstractParser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
+	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], Z] = {
 		var counter:Int = 0
 		val accumulator = evL.init()
-		var remaining:Input[U] = input
+		var remaining:Input[U#Expr[_]] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[U] = null
-		val states = scala.collection.mutable.Stack[Success[U, AS]]()
+		var innerExpecting:Failure[U#Expr[_]] = null
+		val states = scala.collection.mutable.Stack[Success[U#Expr[_], AS]]()
 
 		states.push(Success(evL.result(accumulator), input))
 		while (continue && counter < max) {
@@ -41,23 +41,23 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
-				case failure:Failure[U] => {
-					innerExpecting = failure
+				case Failure(expect, rest) => {
+					innerExpecting = Failure(expect, rest)
 					continue = false
 				}
 			}
 		}
 
-		var rhsExpecting:Failure[U] = null
+		var rhsExpecting:Failure[U#Expr[_]] = null
 		while (counter >= min && states.nonEmpty) {
 			val top = states.pop()
 			rhs.parse(top.remaining) match {
 				case Success(a, r) => {
 					return Success(evR.aggregate(top.value, a), r)
 				}
-				case failure:Failure[U] => {
+				case Failure(expect, rest) => {
 					if (rhsExpecting == null) {
-						rhsExpecting = failure
+						rhsExpecting = Failure(expect, rest)
 					}
 					counter = counter - 1
 					// try next

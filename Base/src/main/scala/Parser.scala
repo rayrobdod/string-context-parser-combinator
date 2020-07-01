@@ -6,7 +6,7 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
  * @group Parser
  */
 trait Parser[U <: Context with Singleton, +A] {
-	def parse(input:Input[U]):Result[U, A]
+	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], A]
 
 	/** Returns a parser which invokes this parser, then modifies a successful result according to fn */
 	def map[Z](fn:Function1[A, Z]):Parser[U, Z] = parsers.Map(this, fn)
