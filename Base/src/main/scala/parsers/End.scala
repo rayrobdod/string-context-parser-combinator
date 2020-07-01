@@ -1,11 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
-private[parsers] final class End[U <: Context with Singleton]
-extends AbstractParser[U, Unit] {
-	override def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], Unit] = {
+private[parsers] final class End[Expr] extends AbstractParser[Expr, Unit] {
+	override def parse(input:Input[Expr]):Result[Expr, Unit] = {
 		if (input.isEmpty) {
 			Success((), input)
 		} else {

@@ -84,7 +84,7 @@ package object stringContextParserCombinator {
 	 *
 	 * @group macro
 	 */
-	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.type, c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
+	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.Expr[_], c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
 		val StringContextApply = stringContextApply(c)
 

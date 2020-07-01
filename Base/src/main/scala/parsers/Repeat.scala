@@ -1,21 +1,19 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
 private[parsers]
-final class Repeat[U <: Context with Singleton, A, Z](
-	inner:Parser[U, A],
+final class Repeat[Expr, A, Z](
+	inner:Parser[Expr, A],
 	min:Int,
 	max:Int,
 	ev:Implicits.RepeatTypes[A, Z]
-) extends AbstractParser[U, Z] {
-	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], Z] = {
+) extends AbstractParser[Expr, Z] {
+	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		var counter:Int = 0
 		val accumulator = ev.init()
-		var remaining:Input[U#Expr[_]] = input
+		var remaining:Input[Expr] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[U#Expr[_]] = null
+		var innerExpecting:Failure[Expr] = null
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
@@ -38,7 +36,7 @@ final class Repeat[U <: Context with Singleton, A, Z](
 		}
 	}
 
-	override def andThen[B, Z2](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[Z,B,Z2]):Parser[U, Z2] = {
-		new RepeatAndThen[U, A, Z, B, Z2](this.inner, this.min, this.max, this.ev, rhs, ev)
+	override def andThen[B, Z2](rhs:Parser[Expr, B])(implicit ev:Implicits.AndThenTypes[Z,B,Z2]):Parser[Expr, Z2] = {
+		new RepeatAndThen[Expr, A, Z, B, Z2](this.inner, this.min, this.max, this.ev, rhs, ev)
 	}
 }

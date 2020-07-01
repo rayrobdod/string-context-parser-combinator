@@ -4,13 +4,13 @@ package parsers
 import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 private[parsers]
-final class OfType[U <: Context with Singleton, A](
-	tpetag:U#TypeTag[A]
-) extends AbstractParser[U, U#Expr[A]] {
-	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], U#Expr[A]] = {
+final class OfType[Ctx <: Context with Singleton, A](
+	tpetag:Ctx#TypeTag[A]
+) extends AbstractParser[Ctx#Expr[_], Ctx#Expr[A]] {
+	def parse(input:Input[Ctx#Expr[_]]):Result[Ctx#Expr[_], Ctx#Expr[A]] = {
 		input.consume(
 			_ => None,
-			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[U#Expr[A]]),
+			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[Ctx#Expr[A]]),
 			Failure.Leaf(tpetag.tpe.toString)
 		)
 	}

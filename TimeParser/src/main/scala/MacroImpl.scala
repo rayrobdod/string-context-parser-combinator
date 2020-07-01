@@ -10,13 +10,13 @@ trait ParsersImplictly extends scpcParsers {
 	import scala.language.implicitConversions
 	implicit def str2parser(str:String):Parser[Unit] = this.IsString(str)
 	implicit def type2parser[A](tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] = this.OfType(tpe)
-	implicit def parserWithSymbolic[A](psr:Parser[A]) = new ParserWithSymbolic[ctx.type, A](psr)
+	implicit def parserWithSymbolic[A](psr:Parser[A]) = new ParserWithSymbolic[ctx.Expr[_], A](psr)
 	implicit def str2parserWithSymbolic(str:String) = this.parserWithSymbolic(this.str2parser(str))
 	implicit def type2parserWithSymbolic[A](tpe:ctx.TypeTag[A]) = this.parserWithSymbolic(this.OfType(tpe))
 }
 
 /** Adds symbolic methods to Parsers */
-class ParserWithSymbolic[U <: Context with Singleton, A](val backing:Parser[U, A]) extends AnyVal {
+class ParserWithSymbolic[U, A](val backing:Parser[U, A]) extends AnyVal {
 	def ~[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]) = backing.andThen(rhs)(ev)
 	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
 	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]) = backing.repeat(min, max)(ev)

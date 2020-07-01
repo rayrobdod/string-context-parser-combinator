@@ -2,7 +2,6 @@ package com.rayrobdod.stringContextParserCombinator
 package parsers
 
 import scala.collection.immutable.Seq
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 /**
  * `Repeat(inner, min, max, evL).andThen(rhs)(evR)`
@@ -15,21 +14,21 @@ import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
  * repeat accepting one less "1" than before, which then allows the rest of the parser to succeed
  */
 private[parsers]
-final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
-	inner:Parser[U, A],
+final class RepeatAndThen[Expr, A, AS, B, Z](
+	inner:Parser[Expr, A],
 	min:Int,
 	max:Int,
 	evL:Implicits.RepeatTypes[A, AS],
-	rhs:Parser[U, B],
+	rhs:Parser[Expr, B],
 	evR:Implicits.AndThenTypes[AS, B, Z]
-) extends AbstractParser[U, Z] {
-	def parse(input:Input[U#Expr[_]]):Result[U#Expr[_], Z] = {
+) extends AbstractParser[Expr, Z] {
+	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		var counter:Int = 0
 		val accumulator = evL.init()
-		var remaining:Input[U#Expr[_]] = input
+		var remaining:Input[Expr] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[U#Expr[_]] = null
-		val states = scala.collection.mutable.Stack[Success[U#Expr[_], AS]]()
+		var innerExpecting:Failure[Expr] = null
+		val states = scala.collection.mutable.Stack[Success[Expr, AS]]()
 
 		states.push(Success(evL.result(accumulator), input))
 		while (continue && counter < max) {
@@ -48,7 +47,7 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 			}
 		}
 
-		var rhsExpecting:Failure[U#Expr[_]] = null
+		var rhsExpecting:Failure[Expr] = null
 		while (counter >= min && states.nonEmpty) {
 			val top = states.pop()
 			rhs.parse(top.remaining) match {
@@ -76,8 +75,8 @@ final class RepeatAndThen[U <: Context with Singleton, A, AS, B, Z](
 		}
 	}
 
-	override def andThen[C, Z2](newParser:Parser[U, C])(implicit ev:Implicits.AndThenTypes[Z,C,Z2]):Parser[U, Z2] = {
-		new RepeatAndThen[U, A, AS, (B, C), Z2](
+	override def andThen[C, Z2](newParser:Parser[Expr, C])(implicit ev:Implicits.AndThenTypes[Z,C,Z2]):Parser[Expr, Z2] = {
+		new RepeatAndThen[Expr, A, AS, (B, C), Z2](
 			this.inner,
 			this.min,
 			this.max,
