@@ -6,11 +6,11 @@ private[parsers] final class AndThen[Expr, A, B, Z](
 ) extends Parser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		left.parse(input) match {
-			case Success(a, resa) => right.parse(resa) match {
-				case Success(b, resb) => Success(ev.aggregate(a,b), resb)
-				case Failure(found, expect) => Failure(found, expect)
+			case Success(valA, restA, traceA) => right.parse(restA) match {
+				case Success(valB, restB, traceB) => Success(ev.aggregate(valA, valB), restB, ThenTrace(traceA, traceB))
+				case Failure(traceB) => Failure(ThenTrace(traceA, traceB))
 			}
-			case Failure(found, expect) => Failure(found, expect)
+			case failure@Failure(_) => failure
 		}
 	}
 }

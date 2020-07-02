@@ -18,10 +18,12 @@ sealed trait Result[+Expr, +A] {
  * @constructor
  * @param value the parsed value
  * @param remaining input that was not consumed by the parser
+ * @param trace a trace of the parsers that lead to this result
  */
 final case class Success[+Expr, +A](
 	val value:A,
-	val remaining:Input[Expr]
+	val remaining:Input[Expr],
+	val trace:Trace[Expr]
 ) extends Result[Expr, A]
 
 /**
@@ -30,25 +32,30 @@ final case class Success[+Expr, +A](
  * @group Input/Result
  *
  * @constructor
- * @param found the value that was found
- * @param expecting what the parser was expecting
+ * @param trace a trace of the parsers that lead to this result
  */
-final case class Failure[+Expr](
-	val expecting:Failure.Expecting,
-	val remaining:Input[Expr]
-) extends Result[Expr, Nothing] {
-	private[stringContextParserCombinator] def msg(implicit ev:Expr <:< Exprs#Expr[_]):String = s"Found ${remaining.description} ; Expected $expecting"
-	def report(c:Context)(implicit ev:Expr <:< c.Expr[_]):Nothing = {
-		c.abort(remaining.position.cast(c), msg)
+final case class Failure[+Expr](trace:Trace[Expr]) extends Result[Expr, Nothing] {
+	private def remainingDescription(implicit ev:Expr <:< Exprs#Expr[_]):String = {
+		trace
+			.removeRequiredThens
+			.leftMostRemaining
+			.description
 	}
-}
 
-object Failure {
-	sealed trait Expecting
-	final case class Leaf(x:String) extends Expecting {
-		override def toString:String = x
+	private def remainingPosition(implicit ev:Expr <:< Exprs#Expr[_]):PositionPoint = {
+		trace
+			.removeRequiredThens
+			.leftMostRemaining
+			.position
 	}
-	final case class Or(options:Seq[Expecting]) extends Expecting {
-		override def toString:String = options.mkString(" | ")
+
+	private def expectingDescription:String = {
+		trace
+			.removeRequiredThens
+			.expectingDescription
+	}
+
+	def report(c:Context)(implicit ev:Expr <:< c.Expr[_]):Nothing = {
+		c.abort(remainingPosition.cast(c), s"Found ${remainingDescription} ; Expected ${expectingDescription}")
 	}
 }

@@ -11,11 +11,10 @@ trait Parser[Expr, +A] {
 	/** Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn */
 	def flatMap[Z](fn:Function1[A, Parser[Expr, Z]]):Parser[Expr, Z] = parsers.FlatMap(this, fn)
 	/** Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate */
-	def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] = parsers.Filter(this, predicate, Failure.Leaf(description))
+	def filter(predicate:Function1[A, Boolean], description:Expecting):Parser[Expr, A] = parsers.Filter(this, predicate, description)
 
 	/** Returns a parser which invokes this parser, but has the given description upon failure */
-	def opaque(description:String):Parser[Expr, A] = this.opaque(Failure.Leaf(description))
-	private[stringContextParserCombinator] def opaque(description:Failure.Expecting) = parsers.Opaque(this, description)
+	def opaque(description:Expecting):Parser[Expr, A] = parsers.Opaque(this, description)
 
 	/** Returns a parser which invokes this parser, and upon success invokes the other parser */
 	def andThen[B, Z](rhs:Parser[Expr, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]):Parser[Expr, Z] = parsers.AndThen(this, rhs, ev)

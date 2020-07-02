@@ -10,7 +10,7 @@ package parsers {
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
 	private[parsers] final class PartsParser[Expr, +A](
 		partsFn:String => Option[(A, Int)],
-		expecting: => Failure.Expecting
+		expecting: => Expecting
 	) extends AbstractParser[Expr, A] {
 		def parse(input:Input[Expr]):Result[Expr, A] = {
 			input.consume(
@@ -31,7 +31,7 @@ package object parsers {
 		chooseFrom:Set[Char]
 	):Parser[Expr, Char] = CharWhere(
 		chooseFrom.contains _,
-		Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")).toSeq)
+		Expecting(chooseFrom.mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
@@ -40,13 +40,14 @@ package object parsers {
 		chooseFrom:Seq[Char]
 	):Parser[Expr, Char] = CharWhere(
 		chooseFrom.contains _,
-		Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")))
+		Expecting(chooseFrom.mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
 	def CharWhere[Expr](
-		predicate:Function1[Char, Boolean], description:Failure.Expecting
+		predicate:Function1[Char, Boolean],
+		description: => Expecting
 	):Parser[Expr, Char] = new PartsParser(
 		pt => Option((pt.charAt(0), 1)).filter(x => predicate(x._1)),
 		description
@@ -58,19 +59,9 @@ package object parsers {
 		chooseFrom:String
 	):Parser[Expr, CodePoint] = {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
-		val CodePointString = new java.util.function.IntFunction[String]{def apply(y:Int) = new String(Array[Int]('"', y, '"'), 0, 3)}
-		type ToExpectingBuffer = scala.collection.mutable.Builder[Failure.Expecting, Seq[Failure.Expecting]]
-		val ToExpecting = new java.util.stream.Collector[String, ToExpectingBuffer, Failure.Expecting]{
-			override def supplier = new java.util.function.Supplier[ToExpectingBuffer] {def get = Seq.newBuilder}
-			override def accumulator = new java.util.function.BiConsumer[ToExpectingBuffer, String]{def accept(buf:ToExpectingBuffer, a:String) = buf += Failure.Leaf(a)}
-			override def combiner = new java.util.function.BinaryOperator[ToExpectingBuffer]{def apply(lhs:ToExpectingBuffer, rhs:ToExpectingBuffer) = {lhs ++= rhs.result; lhs}}
-			override def finisher = new java.util.function.Function[ToExpectingBuffer, Failure.Expecting]{def apply(buf:ToExpectingBuffer) = Failure.Or(buf.result)}
-			override def characteristics = java.util.Collections.emptySet()
-		}
-
 		this.CodePointWhere(
 			{x:CodePoint => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
-			chooseFrom.codePoints.mapToObj(CodePointString).collect(ToExpecting)
+			Expecting("CodePointIn(\"" + chooseFrom + "\")")
 		)
 	}
 
@@ -81,7 +72,7 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")).toSeq)
+			Expecting(chooseFrom.mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -92,14 +83,14 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			Failure.Or(chooseFrom.map(x => Failure.Leaf("\"" + x.toString + "\"")))
+			Expecting(chooseFrom.mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
 	def CodePointWhere[Expr](
-		predicate:Function1[CodePoint, Boolean], description:Failure.Expecting
+		predicate:Function1[CodePoint, Boolean], description:Expecting
 	):Parser[Expr, CodePoint] = new PartsParser(
 		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
 		description
@@ -111,7 +102,7 @@ package object parsers {
 		value:String
 	):Parser[Expr, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
-		Failure.Leaf("\"" + value + "\"")
+		Expecting("\"" + value + "\"")
 	)
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
@@ -120,7 +111,7 @@ package object parsers {
 		reg:scala.util.matching.Regex
 	):Parser[Expr, String] = new PartsParser(
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
-		Failure.Leaf("s/" + reg.toString + "/")
+		Expecting("s/" + reg.toString + "/")
 	)
 
 	/** Succeeds if the next input element is an `arg` with the given type; captures the expression */
@@ -156,14 +147,14 @@ package object parsers {
 
 	private[stringContextParserCombinator]
 	def Filter[Expr, A](
-		backing:Parser[Expr, A], predicate:Function1[A, Boolean], description:Failure.Expecting
+		backing:Parser[Expr, A], predicate:Function1[A, Boolean], description:Expecting
 	):Parser[Expr, A] = {
 		new Filter(backing, predicate, description)
 	}
 
 	private[stringContextParserCombinator]
 	def Opaque[Expr, A](
-		backing:Parser[Expr, A], description:Failure.Expecting
+		backing:Parser[Expr, A], description:Expecting
 	):Parser[Expr, A] = {
 		new Opaque(backing, description)
 	}

@@ -1,8 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import scala.collection.immutable.Seq
-
 /**
  * `Repeat(inner, min, max, evL).andThen(rhs)(evR)`
  *
@@ -27,36 +25,46 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 		val accumulator = evL.init()
 		var remaining:Input[Expr] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[Expr] = null
+		var innerFailureTrace:Trace[Expr] = null
 		val states = scala.collection.mutable.Stack[Success[Expr, AS]]()
 
-		states.push(Success(evL.result(accumulator), input))
+		def thenTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = {
+			if (left.isInstanceOf[EmptyTrace[_]]) {right} else {ThenTrace(left, right)}
+		}
+		def foldOrTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = (left, right) match {
+			case (ThenTrace(leftLeft, leftRight), ThenTrace(rightLeft, rightRight)) if leftLeft == rightLeft => {
+				ThenTrace(leftLeft, foldOrTrace(leftRight, rightRight))
+			}
+			case _ => OrTrace(left, right)
+		}
+
+		states.push(Success(evL.result(accumulator), input, EmptyTrace(input)))
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
-				case Success(a, r) => {
+				case Success(a, r, t) => {
 					counter += 1
 					evL.append(accumulator, a)
-					states.push(Success(evL.result(accumulator), r))
+					states.push(Success(evL.result(accumulator), r, thenTrace(states.head.trace, t)))
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
-				case Failure(expect, rest) => {
-					innerExpecting = Failure(expect, rest)
+				case Failure(t) => {
+					innerFailureTrace = thenTrace(states.head.trace, t)
 					continue = false
 				}
 			}
 		}
 
-		var rhsExpecting:Failure[Expr] = null
+		var rhsFailureTrace:Trace[Expr] = null
 		while (counter >= min && states.nonEmpty) {
-			val top = states.pop()
-			rhs.parse(top.remaining) match {
-				case Success(a, r) => {
-					return Success(evR.aggregate(top.value, a), r)
+			val Success(topValue, topRemaining, topTrace) = states.pop()
+			rhs.parse(topRemaining) match {
+				case Success(a, r, t) => {
+					return Success(evR.aggregate(topValue, a), r, thenTrace(topTrace, t))
 				}
-				case Failure(expect, rest) => {
-					if (rhsExpecting == null) {
-						rhsExpecting = Failure(expect, rest)
+				case Failure(t) => {
+					if (rhsFailureTrace == null) {
+						rhsFailureTrace = thenTrace(topTrace, t)
 					}
 					counter = counter - 1
 					// try next
@@ -64,14 +72,14 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 			}
 		}
 
-		if (null == innerExpecting) {
+		if (null == innerFailureTrace) {
 			// means that input saturates the repeat portion of this aggregate
-			rhsExpecting
-		} else if (null == rhsExpecting) {
+			Failure(rhsFailureTrace)
+		} else if (null == rhsFailureTrace) {
 			// means that input does not meet minimum requirements the repeat portion of this aggregate
-			innerExpecting
+			Failure(innerFailureTrace)
 		} else {
-			Failure(Failure.Or(Seq(innerExpecting.expecting, rhsExpecting.expecting)), innerExpecting.remaining)
+			Failure(foldOrTrace(innerFailureTrace, rhsFailureTrace))
 		}
 	}
 

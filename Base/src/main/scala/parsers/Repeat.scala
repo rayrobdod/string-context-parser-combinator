@@ -8,31 +8,41 @@ final class Repeat[Expr, A, Z](
 	max:Int,
 	ev:Implicits.RepeatTypes[A, Z]
 ) extends AbstractParser[Expr, Z] {
+	require(min >= 0)
+	require(max >= 1)
+	require(max >= min)
+
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		var counter:Int = 0
 		val accumulator = ev.init()
 		var remaining:Input[Expr] = input
 		var continue:Boolean = true
-		var innerExpecting:Failure[Expr] = null
+		var innerFailureTrace:Trace[Expr] = null
+		var innerSuccessTrace:Trace[Expr] = EmptyTrace(input)
+
+		def thenTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = {
+			if (left.isInstanceOf[EmptyTrace[_]]) {right} else {ThenTrace(left, right)}
+		}
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
-				case Success(a, r) => {
+				case Success(a, r, t) => {
 					counter += 1
 					ev.append(accumulator, a)
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
+					innerSuccessTrace = thenTrace(innerSuccessTrace, t)
 				}
-				case Failure(expect, rest) => {
-					innerExpecting = Failure(expect, rest)
+				case Failure(t) => {
+					innerFailureTrace = t
 					continue = false
 				}
 			}
 		}
 		if (min <= counter && counter <= max) {
-			return Success(ev.result(accumulator), remaining)
+			return Success(ev.result(accumulator), remaining, innerSuccessTrace)
 		} else {
-			return innerExpecting
+			return Failure(thenTrace(innerSuccessTrace, innerFailureTrace))
 		}
 	}
 

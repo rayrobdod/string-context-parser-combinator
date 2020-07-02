@@ -102,9 +102,9 @@ package object stringContextParserCombinator {
 		val input = new Input[c.Expr[Any]](strings, args.toList)
 
 		parser.parse(input) match {
-			case Success(res, _) => {
+			case s:Success[_, _] => {
 				//System.out.println(res)
-				res
+				s.value
 			}
 			case f:Failure[_] => {
 				f.report(c)
@@ -141,4 +141,6 @@ package stringContextParserCombinator {
 	object PositionPoint {
 		def apply(x:scala.reflect.api.Position):PositionPoint = new PositionPoint(x.point)
 	}
+
+	final case class Expecting(val description:String)
 }

@@ -8,11 +8,11 @@ final class OrElse[Expr, A](
 ) extends AbstractParser[Expr, A] {
 	def parse(input:Input[Expr]):Result[Expr, A] = {
 		left.parse(input) match {
-			case Success(v, r) => Success(v, r)
-			case Failure(expect1, remain1) => right.parse(input) match {
-				case Success(v, r) => Success(v, r)
-				case Failure(expect2, remain2) => {
-					Failure(Failure.Leaf("TODO OrElse Error Reporting"), input)
+			case result:Success[Expr, A] => result
+			case Failure(traceLeft) => right.parse(input) match {
+				case result:Success[Expr, A] => result
+				case Failure(traceRight) => {
+					Failure(OrTrace(traceLeft, traceRight))
 				}
 			}
 		}

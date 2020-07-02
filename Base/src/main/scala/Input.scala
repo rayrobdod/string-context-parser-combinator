@@ -8,25 +8,26 @@ import scala.reflect.api.Exprs
  * @group Input/Result
  */
 final class Input[+Expr](
-	parts:List[(String, PositionPoint)],
-	args:List[Expr]
+	private val parts:List[(String, PositionPoint)],
+	private val args:List[Expr]
 ) {
 	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],
 		argsFn:Expr => Option[A],
-		expecting: => Failure.Expecting
+		expecting: => Expecting
 	):Result[Expr, A] = {
-		def failure = Failure(expecting, this)
+		val trace = LeafTrace(expecting, this)
+		def failure = Failure(trace)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
-				def success(x:A) = Success(x, new Input(parts.tail, args.tail))
+				def success(x:A) = Success(x, new Input(parts.tail, args.tail), trace)
 				argsFn(args.head).fold[Result[Expr, A]](failure)(success _)
 			} else {
 				failure
 			}
 		} else {
 			val (headStr, headPos) = parts.head
-			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args))
+			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args), trace)
 			partsFn(headStr).fold[Result[Expr, A]](failure)(success _)
 		}
 	}
@@ -61,5 +62,12 @@ final class Input[+Expr](
 		} else {
 			parts(0)._2
 		}
+	}
+
+	override def toString:String = s"Input(${parts}, ${args})"
+	override def hashCode:Int = java.util.Objects.hash(parts, args)
+	override def equals(rhs:Any):Boolean = rhs match {
+		case other:Input[_] => this.parts == other.parts && this.args == other.args
+		case _ => false
 	}
 }

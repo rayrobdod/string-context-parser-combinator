@@ -122,7 +122,7 @@ object MacroImpl {
 			// not just so that the type is only computed once; around JArray, it suddenly looses its Lift TypeTag
 			val liftTypeConstructor = c.typeOf[Lift[_,_]].typeConstructor
 
-			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
+			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").opaque(Expecting("Whitespace")).repeat().map(_ => ())
 
 			val NullP:Parser[c.Expr[JNull.type]] = IsString("null").map(_ => c.universe.reify(scalajson.ast.JNull))
 
@@ -132,7 +132,7 @@ object MacroImpl {
 				val LiftedV = Lifted[Lift.Boolean, JBoolean](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JBoolean])),
 					myLiftFunction[JBoolean, Lift.Boolean](c),
-					Failure.Leaf("A for Lift[A, JBoolean]")
+					Expecting("A for Lift[A, JBoolean]")
 				)
 				LiftedV orElse TrueI orElse FalseI
 			}
@@ -165,12 +165,12 @@ object MacroImpl {
 						val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
 						c.universe.reify(scalajson.ast.JNumber.fromString(xExpr.splice).get)
 					})
-				}.opaque("Number Literal")
+				}.opaque(Expecting("Number Literal"))
 				val AstV:Parser[c.Expr[JNumber]] = OfType[JNumber]
 				val LiftedV = Lifted[Lift.Number, JNumber](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JNumber])),
 					myLiftFunction[JNumber, Lift.Number](c),
-					Failure.Leaf("A for Lift[A, JNumber]")
+					Expecting("A for Lift[A, JNumber]")
 				)
 				AstV orElse LiftedV orElse NumberI
 			}
@@ -225,7 +225,7 @@ object MacroImpl {
 				val LiftedArrayV = Lifted[Lift.Array, JArray](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JArray])),
 					myLiftFunction[JArray, Lift.Array](c),
-					Failure.Leaf("A for Lift[A, JArray]")
+					Expecting("A for Lift[A, JArray]")
 				)
 				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 
@@ -258,14 +258,14 @@ object MacroImpl {
 				val ObjectV = Lifted[Lift.Object, JObject](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JObject])),
 					myLiftFunction[JObject, Lift.Object](c),
-					Failure.Leaf("A for Lift[A, JObject]")
+					Expecting("A for Lift[A, JObject]")
 				)
 				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 
 				val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
 					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
-					Failure.Leaf("A for Lift[A, (String, JValue)]")
+					Expecting("A for Lift[A, (String, JValue)]")
 				)
 
 				val KeyV = WhitespaceP andThen StringP andThen WhitespaceP

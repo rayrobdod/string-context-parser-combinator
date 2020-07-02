@@ -41,13 +41,13 @@ object MacroImpl {
 
 		def Int2Digits(min:Int, max:Int) = (IsDigit.rep(2, 2))
 			.map(_.value)
-			.filter(x => min <= x && x <= max, String.format(""""$1%02d" - "$2%02d"""", Integer.valueOf(min), Integer.valueOf(max)))
+			.filter(x => min <= x && x <= max, Expecting(String.format(""""$1%02d" - "$2%02d"""", Integer.valueOf(min), Integer.valueOf(max))))
 
 		def YearP:Parser[ctx.Expr[Year]] = {
 			val LiteralP:Parser[ctx.Expr[Year]] = {
 				(CharIn("-+").opt ~ IsDigit.rep(1, 9).map(_.value))
 					.map({x => if (x._1 == Some('-')) {-x._2} else {x._2}})
-					.opaque("\"-999999999\"-\"999999999\"")
+					.opaque(Expecting("\"-999999999\"-\"999999999\""))
 					.map(x =>
 						{
 							val xExpr = ctx.Expr[Int](ctx.universe.Literal(ctx.universe.Constant(x)))
@@ -134,7 +134,7 @@ object MacroImpl {
 			val LiteralP = CharIn('0' to '9').rep(1, 9)
 				.map(x => s"${x}000000000".substring(0, 9))
 				.map(Integer.parseInt _)
-				.opaque("\"0\"-\"999999999\"")
+				.opaque(Expecting("\"0\"-\"999999999\""))
 				.map(x => ctx.Expr(ctx.universe.Literal(ctx.universe.Constant(x))))
 			LiteralP
 		}
