@@ -4,7 +4,7 @@ import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
 import scala.language.higherKinds
 import scala.reflect.api.Universe
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
 /**
  * A library for implementing StringContext methods via Parser Combinators
@@ -19,7 +19,6 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
-		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
 				c.universe.Select(
@@ -36,7 +35,6 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
-		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
 				val (nameInit, nameLast) = {
@@ -57,6 +55,15 @@ package object stringContextParserCombinator {
 				}
 			}
 		}
+	}
+
+	private[this] def reportFailure(c:Context)(failure:Failure[c.Expr[_]]):Nothing = {
+		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
+		val remainingDescription = trimmedTrace.leftMostRemaining.description
+		val remainingPosition = trimmedTrace.leftMostRemaining.position
+		val expectingDescription = trimmedTrace.expectingDescription
+
+		c.abort(remainingPosition.cast(c), s"Found ${remainingDescription} ; Expected ${expectingDescription}")
 	}
 
 
@@ -96,7 +103,7 @@ package object stringContextParserCombinator {
 				ExtensionClassSelectChain(),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
+				strings.map({x => (c.eval(x), PositionPoint(x.tree.pos))})
 			}
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
@@ -109,12 +116,10 @@ package object stringContextParserCombinator {
 				s.value
 			}
 			case f:Failure[_] => {
-				f.report(c)
+				reportFailure(c)(f)
 			}
 		}
 	}
-
-
 }
 
 package stringContextParserCombinator {
@@ -126,13 +131,6 @@ package stringContextParserCombinator {
 	trait LiftFunction[U <: Context with Singleton, CC[A], Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):U#Expr[Z]}
 
 
-	// CodePoint extending AnyVal, parameterized methods, and using CodePoint::toString results in a
-	// surprisingly high number of NoSuchMethodErrors, at least before 2.12.
-	// `java.lang.NoSuchMethodError: 'java.lang.String com.rayrobdod.stringContextParserCombinator.CodePoint$.toString$extension(int)`
-	/** A unicode codepoint */
-	final case class CodePoint(val value:Int) {
-		override def toString:String = new String(Array[Int](value), 0, 1)
-	}
 
 	/** A position's point - divorced from the position's context */
 	final case class PositionPoint(val value:Int) extends AnyVal {
@@ -143,7 +141,4 @@ package stringContextParserCombinator {
 	object PositionPoint {
 		def apply(x:scala.reflect.api.Position):PositionPoint = new PositionPoint(x.point)
 	}
-
-	/** Represent a textual description of under what conditions a parser would return success */
-	final case class Expecting(val description:String)
 }

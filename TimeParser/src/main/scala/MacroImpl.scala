@@ -3,7 +3,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.datetime
 import java.time._
 import scala.Predef.charWrapper
 import com.rayrobdod.stringContextParserCombinator.{Parsers => scpcParsers, _}
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.MacroCompat.Context
 
 /** Implicit methods to convert things to parsers or to add symbolic methods to parsers */
 trait ParsersImplictly extends scpcParsers {

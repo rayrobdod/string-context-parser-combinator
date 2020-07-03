@@ -3,7 +3,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.json
 import scala.collection.immutable.{Map, Seq, Vector}
 import scalajson.ast._
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import com.rayrobdod.stringContextParserCombinatorExample.json.MacroCompat.Context
 
 object MacroImpl {
 	/**

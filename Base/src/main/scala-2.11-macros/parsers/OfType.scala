@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
 private[parsers]
 final class OfType[Ctx <: Context with Singleton, A](
@@ -13,5 +13,15 @@ final class OfType[Ctx <: Context with Singleton, A](
 			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[Ctx#Expr[A]]),
 			Expecting(s"OfType(${tpetag.tpe})")
 		)
+	}
+}
+
+private[stringContextParserCombinator]
+object OfType {
+	/** Succeeds if the next input element is an `arg` with the given type; captures the expression */
+	def apply[Ctx <: Context with Singleton, A](
+		tpetag:Ctx#TypeTag[A]
+	):Parser[Ctx#Expr[_], Ctx#Expr[A]] = {
+		new OfType(tpetag)
 	}
 }

@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.{Seq, Set}
 import scala.language.higherKinds
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import scala.reflect.macros.Context
 
 /**
  * A mixin that provides Parser factory methods that conform to a particular `U` parameter.

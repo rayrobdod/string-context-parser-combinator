@@ -1,7 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.{Seq, Set}
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
 
 package parsers {
 	/** An intermediary class to lessen the weight of implementing Parser repeatedly, Parser being a trait with several concrete methods */
@@ -113,14 +112,6 @@ package object parsers {
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
 		Expecting("s/" + reg.toString + "/")
 	)
-
-	/** Succeeds if the next input element is an `arg` with the given type; captures the expression */
-	private[stringContextParserCombinator]
-	def OfType[Ctx <: Context with Singleton, A](
-		tpetag:Ctx#TypeTag[A]
-	):Parser[Ctx#Expr[_], Ctx#Expr[A]] = {
-		new OfType(tpetag)
-	}
 
 	/** Succeeds only at the end of the given input */
 	private[stringContextParserCombinator]

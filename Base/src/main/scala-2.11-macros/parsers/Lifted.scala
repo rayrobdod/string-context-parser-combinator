@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 package parsers
 
 import scala.language.higherKinds
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
 private[stringContextParserCombinator]
 object Lifted {
