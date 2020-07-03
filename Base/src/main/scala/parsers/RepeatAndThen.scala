@@ -25,7 +25,8 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 		val accumulator = evL.init()
 		var remaining:Input[Expr] = input
 		var continue:Boolean = true
-		var innerFailureTrace:Trace[Expr] = null
+		var repeatFailure:Failure[Expr] = null
+		var repeatAnySuccessHasCut:Cut = Cut.False
 		val states = scala.collection.mutable.Stack[Success[Expr, AS]]()
 
 		def thenTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = {
@@ -38,48 +39,57 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 			case _ => OrTrace(left, right)
 		}
 
-		states.push(Success(evL.result(accumulator), input, EmptyTrace(input)))
+		states.push(Success(evL.result(accumulator), input, EmptyTrace(input), Cut.False))
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
-				case Success(a, r, t) => {
+				case Success(a, r, t, c) => {
 					counter += 1
+					repeatAnySuccessHasCut = repeatAnySuccessHasCut | c
 					evL.append(accumulator, a)
-					states.push(Success(evL.result(accumulator), r, thenTrace(states.head.trace, t)))
+					states.push(Success(evL.result(accumulator), r, thenTrace(states.head.trace, t), c))
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 				}
-				case Failure(t) => {
-					innerFailureTrace = thenTrace(states.head.trace, t)
+				case Failure(t, c) => {
+					repeatFailure = Failure(thenTrace(states.head.trace, t), c)
 					continue = false
 				}
 			}
 		}
 
-		var rhsFailureTrace:Trace[Expr] = null
-		while (counter >= min && states.nonEmpty) {
-			val Success(topValue, topRemaining, topTrace) = states.pop()
+		if (repeatFailure != null && repeatFailure.isCut.toBoolean) {
+			return repeatFailure
+		}
+
+		var rhsFailure:Failure[Expr] = null
+		continue = true
+		while (continue && counter >= min && states.nonEmpty) {
+			val Success(topValue, topRemaining, topTrace, topCut) = states.pop()
 			rhs.parse(topRemaining) match {
-				case Success(a, r, t) => {
-					return Success(evR.aggregate(topValue, a), r, thenTrace(topTrace, t))
+				case Success(a, r, t, c) => {
+					return Success(evR.aggregate(topValue, a), r, thenTrace(topTrace, t), repeatAnySuccessHasCut | c)
 				}
-				case Failure(t) => {
-					if (rhsFailureTrace == null) {
-						rhsFailureTrace = thenTrace(topTrace, t)
+				case Failure(t, c) => {
+					if (rhsFailure == null) {
+						rhsFailure = Failure(thenTrace(topTrace, t), c)
 					}
+					continue = ! topCut.toBoolean
 					counter = counter - 1
 					// try next
 				}
 			}
 		}
 
-		if (null == innerFailureTrace) {
+		if (null == repeatFailure) {
 			// means that input saturates the repeat portion of this aggregate
-			Failure(rhsFailureTrace)
-		} else if (null == rhsFailureTrace) {
+			Failure(rhsFailure.trace, repeatAnySuccessHasCut)
+		} else if (null == rhsFailure) {
 			// means that input does not meet minimum requirements the repeat portion of this aggregate
-			Failure(innerFailureTrace)
+			Failure(repeatFailure.trace, repeatAnySuccessHasCut)
+		} else if (rhsFailure.isCut.toBoolean) {
+			rhsFailure
 		} else {
-			Failure(foldOrTrace(innerFailureTrace, rhsFailureTrace))
+			Failure(foldOrTrace(repeatFailure.trace, rhsFailure.trace), repeatAnySuccessHasCut | rhsFailure.isCut)
 		}
 	}
 

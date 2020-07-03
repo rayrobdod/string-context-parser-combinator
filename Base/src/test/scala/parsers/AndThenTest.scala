@@ -15,8 +15,8 @@ final class AndThenTest extends AnyFunSpec {
 			val leftExpect = Expecting("Left")
 			val rightExpect = Expecting("Right")
 
-			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect)
-			val rightParser = new ConstSuccess(rightResult, endInput, rightExpect)
+			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect, Cut.False)
+			val rightParser = new ConstSuccess(rightResult, endInput, rightExpect, Cut.False)
 
 			val expected = Success[Nothing, (Object, Object)](
 				(leftResult, rightResult),
@@ -24,7 +24,8 @@ final class AndThenTest extends AnyFunSpec {
 				ThenTrace(
 					LeafTrace(leftExpect, initialInput),
 					LeafTrace(rightExpect, middleInput)
-				)
+				),
+				Cut.False
 			)
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -34,10 +35,10 @@ final class AndThenTest extends AnyFunSpec {
 
 			val leftExpect = Expecting("Left")
 
-			val leftParser = new ConstFailure(leftExpect)
-			val rightParser = new ConstSuccess(new Object, new Input[Nothing](("wxyz", PositionPoint(13)) :: Nil, Nil), Expecting("Right"))
+			val leftParser = new ConstFailure(leftExpect, Cut.False)
+			val rightParser = new ConstSuccess(new Object, new Input[Nothing](("wxyz", PositionPoint(13)) :: Nil, Nil), Expecting("Right"), Cut.False)
 
-			val expected = Failure[Nothing](LeafTrace(leftExpect, initialInput))
+			val expected = Failure[Nothing](LeafTrace(leftExpect, initialInput), Cut.False)
 
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -50,10 +51,16 @@ final class AndThenTest extends AnyFunSpec {
 			val leftExpect = Expecting("Left")
 			val rightExpect = Expecting("Right")
 
-			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect)
-			val rightParser = new ConstFailure(rightExpect)
+			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect, Cut.False)
+			val rightParser = new ConstFailure(rightExpect, Cut.False)
 
-			val expected = Failure[Nothing](ThenTrace(LeafTrace(leftExpect, initialInput), LeafTrace(rightExpect, middleInput)))
+			val expected = Failure[Nothing](
+				ThenTrace(
+					LeafTrace(leftExpect, initialInput),
+					LeafTrace(rightExpect, middleInput)
+				),
+				Cut.False
+			)
 
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}

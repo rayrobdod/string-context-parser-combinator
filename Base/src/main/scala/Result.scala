@@ -19,11 +19,13 @@ sealed trait Result[+Expr, +A] {
  * @param value the parsed value
  * @param remaining input that was not consumed by the parser
  * @param trace a trace of the parsers that lead to this result
+ * @param isCut true if other OrElse branches should be ignored
  */
 final case class Success[+Expr, +A](
 	val value:A,
 	val remaining:Input[Expr],
-	val trace:Trace[Expr]
+	val trace:Trace[Expr],
+	val isCut:Cut
 ) extends Result[Expr, A]
 
 /**
@@ -33,8 +35,9 @@ final case class Success[+Expr, +A](
  *
  * @constructor
  * @param trace a trace of the parsers that lead to this result
+ * @param isCut true if other OrElse branches should be ignored
  */
-final case class Failure[+Expr](trace:Trace[Expr]) extends Result[Expr, Nothing] {
+final case class Failure[+Expr](trace:Trace[Expr], isCut:Cut) extends Result[Expr, Nothing] {
 	private def remainingDescription(implicit ev:Expr <:< Exprs#Expr[_]):String = {
 		trace
 			.removeRequiredThens
@@ -52,6 +55,7 @@ final case class Failure[+Expr](trace:Trace[Expr]) extends Result[Expr, Nothing]
 	private def expectingDescription:String = {
 		trace
 			.removeRequiredThens
+			.removeEmptyTraces
 			.expectingDescription
 	}
 

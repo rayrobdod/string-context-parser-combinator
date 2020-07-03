@@ -6,11 +6,12 @@ private[parsers] final class FlatMap[Expr, A, Z](
 ) extends AbstractParser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		left.parse(input) match {
-			case Success(leftValue, leftRemaining, leftTrace) => right(leftValue).parse(leftRemaining) match {
-				case Success(rightValue, rightRemaining, rightTrace) => Success(rightValue, rightRemaining, ThenTrace(leftTrace, rightTrace))
-				case Failure(rightTrace) => Failure(ThenTrace(leftTrace, rightTrace))
+			case Success(leftValue, leftRemaining, leftTrace, leftCut) => right(leftValue).parse(leftRemaining) match {
+				case Success(rightValue, rightRemaining, rightTrace, rightCut) => Success(rightValue, rightRemaining, ThenTrace(leftTrace, rightTrace), leftCut | rightCut)
+				case Failure(rightTrace, Cut.False) => Failure(ThenTrace(leftTrace, rightTrace), leftCut)
+				case failure@Failure(_, Cut.True) => failure
 			}
-			case failure@Failure(_) => failure
+			case failure@Failure(_, _) => failure
 		}
 	}
 }

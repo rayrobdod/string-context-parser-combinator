@@ -200,6 +200,13 @@ package object parsers {
 	}
 
 	private[stringContextParserCombinator]
+	def AndThenWithCut[Expr, A, B, Z](
+		left:Parser[Expr, A], right:Parser[Expr, B], ev:Implicits.AndThenTypes[A, B, Z]
+	):Parser[Expr, Z] = {
+		new AndThenWithCut(left, right, ev)
+	}
+
+	private[stringContextParserCombinator]
 	def OrElse[Expr, A](
 		left:Parser[Expr, A], right:Parser[Expr, A]
 	):Parser[Expr, A] = {

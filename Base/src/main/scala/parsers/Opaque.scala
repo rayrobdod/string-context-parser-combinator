@@ -8,8 +8,8 @@ private[parsers] final class Opaque[Expr, A](
 	def parse(input:Input[Expr]):Result[Expr, A] = {
 		val trace = LeafTrace(description, input)
 		backing.parse(input) match {
-			case Success(value, rest, _) => Success(value, rest, trace)
-			case Failure(_) => Failure(trace)
+			case Success(value, rest, _, cut) => Success(value, rest, trace, cut)
+			case Failure(_, cut) => Failure(trace, cut)
 		}
 	}
 }

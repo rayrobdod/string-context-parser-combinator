@@ -19,6 +19,8 @@ final class Repeat[Expr, A, Z](
 		var continue:Boolean = true
 		var innerFailureTrace:Trace[Expr] = null
 		var innerSuccessTrace:Trace[Expr] = EmptyTrace(input)
+		var innerCut:Cut = Cut.False
+		var innerFailureCut:Cut = Cut.False
 
 		def thenTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = {
 			if (left.isInstanceOf[EmptyTrace[_]]) {right} else {ThenTrace(left, right)}
@@ -26,23 +28,26 @@ final class Repeat[Expr, A, Z](
 
 		while (continue && counter < max) {
 			inner.parse(remaining) match {
-				case Success(a, r, t) => {
+				case Success(a, r, t, c) => {
 					counter += 1
+					innerCut = innerCut | c
 					ev.append(accumulator, a)
 					continue = (remaining != r) // quit if inner seems to be making no progress
 					remaining = r
 					innerSuccessTrace = thenTrace(innerSuccessTrace, t)
 				}
-				case Failure(t) => {
+				case Failure(t, c) => {
+					innerFailureCut = c
+					innerCut = innerCut | c
 					innerFailureTrace = t
 					continue = false
 				}
 			}
 		}
-		if (min <= counter && counter <= max) {
-			return Success(ev.result(accumulator), remaining, innerSuccessTrace)
+		if (min <= counter && counter <= max && !(innerFailureCut.toBoolean)) {
+			return Success(ev.result(accumulator), remaining, innerSuccessTrace, innerCut)
 		} else {
-			return Failure(thenTrace(innerSuccessTrace, innerFailureTrace))
+			return Failure(thenTrace(innerSuccessTrace, innerFailureTrace), innerCut)
 		}
 	}
 

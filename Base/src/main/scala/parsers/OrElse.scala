@@ -9,12 +9,14 @@ final class OrElse[Expr, A](
 	def parse(input:Input[Expr]):Result[Expr, A] = {
 		left.parse(input) match {
 			case result:Success[Expr, A] => result
-			case Failure(traceLeft) => right.parse(input) match {
+			case Failure(traceLeft, Cut.False) => right.parse(input) match {
 				case result:Success[Expr, A] => result
-				case Failure(traceRight) => {
-					Failure(OrTrace(traceLeft, traceRight))
+				case Failure(traceRight, Cut.False) => {
+					Failure(OrTrace(traceLeft, traceRight), Cut.False)
 				}
+				case failure@Failure(_, Cut.True) => failure
 			}
+			case failure@Failure(_, Cut.True) => failure
 		}
 	}
 }

@@ -18,6 +18,7 @@ trait ParsersImplictly extends scpcParsers {
 /** Adds symbolic methods to Parsers */
 class ParserWithSymbolic[U, A](val backing:Parser[U, A]) extends AnyVal {
 	def ~[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]) = backing.andThen(rhs)(ev)
+	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
 	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
 	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]) = backing.repeat(min, max)(ev)
 	def opt[Z](implicit ev:Implicits.OptionallyTypes[A, Z]) = backing.optionally(ev)
@@ -41,7 +42,7 @@ object MacroImpl {
 
 		def Int2Digits(min:Int, max:Int) = (IsDigit.rep(2, 2))
 			.map(_.value)
-			.filter(x => min <= x && x <= max, Expecting(String.format(""""$1%02d" - "$2%02d"""", Integer.valueOf(min), Integer.valueOf(max))))
+			.filter(x => min <= x && x <= max, Expecting(String.format("""%02d <= $value <= %02d""", Integer.valueOf(min), Integer.valueOf(max))))
 
 		def YearP:Parser[ctx.Expr[Year]] = {
 			val LiteralP:Parser[ctx.Expr[Year]] = {
@@ -95,7 +96,7 @@ object MacroImpl {
 		}
 
 		def YearMonthP:Parser[ctx.Expr[YearMonth]] = {
-			val PartsP:Parser[ctx.Expr[YearMonth]] = (YearP ~ "-" ~ MonthP).map(x => {
+			val PartsP:Parser[ctx.Expr[YearMonth]] = (YearP ~ "-" ~/ MonthP).map(x => {
 				val (y, m) = x
 				ctx.universe.reify(y.splice.atMonth(m.splice))
 			})
@@ -104,7 +105,7 @@ object MacroImpl {
 		}
 
 		def LocalDateP:Parser[ctx.Expr[LocalDate]] = {
-			val YearMonthVariantP:Parser[ctx.Expr[LocalDate]] = (YearMonthP ~ "-" ~ Day31P).map(x => {
+			val YearMonthVariantP:Parser[ctx.Expr[LocalDate]] = (YearMonthP ~ "-" ~/ Day31P).map(x => {
 				val (ym, day) = x
 				ctx.universe.reify(ym.splice.atDay(day.splice))
 			})
@@ -140,7 +141,7 @@ object MacroImpl {
 		}
 
 		def LocalTimeP:Parser[ctx.Expr[LocalTime]] = {
-			val LiteralP:Parser[ctx.Expr[LocalTime]] = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
+			val LiteralP:Parser[ctx.Expr[LocalTime]] = (HourP ~ ":" ~/ MinuteP ~ (":" ~/ SecondP ~ ("." ~/ NanoP).opt).opt)
 				.map({hmsn =>
 					val constZero = ctx.Expr(ctx.universe.Literal(ctx.universe.Constant(0)))
 					val (hm, sn) = hmsn
@@ -155,7 +156,7 @@ object MacroImpl {
 		}
 
 		def LocalDateTimeP:Parser[ctx.Expr[LocalDateTime]] = {
-			(LocalDateP ~ "T" ~ LocalTimeP)
+			(LocalDateP ~ "T" ~/ LocalTimeP)
 				.map({dt =>
 					val (date, time) = dt
 					ctx.universe.reify(date.splice.atTime(time.splice))

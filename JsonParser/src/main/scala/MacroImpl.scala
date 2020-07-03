@@ -194,7 +194,7 @@ object MacroImpl {
 				val AstVInner:Parser[c.Expr[String]] = OfType[JString].map(x => c.universe.reify(x.splice.value))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
 					.map(strs => concatenateStrings(c)(strs))
-				(DelimiterP andThen Content andThen DelimiterP)
+				(DelimiterP andThenWithCut Content andThen DelimiterP)
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
@@ -231,13 +231,13 @@ object MacroImpl {
 
 				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = (
 					ValueP.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThen LiftedArrayV2
+					(WhitespaceP andThen IsString("..") andThenWithCut LiftedArrayV2
 						andThen WhitespaceP).map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
-					(Prefix andThen WhitespaceP andThen (
+					(Prefix andThenWithCut WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
+						(SplicableValue andThen ((Delim andThenWithCut SplicableValue).repeat() andThen Suffix))
 					))
 				)
 				val Literal:Parser[c.Expr[JArray]] = (
@@ -274,16 +274,16 @@ object MacroImpl {
 				val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = (
 					(WhitespaceP andThen KeyValueV andThen WhitespaceP)
 						.map(x => Left(x)) orElse
-					(KeyV andThen Separator andThen ValueP)
+					(KeyV andThen Separator andThenWithCut ValueP)
 						.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
 						.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThen ObjectV2 andThen WhitespaceP)
+					(WhitespaceP andThen IsString("..") andThenWithCut ObjectV2 andThen WhitespaceP)
 						.map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
-					(Prefix andThen WhitespaceP andThen (
+					(Prefix andThenWithCut WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
+						(SplicableValue andThen ((Delim andThenWithCut SplicableValue).repeat() andThen Suffix))
 					))
 				)
 				val Literal:Parser[c.Expr[JObject]] = (

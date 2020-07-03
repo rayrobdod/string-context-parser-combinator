@@ -14,7 +14,8 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, String](
 				"",
 				new Input[Nothing](InputPart("", 42) :: Nil, Nil),
-				EmptyTrace(initialInput)
+				EmptyTrace(initialInput),
+				Cut.False
 			)
 			val parser = childParser.repeat()
 			assertResult(expected){parser.parse(initialInput)}
@@ -27,7 +28,8 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, String](
 				"a",
 				new Input[Nothing](InputPart("", 43) :: Nil, Nil),
-				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List()))
+				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List())),
+				Cut.False
 			)
 			val parser = childParser.repeat()
 			assertResult(expected){parser.parse(initialInput)}
@@ -49,7 +51,8 @@ final class RepeatTest extends AnyFunSpec {
 						LeafTrace(childExpecting, new Input(List(InputPart("aa", 44)), List()))
 					),
 					LeafTrace(childExpecting, new Input(List(InputPart("a", 45)), List()))
-				)
+				),
+				Cut.False
 			)
 			val parser = childParser.repeat()
 			assertResult(expected){parser.parse(initialInput)}
@@ -61,7 +64,8 @@ final class RepeatTest extends AnyFunSpec {
 			val childExpecting = Expecting("CharIn(\"a\")")
 
 			val expected = Failure[Nothing](
-				LeafTrace(childExpecting, new Input(List(InputPart("", 42)), List()))
+				LeafTrace(childExpecting, new Input(List(InputPart("", 42)), List())),
+				Cut.False
 			)
 			val parser = childParser.repeat(1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -74,7 +78,8 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, String](
 				"a",
 				new Input[Nothing](InputPart("", 43) :: Nil, Nil),
-				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List()))
+				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List())),
+				Cut.False
 			)
 			val parser = childParser.repeat(1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -96,7 +101,8 @@ final class RepeatTest extends AnyFunSpec {
 						LeafTrace(childExpecting, new Input(List(InputPart("aa", 44)), List()))
 					),
 					LeafTrace(childExpecting, new Input(List(InputPart("a", 45)), List()))
-				)
+				),
+				Cut.False
 			)
 			val parser = childParser.repeat(1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -109,7 +115,8 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, String](
 				"",
 				new Input[Nothing](InputPart("", 42) :: Nil, Nil),
-				EmptyTrace(initialInput)
+				EmptyTrace(initialInput),
+				Cut.False
 			)
 			val parser = childParser.repeat(0, 1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -122,7 +129,8 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, String](
 				"a",
 				new Input[Nothing](InputPart("", 43) :: Nil, Nil),
-				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List()))
+				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List())),
+				Cut.False
 			)
 			val parser = childParser.repeat(0, 1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -135,7 +143,8 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, String](
 				"a",
 				new Input[Nothing](InputPart("aaa", 43) :: Nil, Nil),
-				LeafTrace(childExpecting, new Input(List(InputPart("aaaa", 42)), List()))
+				LeafTrace(childExpecting, new Input(List(InputPart("aaaa", 42)), List())),
+				Cut.False
 			)
 			val parser = childParser.repeat(0, 1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -148,10 +157,63 @@ final class RepeatTest extends AnyFunSpec {
 			val expected = Success[Nothing, Seq[String]](
 				Seq(""),
 				new Input[Nothing](InputPart("", 42) :: Nil, Nil),
-				EmptyTrace(initialInput)
+				EmptyTrace(initialInput),
+				Cut.False
 			)
 			val parser = childParser.repeat().repeat()
 			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		describe("`(a ~/ b ~ c)*`") {
+			val childExpecting = Expecting("childExpecting")
+			val childParser = (CharIn[Nothing]("a")
+				andThenWithCut CharIn[Nothing]("b")
+				andThen CharIn[Nothing]("c")).opaque(childExpecting)
+			val parser = childParser.repeat()
+
+			it ("matches ``; no cut") {
+				val initialInput = new Input[Nothing](InputPart("zzz", 42) :: Nil, Nil)
+
+				val expected = Success[Nothing, List[Nothing]](
+					List(),
+					new Input[Nothing](InputPart("zzz", 42) :: Nil, Nil),
+					EmptyTrace(initialInput),
+					Cut.False
+				)
+				assertResult(expected){parser.parse(initialInput)}
+			}
+			it ("does not match `a`; has cut") {
+				val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
+
+				val expected = Failure(
+					LeafTrace(childExpecting, initialInput),
+					Cut.True
+				)
+				assertResult(expected){parser.parse(initialInput)}
+			}
+			it ("matches `abcde`; has cut") {
+				val initialInput = new Input[Nothing](InputPart("abcde", 42) :: Nil, Nil)
+
+				val expected = Success[Nothing, List[((Char, Char), Char)]](
+					List((('a','b'),'c')),
+					new Input[Nothing](InputPart("de", 45) :: Nil, Nil),
+					LeafTrace(childExpecting, initialInput),
+					Cut.True
+				)
+				assertResult(expected){parser.parse(initialInput)}
+			}
+			it ("does not match `abca`; has cut") {
+				val initialInput = new Input[Nothing](InputPart("abca", 42) :: Nil, Nil)
+
+				val expected = Failure(
+					ThenTrace(
+						LeafTrace(childExpecting, initialInput),
+						LeafTrace(childExpecting, new Input[Nothing](InputPart("a", 45) :: Nil, Nil))
+					),
+					Cut.True
+				)
+				assertResult(expected){parser.parse(initialInput)}
+			}
 		}
 	}
 }
