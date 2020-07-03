@@ -1,18 +1,21 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
-private[parsers] final class AndThen[U <: Context with Singleton, A, B, Z](
-	left:Parser[U, A], right:Parser[U, B], ev:Implicits.AndThenTypes[A, B, Z]
-) extends Parser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
+private[parsers] final class AndThen[Expr, A, B, Z](
+	left:Parser[Expr, A], right:Parser[Expr, B], ev:Implicits.AndThenTypes[A, B, Z]
+) extends Parser[Expr, Z] {
+	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		left.parse(input) match {
-			case Success(a, resa) => right.parse(resa) match {
-				case Success(b, resb) => Success(ev.aggregate(a,b), resb)
-				case Failure(found, expect) => Failure(found, expect)
+			case Success(valA, restA, traceA, cutA) => right.parse(restA) match {
+				case Success(valB, restB, traceB, cutB) => Success(
+					ev.aggregate(valA, valB),
+					restB,
+					ThenTrace(traceA, traceB),
+					cutA | cutB
+				)
+				case Failure(traceB, cutB) => Failure(ThenTrace(traceA, traceB), cutA | cutB)
 			}
-			case Failure(found, expect) => Failure(found, expect)
+			case failure@Failure(_,_) => failure
 		}
 	}
 }

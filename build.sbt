@@ -11,9 +11,9 @@ lazy val sharedSettings = Seq(
 		case _ => Seq("-target:jvm-1.8")
 	}),
 	scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.10" => Seq("-Yno-predef")
-		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-Yno-predef")
-		case _ => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit", "-Yno-predef")
+		case "2.10" => Seq.empty
+		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit")
+		case _ => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
 	}),
 	unmanagedSourceDirectories in Compile += (scalaBinaryVersion.value match {
 		case "2.10" => (Compile / sourceDirectory).value / "scala-2.10-macros"

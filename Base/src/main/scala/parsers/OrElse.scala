@@ -1,24 +1,22 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
 private[parsers]
-final class OrElse[U <: Context with Singleton, A](
-	left:Parser[U, A],
-	right:Parser[U, A]
-) extends AbstractParser[U, A] {
-	def parse(input:Input[U]):Result[U, A] = {
+final class OrElse[Expr, A](
+	left:Parser[Expr, A],
+	right:Parser[Expr, A]
+) extends AbstractParser[Expr, A] {
+	def parse(input:Input[Expr]):Result[Expr, A] = {
 		left.parse(input) match {
-			case Success(v, r) => Success(v, r)
-			case Failure(expect1, remain1) => right.parse(input) match {
-				case Success(v, r) => Success(v, r)
-				case Failure(expect2, remain2) => {
-					if (remain1.next.position == remain2.next.position) {Failure(Failure.Or(Seq(expect1, expect2)), remain1)}
-					else if (remain1.next.position > remain2.next.position) {Failure(expect1, remain1)}
-					else {Failure(expect2, remain2)}
+			case result:Success[Expr, A] => result
+			case Failure(traceLeft, Cut.False) => right.parse(input) match {
+				case result:Success[Expr, A] => result
+				case Failure(traceRight, Cut.False) => {
+					Failure(OrTrace(traceLeft, traceRight), Cut.False)
 				}
+				case failure@Failure(_, Cut.True) => failure
 			}
+			case failure@Failure(_, Cut.True) => failure
 		}
 	}
 }

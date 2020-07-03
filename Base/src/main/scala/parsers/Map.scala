@@ -1,15 +1,13 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
-private[parsers] final class Map[U <: Context with Singleton, A, Z](
-	backing:Parser[U,A], mapping:Function1[A, Z]
-) extends AbstractParser[U, Z] {
-	def parse(input:Input[U]):Result[U, Z] = {
+private[parsers] final class Map[Expr, A, Z](
+	backing:Parser[Expr,A], mapping:Function1[A, Z]
+) extends AbstractParser[Expr, Z] {
+	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		backing.parse(input) match {
-			case Success(v, r) => Success(mapping(v), r)
-			case Failure(found, expect) => Failure(found, expect)
+			case Success(value, rest, trace, cut) => Success(mapping(value), rest, trace, cut)
+			case failure@Failure(_, _) => failure
 		}
 	}
 }

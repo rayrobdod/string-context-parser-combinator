@@ -122,7 +122,7 @@ object MacroImpl {
 			// not just so that the type is only computed once; around JArray, it suddenly looses its Lift TypeTag
 			val liftTypeConstructor = c.typeOf[Lift[_,_]].typeConstructor
 
-			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
+			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").opaque(Expecting("Whitespace")).repeat().map(_ => ())
 
 			val NullP:Parser[c.Expr[JNull.type]] = IsString("null").map(_ => c.universe.reify(scalajson.ast.JNull))
 
@@ -132,7 +132,7 @@ object MacroImpl {
 				val LiftedV = Lifted[Lift.Boolean, JBoolean](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JBoolean])),
 					myLiftFunction[JBoolean, Lift.Boolean](c),
-					Failure.Leaf("A for Lift[A, JBoolean]")
+					Expecting("A for Lift[A, JBoolean]")
 				)
 				LiftedV orElse TrueI orElse FalseI
 			}
@@ -165,12 +165,12 @@ object MacroImpl {
 						val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
 						c.universe.reify(scalajson.ast.JNumber.fromString(xExpr.splice).get)
 					})
-				}.opaque("Number Literal")
+				}.opaque(Expecting("Number Literal"))
 				val AstV:Parser[c.Expr[JNumber]] = OfType[JNumber]
 				val LiftedV = Lifted[Lift.Number, JNumber](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JNumber])),
 					myLiftFunction[JNumber, Lift.Number](c),
-					Failure.Leaf("A for Lift[A, JNumber]")
+					Expecting("A for Lift[A, JNumber]")
 				)
 				AstV orElse LiftedV orElse NumberI
 			}
@@ -194,7 +194,7 @@ object MacroImpl {
 				val AstVInner:Parser[c.Expr[String]] = OfType[JString].map(x => c.universe.reify(x.splice.value))
 				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
 					.map(strs => concatenateStrings(c)(strs))
-				(DelimiterP andThen Content andThen DelimiterP)
+				(DelimiterP andThenWithCut Content andThen DelimiterP)
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
@@ -225,19 +225,19 @@ object MacroImpl {
 				val LiftedArrayV = Lifted[Lift.Array, JArray](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JArray])),
 					myLiftFunction[JArray, Lift.Array](c),
-					Failure.Leaf("A for Lift[A, JArray]")
+					Expecting("A for Lift[A, JArray]")
 				)
 				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 
 				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = (
 					ValueP.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThen LiftedArrayV2
+					(WhitespaceP andThen IsString("..") andThenWithCut LiftedArrayV2
 						andThen WhitespaceP).map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
-					(Prefix andThen WhitespaceP andThen (
+					(Prefix andThenWithCut WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
+						(SplicableValue andThen ((Delim andThenWithCut SplicableValue).repeat() andThen Suffix))
 					))
 				)
 				val Literal:Parser[c.Expr[JArray]] = (
@@ -258,14 +258,14 @@ object MacroImpl {
 				val ObjectV = Lifted[Lift.Object, JObject](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JObject])),
 					myLiftFunction[JObject, Lift.Object](c),
-					Failure.Leaf("A for Lift[A, JObject]")
+					Expecting("A for Lift[A, JObject]")
 				)
 				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 
 				val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
 					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
-					Failure.Leaf("A for Lift[A, (String, JValue)]")
+					Expecting("A for Lift[A, (String, JValue)]")
 				)
 
 				val KeyV = WhitespaceP andThen StringP andThen WhitespaceP
@@ -274,16 +274,16 @@ object MacroImpl {
 				val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = (
 					(WhitespaceP andThen KeyValueV andThen WhitespaceP)
 						.map(x => Left(x)) orElse
-					(KeyV andThen Separator andThen ValueP)
+					(KeyV andThen Separator andThenWithCut ValueP)
 						.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
 						.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThen ObjectV2 andThen WhitespaceP)
+					(WhitespaceP andThen IsString("..") andThenWithCut ObjectV2 andThen WhitespaceP)
 						.map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
-					(Prefix andThen WhitespaceP andThen (
+					(Prefix andThenWithCut WhitespaceP andThen (
 						Suffix.map(_ => List.empty) orElse
-						((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
+						(SplicableValue andThen ((Delim andThenWithCut SplicableValue).repeat() andThen Suffix))
 					))
 				)
 				val Literal:Parser[c.Expr[JObject]] = (

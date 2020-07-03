@@ -1,12 +1,10 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
-private[parsers] final class DelayedConstruction[U <: Context with Singleton, A](
-	backing:Function0[Parser[U, A]]
-) extends AbstractParser[U, A] {
-	def parse(input:Input[U]):Result[U, A] = {
+private[parsers] final class DelayedConstruction[Expr, A](
+	backing:Function0[Parser[Expr, A]]
+) extends AbstractParser[Expr, A] {
+	def parse(input:Input[Expr]):Result[Expr, A] = {
 		backing.apply.parse(input)
 	}
 }

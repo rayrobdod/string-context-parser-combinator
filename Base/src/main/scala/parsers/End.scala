@@ -1,16 +1,14 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
-private[parsers] final class End[U <: Context with Singleton]
-extends AbstractParser[U, Unit] {
-	override def parse(input:Input[U]):Result[U, Unit] = {
+private[parsers] final class End[Expr] extends AbstractParser[Expr, Unit] {
+	override def parse(input:Input[Expr]):Result[Expr, Unit] = {
+		val trace = LeafTrace(this.expecting, input)
 		if (input.isEmpty) {
-			Success((), input)
+			Success((), input, trace, Cut.False)
 		} else {
-			Failure(this.expecting, input)
+			Failure(trace, Cut.False)
 		}
 	}
-	def expecting:Failure.Expecting = Failure.Leaf("EOF")
+	private def expecting:Expecting = Expecting("EOF")
 }

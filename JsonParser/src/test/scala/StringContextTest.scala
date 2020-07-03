@@ -245,7 +245,7 @@ final class StringContextTest extends AnyFunSpec {
 			assertDoesNotCompile(""" json"{null}" """)
 		}
 		it ("Rejects object with array prefix/suffix") {
-			assertDoesNotCompile(""" json"["":null]" """)
+			assertDoesNotCompile(" json\"\"\"[\"\":null]\"\"\" ")
 		}
 	}
 }

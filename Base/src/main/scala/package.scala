@@ -84,7 +84,7 @@ package object stringContextParserCombinator {
 	 *
 	 * @group macro
 	 */
-	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.type, c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
+	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.Expr[_], c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
 		val StringContextApply = stringContextApply(c)
 
@@ -99,12 +99,12 @@ package object stringContextParserCombinator {
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[c.type](strings, args.toList)
+		val input = new Input[c.Expr[Any]](strings, args.toList)
 
 		parser.parse(input) match {
-			case Success(res, _) => {
+			case s:Success[_, _] => {
 				//System.out.println(res)
-				res
+				s.value
 			}
 			case f:Failure[_] => {
 				f.report(c)
@@ -141,4 +141,7 @@ package stringContextParserCombinator {
 	object PositionPoint {
 		def apply(x:scala.reflect.api.Position):PositionPoint = new PositionPoint(x.point)
 	}
+
+	/** Represent a textual description of under what conditions a parser would return success */
+	final case class Expecting(val description:String)
 }
