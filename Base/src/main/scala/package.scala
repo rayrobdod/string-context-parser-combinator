@@ -19,6 +19,7 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
+		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
 				c.universe.Select(
@@ -35,6 +36,7 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
+		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
 				val (nameInit, nameLast) = {
