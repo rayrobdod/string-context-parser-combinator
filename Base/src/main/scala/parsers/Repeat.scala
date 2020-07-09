@@ -6,6 +6,7 @@ final class Repeat[Expr, A, Z](
 	inner:Parser[Expr, A],
 	min:Int,
 	max:Int,
+	delimiter:Parser[Expr, Unit],
 	ev:Implicits.RepeatTypes[A, Z]
 ) extends AbstractParser[Expr, Z] {
 	require(min >= 0)
@@ -23,24 +24,46 @@ final class Repeat[Expr, A, Z](
 		var innerFailureCut:Cut = Cut.False
 
 		def thenTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = {
-			if (left.isInstanceOf[EmptyTrace[_]]) {right} else {ThenTrace(left, right)}
+			if (left.isInstanceOf[EmptyTrace[_]])
+				{right}
+			else if (right.isInstanceOf[EmptyTrace[_]])
+				{left}
+			else
+				{ThenTrace(left, right)}
 		}
 
 		while (continue && counter < max) {
-			inner.parse(remaining) match {
-				case Success(a, r, t, c) => {
-					counter += 1
-					innerCut = innerCut | c
-					ev.append(accumulator, a)
-					continue = (remaining != r) // quit if inner seems to be making no progress
-					remaining = r
-					innerSuccessTrace = thenTrace(innerSuccessTrace, t)
+			if (counter != 0) {
+				delimiter.parse(remaining) match {
+					case Success((), r, t, c) => {
+						innerCut = innerCut | c
+						remaining = r
+						innerSuccessTrace = thenTrace(innerSuccessTrace, t)
+					}
+					case Failure(t, c) => {
+						innerFailureCut = c
+						innerCut = innerCut | c
+						innerFailureTrace = t
+						continue = false
+					}
 				}
-				case Failure(t, c) => {
-					innerFailureCut = c
-					innerCut = innerCut | c
-					innerFailureTrace = t
-					continue = false
+			}
+			if (continue) {
+				inner.parse(remaining) match {
+					case Success(a, r, t, c) => {
+						counter += 1
+						innerCut = innerCut | c
+						ev.append(accumulator, a)
+						continue = (remaining != r) // quit if inner seems to be making no progress
+						remaining = r
+						innerSuccessTrace = thenTrace(innerSuccessTrace, t)
+					}
+					case Failure(t, c) => {
+						innerFailureCut = c
+						innerCut = innerCut | c
+						innerFailureTrace = t
+						continue = false
+					}
 				}
 			}
 		}
@@ -52,6 +75,6 @@ final class Repeat[Expr, A, Z](
 	}
 
 	override def andThen[B, Z2](rhs:Parser[Expr, B])(implicit ev:Implicits.AndThenTypes[Z,B,Z2]):Parser[Expr, Z2] = {
-		new RepeatAndThen[Expr, A, Z, B, Z2](this.inner, this.min, this.max, this.ev, rhs, ev)
+		new RepeatAndThen[Expr, A, Z, B, Z2](this.inner, this.min, this.max, this.delimiter, this.ev, rhs, ev)
 	}
 }

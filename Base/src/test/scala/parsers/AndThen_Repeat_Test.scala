@@ -243,5 +243,48 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}
 		}
+		it ("unexpected right with any repeat and delimiter fails and shows delimiter and right as options") {
+			val initialInput = InputNoArgs("az", 42)
+			val leftParser = CharIn("a").opaque(Expecting("rep")).repeat(delimiter = IsString("b").map(_ => ()).opaque(Expecting("delim")))
+			val rightParser = CharIn("c").opaque(Expecting("right"))
+
+			val expected = Failure(
+				ThenTrace(
+					LeafTrace(Expecting("rep"), initialInput),
+					OrTrace(
+						LeafTrace(Expecting("delim"), InputNoArgs("z", 43)),
+						LeafTrace(Expecting("right"), InputNoArgs("z", 43))
+					)
+				),
+				Cut.False
+			)
+
+			val parser = leftParser andThen rightParser
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("successful with delimiter") {
+			val initialInput = InputNoArgs("abac", 42)
+			val leftParser = CharIn("a").opaque(Expecting("rep")).repeat(delimiter = IsString("b").map(_ => ()).opaque(Expecting("delim")))
+			val rightParser = CharIn("c").opaque(Expecting("right"))
+
+			val expected = Success(
+				("aa", 'c'),
+				InputNoArgs("", 46),
+				ThenTrace(
+					ThenTrace(
+						ThenTrace(
+							LeafTrace(Expecting("rep"), initialInput),
+							LeafTrace(Expecting("delim"), InputNoArgs("bac", 43)),
+						),
+						LeafTrace(Expecting("rep"), InputNoArgs("ac", 44)),
+					),
+					LeafTrace(Expecting("right"), InputNoArgs("c", 45)),
+				),
+				Cut.False
+			)
+
+			val parser = leftParser andThen rightParser
+			assertResult(expected){parser.parse(initialInput)}
+		}
 	}
 }

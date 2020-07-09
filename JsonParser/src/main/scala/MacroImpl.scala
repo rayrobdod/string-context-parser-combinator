@@ -211,12 +211,6 @@ object MacroImpl {
 				AstVOuter orElse ScalaVOuter orElse Immediate
 			}
 
-			/** An AndThenTypes that melds the shape of an A followed by a repeating A into a single List */
-			implicit def headTailAndThenTypes[A]:Implicits.AndThenTypes[A, Seq[A], List[A]] = new HeadTailAndThenTypes
-			private[this] final class HeadTailAndThenTypes[A] extends Implicits.AndThenTypes[A, Seq[A], List[A]] {
-				def aggregate(a:A, bs:Seq[A]):List[A] = a :: bs.toList
-			}
-
 			val ArrayP:Parser[c.Expr[JArray]] = DelayedConstruction(() => {
 				val Prefix:Parser[Unit] = IsString("[")
 				val Delim:Parser[Unit] = IsString(",")
@@ -235,10 +229,10 @@ object MacroImpl {
 						andThen WhitespaceP).map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
-					(Prefix andThenWithCut WhitespaceP andThen (
-						Suffix.map(_ => List.empty) orElse
-						(SplicableValue andThen ((Delim andThenWithCut SplicableValue).repeat() andThen Suffix))
-					))
+					Prefix
+						andThenWithCut WhitespaceP
+						andThen SplicableValue.repeat(delimiter = Delim)
+						andThen Suffix
 				)
 				val Literal:Parser[c.Expr[JArray]] = (
 					LiteralPresplice
@@ -281,10 +275,10 @@ object MacroImpl {
 						.map(x => Right(x))
 				)
 				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
-					(Prefix andThenWithCut WhitespaceP andThen (
-						Suffix.map(_ => List.empty) orElse
-						(SplicableValue andThen ((Delim andThenWithCut SplicableValue).repeat() andThen Suffix))
-					))
+					Prefix
+						andThenWithCut WhitespaceP
+						andThen SplicableValue.repeat(delimiter = Delim)
+						andThen Suffix
 				)
 				val Literal:Parser[c.Expr[JObject]] = (
 					LiteralPresplice

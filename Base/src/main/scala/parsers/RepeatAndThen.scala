@@ -16,6 +16,7 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 	inner:Parser[Expr, A],
 	min:Int,
 	max:Int,
+	delimiter:Parser[Expr, Unit],
 	evL:Implicits.RepeatTypes[A, AS],
 	rhs:Parser[Expr, B],
 	evR:Implicits.AndThenTypes[AS, B, Z]
@@ -30,7 +31,12 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 		val states = scala.collection.mutable.Stack[Success[Expr, AS]]()
 
 		def thenTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = {
-			if (left.isInstanceOf[EmptyTrace[_]]) {right} else {ThenTrace(left, right)}
+			if (left.isInstanceOf[EmptyTrace[_]])
+				{right}
+			else if (right.isInstanceOf[EmptyTrace[_]])
+				{left}
+			else
+				{ThenTrace(left, right)}
 		}
 		def foldOrTrace(left:Trace[Expr], right:Trace[Expr]):Trace[Expr] = (left, right) match {
 			case (ThenTrace(leftLeft, leftRight), ThenTrace(rightLeft, rightRight)) if leftLeft == rightLeft => {
@@ -41,18 +47,34 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 
 		states.push(Success(evL.result(accumulator), input, EmptyTrace(input), Cut.False))
 		while (continue && counter < max) {
-			inner.parse(remaining) match {
-				case Success(a, r, t, c) => {
-					counter += 1
-					repeatAnySuccessHasCut = repeatAnySuccessHasCut | c
-					evL.append(accumulator, a)
-					states.push(Success(evL.result(accumulator), r, thenTrace(states.head.trace, t), c))
-					continue = (remaining != r) // quit if inner seems to be making no progress
-					remaining = r
+			var delimTrace:Trace[Expr] = EmptyTrace(input)
+			if (counter != 0) {
+				delimiter.parse(remaining) match {
+					case Success((), r, t, c) => {
+						repeatAnySuccessHasCut = repeatAnySuccessHasCut | c
+						remaining = r
+						delimTrace = t
+					}
+					case Failure(t, c) => {
+						repeatFailure = Failure(thenTrace(states.head.trace, t), c)
+						continue = false
+					}
 				}
-				case Failure(t, c) => {
-					repeatFailure = Failure(thenTrace(states.head.trace, t), c)
-					continue = false
+			}
+			if (continue) {
+				inner.parse(remaining) match {
+					case Success(a, r, t, c) => {
+						counter += 1
+						repeatAnySuccessHasCut = repeatAnySuccessHasCut | c
+						evL.append(accumulator, a)
+						states.push(Success(evL.result(accumulator), r, thenTrace(thenTrace(states.head.trace, delimTrace), t), c))
+						continue = (remaining != r) // quit if inner seems to be making no progress
+						remaining = r
+					}
+					case Failure(t, c) => {
+						repeatFailure = Failure(thenTrace(thenTrace(states.head.trace, delimTrace), t), c)
+						continue = false
+					}
 				}
 			}
 		}
@@ -98,6 +120,7 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 			this.inner,
 			this.min,
 			this.max,
+			this.delimiter,
 			this.evL,
 			this.rhs.andThen(newParser)(Implicits.AndThenTypes.andThenGeneric),
 			new Implicits.AndThenTypes[AS, (B, C), Z2] {

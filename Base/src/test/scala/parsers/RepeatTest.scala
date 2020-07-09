@@ -164,6 +164,79 @@ final class RepeatTest extends AnyFunSpec {
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
+		it ("`a*` with delim `b` matches ``") {
+			val initialInput = new Input[Nothing](InputPart("", 42) :: Nil, Nil)
+			val childParser = CharIn("a")
+			val delimParser = CharIn("b").map(_ => ())
+
+			val expected = Success[Nothing, String](
+				"",
+				new Input[Nothing](InputPart("", 42) :: Nil, Nil),
+				EmptyTrace(initialInput),
+				Cut.False
+			)
+			val parser = childParser.repeat(delimiter = delimParser)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a*` with delim `b` matches `a`") {
+			val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
+			val childParser = CharIn("a")
+			val delimParser = CharIn("b").map(_ => ())
+			val childExpecting = Expecting("CharIn(\"a\")")
+
+			val expected = Success[Nothing, String](
+				"a",
+				new Input[Nothing](InputPart("", 43) :: Nil, Nil),
+				LeafTrace(childExpecting, new Input(List(InputPart("a", 42)), List())),
+				Cut.False
+			)
+			val parser = childParser.repeat(delimiter = delimParser)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a*` with delim `b` matches `ababa`") {
+			val initialInput = new Input[Nothing](InputPart("ababa", 42) :: Nil, Nil)
+			val childParser = CharIn("a")
+			val delimParser = CharIn("b").map(_ => ())
+			val childExpecting = Expecting("CharIn(\"a\")")
+			val delimExpecting = Expecting("CharIn(\"b\")")
+
+			val expected = Success[Nothing, String](
+				"aaa",
+				new Input[Nothing](InputPart("", 47) :: Nil, Nil),
+				ThenTrace(
+					ThenTrace(
+						ThenTrace(
+							ThenTrace(
+								LeafTrace(childExpecting, new Input(List(InputPart("ababa", 42)), List())),
+								LeafTrace(delimExpecting, new Input(List(InputPart("baba", 43)), List()))
+							),
+							LeafTrace(childExpecting, new Input(List(InputPart("aba", 44)), List()))
+						),
+						LeafTrace(delimExpecting, new Input(List(InputPart("ba", 45)), List()))
+					),
+					LeafTrace(childExpecting, new Input(List(InputPart("a", 46)), List()))
+				),
+				Cut.False
+			)
+			val parser = childParser.repeat(delimiter = delimParser)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a{2,}` with delim `b` does not match `a` and report expecting 'b'") {
+			val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
+			val childParser = CharIn("a")
+			val delimParser = CharIn("b").map(_ => ())
+
+			val expected = Failure[Nothing](
+				ThenTrace(
+					LeafTrace(Expecting("CharIn(\"a\")"), new Input(List(InputPart("a", 42)), List())),
+					LeafTrace(Expecting("CharIn(\"b\")"), new Input(List(InputPart("", 43)), List()))
+				),
+				Cut.False
+			)
+			val parser = childParser.repeat(min = 2, delimiter = delimParser)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
 		describe("`(a ~/ b ~ c)*`") {
 			val childExpecting = Expecting("childExpecting")
 			val childParser = (CharIn[Nothing]("a")

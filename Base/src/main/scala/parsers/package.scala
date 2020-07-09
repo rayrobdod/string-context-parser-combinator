@@ -129,6 +129,11 @@ package object parsers {
 		new End()
 	}
 
+	private[stringContextParserCombinator]
+	def NilParser[Expr]:Parser[Expr, Unit] = new Parser[Expr, Unit] {
+		def parse(input:Input[Expr]):Result[Expr, Unit] = Success((), input, EmptyTrace(input), Cut.False)
+	}
+
 	/* * * Mapping * * */
 
 	private[stringContextParserCombinator]
@@ -172,16 +177,17 @@ package object parsers {
 		backing:Parser[Expr, A],
 		min:Int,
 		max:Int,
+		delimiter:Parser[Expr, Unit],
 		ev:Implicits.RepeatTypes[A, Z]
 	):Parser[Expr, Z] = {
-		new Repeat(backing, min, max, ev)
+		new Repeat(backing, min, max, delimiter, ev)
 	}
 
 	private[stringContextParserCombinator]
 	def Optionally[Expr, A, Z](
 		backing:Parser[Expr, A], ev:Implicits.OptionallyTypes[A, Z]
 	):Parser[Expr, Z] = {
-		new Repeat(backing, 0, 1, new Implicits.RepeatTypes[A, Z] {
+		new Repeat(backing, 0, 1, NilParser, new Implicits.RepeatTypes[A, Z] {
 			final class Box[BoxType](var value:BoxType)
 			type Acc = Box[Z]
 			def init():Acc = new Box(ev.none())
