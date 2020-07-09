@@ -17,9 +17,9 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 	min:Int,
 	max:Int,
 	delimiter:Parser[Expr, Unit],
-	evL:Implicits.RepeatTypes[A, AS],
+	evL:typelevel.Repeated[A, AS],
 	rhs:Parser[Expr, B],
-	evR:Implicits.AndThenTypes[AS, B, Z]
+	evR:typelevel.Sequenced[AS, B, Z]
 ) extends AbstractParser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		var counter:Int = 0
@@ -115,15 +115,15 @@ final class RepeatAndThen[Expr, A, AS, B, Z](
 		}
 	}
 
-	override def andThen[C, Z2](newParser:Parser[Expr, C])(implicit ev:Implicits.AndThenTypes[Z,C,Z2]):Parser[Expr, Z2] = {
+	override def andThen[C, Z2](newParser:Parser[Expr, C])(implicit ev:typelevel.Sequenced[Z,C,Z2]):Parser[Expr, Z2] = {
 		new RepeatAndThen[Expr, A, AS, (B, C), Z2](
 			this.inner,
 			this.min,
 			this.max,
 			this.delimiter,
 			this.evL,
-			this.rhs.andThen(newParser)(Implicits.AndThenTypes.andThenGeneric),
-			new Implicits.AndThenTypes[AS, (B, C), Z2] {
+			this.rhs.andThen(newParser)(typelevel.Sequenced.sequencedGenricToPair),
+			new typelevel.Sequenced[AS, (B, C), Z2] {
 				def aggregate(as:AS, bc:(B, C)):Z2 = ev.aggregate(evR.aggregate(as, bc._1), bc._2)
 			}
 		)

@@ -144,14 +144,14 @@ object MacroImpl {
 					def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
 
 					/* Concatenate every capture in the following parser and combine into one long string */
-					implicit object StringStringAndThenTypes extends Implicits.AndThenTypes[String, String, String] {
+					implicit object StringStringAndThenTypes extends typelevel.Sequenced[String, String, String] {
 						def aggregate(a:String, b:String):String = a + b
 					}
-					implicit object CharStringOptionallyTypes extends Implicits.OptionallyTypes[Char, String] {
+					implicit object CharStringOptionallyTypes extends typelevel.Optionally[Char, String] {
 						def none():String = ""
 						def some(elem:Char):String = elem.toString
 					}
-					implicit object StringStringOptionallyTypes extends Implicits.OptionallyTypes[String, String] {
+					implicit object StringStringOptionallyTypes extends typelevel.Optionally[String, String] {
 						def none():String = ""
 						def some(elem:String):String = elem
 					}
