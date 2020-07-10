@@ -223,11 +223,12 @@ object MacroImpl {
 				)
 				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("value"))))
 
-				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = (
-					ValueP.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThenWithCut LiftedArrayV2
-						andThen WhitespaceP).map(x => Right(x))
-				)
+				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = {
+					val value = ValueP
+					val array = (WhitespaceP andThen IsString("..") andThenWithCut LiftedArrayV2
+						andThen WhitespaceP)
+					value.orElse(array)(typelevel.Eithered.discriminatedUnion)
+				}
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
 					Prefix
 						andThenWithCut WhitespaceP
@@ -265,15 +266,14 @@ object MacroImpl {
 				val KeyV = WhitespaceP andThen StringP andThen WhitespaceP
 
 
-				val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = (
-					(WhitespaceP andThen KeyValueV andThen WhitespaceP)
-						.map(x => Left(x)) orElse
-					(KeyV andThen Separator andThenWithCut ValueP)
+				val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = {
+					val keyValue = (WhitespaceP andThen KeyValueV andThen WhitespaceP)
+					val keyThenValue = (KeyV andThen Separator andThenWithCut ValueP)
 						.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
-						.map(x => Left(x)) orElse
-					(WhitespaceP andThen IsString("..") andThenWithCut ObjectV2 andThen WhitespaceP)
-						.map(x => Right(x))
-				)
+					val mapping = (WhitespaceP andThen IsString("..") andThenWithCut ObjectV2
+						andThen WhitespaceP)
+					keyValue.orElse(keyThenValue).orElse(mapping)(typelevel.Eithered.discriminatedUnion)
+				}
 				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
 					Prefix
 						andThenWithCut WhitespaceP
@@ -292,7 +292,7 @@ object MacroImpl {
 			val ValueP:Parser[c.Expr[JValue]] = {
 				(WhitespaceP andThen (
 					NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP
-				) andThen WhitespaceP).map({x => c.Expr(x.tree)})
+				) andThen WhitespaceP)
 			}
 
 			val Aggregate = (ValueP andThen End())

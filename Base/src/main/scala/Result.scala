@@ -26,7 +26,10 @@ final case class Success[+Expr, +A](
 	val remaining:Input[Expr],
 	val trace:Trace[Expr],
 	val isCut:Cut
-) extends Result[Expr, A]
+) extends Result[Expr, A] {
+	private[stringContextParserCombinator]
+	def map[Z](fn:A => Z):Success[Expr, Z] = Success(fn(value), remaining, trace, isCut)
+}
 
 /**
  * The result of a failed parse

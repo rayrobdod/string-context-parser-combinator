@@ -213,9 +213,11 @@ package object parsers {
 	}
 
 	private[stringContextParserCombinator]
-	def OrElse[Expr, A](
-		left:Parser[Expr, A], right:Parser[Expr, A]
-	):Parser[Expr, A] = {
-		new OrElse(left, right)
+	def OrElse[Expr, A, B, Z](
+		left:Parser[Expr, A],
+		right:Parser[Expr, B],
+		combiner:typelevel.Eithered[A, B, Z]
+	):Parser[Expr, Z] = {
+		new OrElse(left, right, combiner)
 	}
 }

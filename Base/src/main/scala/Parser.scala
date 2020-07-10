@@ -21,7 +21,7 @@ trait Parser[Expr, +A] {
 	/** Returns a parser which invokes this parser, and upon success invokes the other parser. If the second parser fails, the error is marked so that prior `orElse` parsers will not try other branches. */
 	def andThenWithCut[B, Z](rhs:Parser[Expr, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[Expr, Z] = parsers.AndThenWithCut(this, rhs, ev)
 	/** Returns a parser which invokes this parser and the other parser, and returns the first successful result */
-	def orElse[Z >: A](rhs:Parser[Expr, Z]):Parser[Expr, Z] = parsers.OrElse(this, rhs)
+	def orElse[B, Z](rhs:Parser[Expr, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[Expr, Z] = parsers.OrElse(this, rhs, ev)
 	/** Returns a parser which invokes this parser repeatedly and returns the aggregated result */
 	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE, delimiter:Parser[Expr, Unit] = parsers.NilParser)(implicit ev:typelevel.Repeated[A, Z]):Parser[Expr, Z] = parsers.Repeat(this, min, max, delimiter, ev)
 	/** Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed */
