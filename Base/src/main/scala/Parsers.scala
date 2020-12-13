@@ -44,7 +44,7 @@ trait Parsers {
 	 */
 	def Lifted[Lifter[A], Z](lifterType:Function1[ctx.Type, ctx.Type], lift:LiftFunction[ctx.type, Lifter, Z], description:Expecting):Parser[ctx.Expr[Z]] = parsers.Lifted(ctx)(lifterType, lift, description)
 	/** A parser that succeeds iff the input is empty */
-	def End():Parser[Unit] = parsers.End()
+	def End:Parser[Unit] = parsers.End()
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] = parsers.DelayedConstruction(fn)
 }

@@ -1,9 +1,14 @@
 ThisBuild / version := "-SNAPSHOT"
 ThisBuild / organization := "com.rayrobdod"
 
+val scala210Ver = "2.10.7"
+val scala211Ver = "2.11.12"
+val scala212Ver = "2.12.12"
+val scala213Ver = "2.13.4"
+
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %% "scalatest" % "3.1.1" % "test",
+		"org.scalatest" %% "scalatest" % "3.2.3" % "test",
 	),
 	scalacOptions += "-feature",
 	scalacOptions ++= (scalaBinaryVersion.value match {
@@ -40,7 +45,12 @@ lazy val base = (projectMatrix in file("Base"))
 			"org.scala-lang" % "scala-reflect" % scalaVersion.value,
 		),
 	)
-	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"))
+	.jvmPlatform(scalaVersions = Seq(
+		scala210Ver,
+		scala211Ver,
+		scala212Ver,
+		scala213Ver,
+	))
 
 lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)
@@ -52,7 +62,11 @@ lazy val json = (projectMatrix in file("JsonParser"))
 			"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
 		),
 	)
-	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11"))
+	.jvmPlatform(scalaVersions = Seq(
+		scala210Ver,
+		scala211Ver,
+		scala212Ver,
+	))
 
 lazy val time = (projectMatrix in file("TimeParser"))
 	.dependsOn(base)
@@ -61,7 +75,12 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		name := "time",
 		publish / skip := true,
 	)
-	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"))
+	.jvmPlatform(scalaVersions = Seq(
+		scala210Ver,
+		scala211Ver,
+		scala212Ver,
+		scala213Ver,
+	))
 
 lazy val uri = (projectMatrix in file("UriParser"))
 	.dependsOn(base)
@@ -70,4 +89,9 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		name := "uri",
 		publish / skip := true,
 	)
-	.jvmPlatform(scalaVersions = Seq("2.10.7", "2.11.12", "2.12.11", "2.13.1"))
+	.jvmPlatform(scalaVersions = Seq(
+		scala210Ver,
+		scala211Ver,
+		scala212Ver,
+		scala213Ver,
+	))

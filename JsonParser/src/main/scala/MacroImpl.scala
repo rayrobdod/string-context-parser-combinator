@@ -148,11 +148,11 @@ object MacroImpl {
 						def aggregate(a:String, b:String):String = a + b
 					}
 					implicit object CharStringOptionallyTypes extends typelevel.Optionally[Char, String] {
-						def none():String = ""
+						def none:String = ""
 						def some(elem:Char):String = elem.toString
 					}
 					implicit object StringStringOptionallyTypes extends typelevel.Optionally[String, String] {
-						def none():String = ""
+						def none:String = ""
 						def some(elem:String):String = elem
 					}
 
@@ -295,7 +295,7 @@ object MacroImpl {
 				) andThen WhitespaceP)
 			}
 
-			val Aggregate = (ValueP andThen End())
+			val Aggregate = (ValueP andThen End)
 		}
 
 		val className = "com.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"

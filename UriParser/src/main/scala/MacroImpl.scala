@@ -63,11 +63,11 @@ object MacroImpl {
 				def aggregate(a:String, b:String):String = s"${a}${b}"
 			}
 			implicit object EmptyStringOptionallyTypes extends typelevel.Optionally[String, String] {
-				def none():String = ""
+				def none:String = ""
 				def some(elem:String):String = elem
 			}
 			implicit object CodePointOptionallyTypes extends typelevel.Optionally[CodePoint, String] {
-				def none():String = ""
+				def none:String = ""
 				def some(elem:CodePoint):String = elem.toString
 			}
 			implicit object StringRepeatTypes extends typelevel.Repeated[String, String] {
@@ -212,7 +212,7 @@ object MacroImpl {
 						type Acc = scala.collection.mutable.Builder[A, List[A]]
 						def init():Acc = List.newBuilder
 						def append(acc:Acc, elem:List[A]):Unit = {acc ++= elem}
-						def result(acc:Acc):List[A] = acc.result
+						def result(acc:Acc):List[A] = acc.result()
 					}
 					implicit def ListRepeatTypes[A]:typelevel.Repeated[List[A], List[A]] = new ListRepeatTypes[A]
 					val EqualsChar = CodePointIn("=").map(x => constExpr(x.toString))
@@ -285,7 +285,7 @@ object MacroImpl {
 						)
 					})
 				}) andThen
-				End()
+				End
 			}
 
 			val RelativeUriP:Parser[c.Expr[URI]] = {

@@ -190,7 +190,7 @@ package object parsers {
 		new Repeat(backing, 0, 1, NilParser, new typelevel.Repeated[A, Z] {
 			final class Box[BoxType](var value:BoxType)
 			type Acc = Box[Z]
-			def init():Acc = new Box(ev.none())
+			def init():Acc = new Box(ev.none)
 			def append(acc:Acc, elem:A):Unit = acc.value = ev.some(elem)
 			def result(acc:Acc):Z = acc.value
 		})

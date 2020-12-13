@@ -169,7 +169,7 @@ object MacroImpl {
 	def stringContext_localdate(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDate] = {
 		object parsers extends Parsers {
 			val ctx:c.type = c
-			def Aggregate = (this.LocalDateP ~ this.End())
+			def Aggregate = (this.LocalDateP ~ this.End)
 		}
 
 		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
@@ -178,7 +178,7 @@ object MacroImpl {
 	def stringContext_localtime(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalTime] = {
 		object parsers extends Parsers {
 			val ctx:c.type = c
-			def Aggregate = (this.LocalTimeP ~ this.End())
+			def Aggregate = (this.LocalTimeP ~ this.End)
 		}
 
 		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
@@ -187,7 +187,7 @@ object MacroImpl {
 	def stringContext_localdatetime(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDateTime] = {
 		object parsers extends Parsers {
 			val ctx:c.type = c
-			def Aggregate = (this.LocalDateTimeP ~ this.End())
+			def Aggregate = (this.LocalDateTimeP ~ this.End)
 		}
 
 		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
