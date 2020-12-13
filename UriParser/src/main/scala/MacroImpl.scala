@@ -53,24 +53,24 @@ object MacroImpl {
 			def parseByteHex(x:(Char, Char)):Int = java.lang.Integer.parseInt(s"${x._1}${x._2}", 16)
 
 
-			implicit object AndThenCodepointString extends Implicits.AndThenTypes[CodePoint, String, String] {
+			implicit object AndThenCodepointString extends typelevel.Sequenced[CodePoint, String, String] {
 				def aggregate(a:CodePoint, b:String):String = s"${a}${b}"
 			}
-			implicit object AndThenStringCodepoint extends Implicits.AndThenTypes[String, CodePoint, String] {
+			implicit object AndThenStringCodepoint extends typelevel.Sequenced[String, CodePoint, String] {
 				def aggregate(a:String, b:CodePoint):String = s"${a}${b}"
 			}
-			implicit object AndThenStringString extends Implicits.AndThenTypes[String, String, String] {
+			implicit object AndThenStringString extends typelevel.Sequenced[String, String, String] {
 				def aggregate(a:String, b:String):String = s"${a}${b}"
 			}
-			implicit object EmptyStringOptionallyTypes extends Implicits.OptionallyTypes[String, String] {
+			implicit object EmptyStringOptionallyTypes extends typelevel.Optionally[String, String] {
 				def none():String = ""
 				def some(elem:String):String = elem
 			}
-			implicit object CodePointOptionallyTypes extends Implicits.OptionallyTypes[CodePoint, String] {
+			implicit object CodePointOptionallyTypes extends typelevel.Optionally[CodePoint, String] {
 				def none():String = ""
 				def some(elem:CodePoint):String = elem.toString
 			}
-			implicit object StringRepeatTypes extends Implicits.RepeatTypes[String, String] {
+			implicit object StringRepeatTypes extends typelevel.Repeated[String, String] {
 				type Acc = StringBuilder
 				def init():Acc = new StringBuilder
 				def append(acc:Acc, elem:String):Unit = {acc ++= elem}
@@ -85,7 +85,7 @@ object MacroImpl {
 			val UnreservedChar:Parser[CodePoint] = AlphaNumChar orElse CodePointIn("-_.!~*'()")
 
 			val EscapedChar:Parser[CodePoint] = {
-				implicit object Utf8ContinuationAndThen extends Implicits.AndThenTypes[Int, Int, Int] {def aggregate(a:Int, b:Int):Int = a << 6 | b}
+				implicit object Utf8ContinuationAndThen extends typelevel.Sequenced[Int, Int, Int] {def aggregate(a:Int, b:Int):Int = a << 6 | b}
 				val EscapedContinuation:Parser[Int] = (IsString("%") andThen CharIn("89ABab") andThen HexChar).map({x => (parseByteHex(x) & 0x3F)})
 
 				(IsString("%") andThen (
@@ -201,20 +201,20 @@ object MacroImpl {
 					.map(xs => concatenateStrings(c)(xs))
 				val Mapping = {
 					import scala.language.implicitConversions
-					implicit def fn2then[A,B,Z](fn:(A,B) => Z):Implicits.AndThenTypes[A,B,Z] = new Implicits.AndThenTypes[A,B,Z]{
+					implicit def fn2then[A,B,Z](fn:(A,B) => Z):typelevel.Sequenced[A,B,Z] = new typelevel.Sequenced[A,B,Z]{
 						def aggregate(a:A, b:B):Z = fn(a,b)
 					}
-					implicit def AndThenElemElem:Implicits.AndThenTypes[c.Expr[String], c.Expr[String], List[c.Expr[String]]] = (a:c.Expr[String],b:c.Expr[String]) => a :: b :: Nil
-					implicit def AndThenElemList:Implicits.AndThenTypes[c.Expr[String], List[c.Expr[String]], List[c.Expr[String]]] = (a:c.Expr[String], b:List[c.Expr[String]]) => a +: b
-					implicit def AndThenListElem:Implicits.AndThenTypes[List[c.Expr[String]], c.Expr[String], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:c.Expr[String]) => a :+ b
-					implicit def AndThenListList:Implicits.AndThenTypes[List[c.Expr[String]], List[c.Expr[String]], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:List[c.Expr[String]]) => a ++: b
-					final class ListRepeatTypes[A] extends Implicits.RepeatTypes[List[A], List[A]] {
+					implicit def AndThenElemElem:typelevel.Sequenced[c.Expr[String], c.Expr[String], List[c.Expr[String]]] = (a:c.Expr[String],b:c.Expr[String]) => a :: b :: Nil
+					implicit def AndThenElemList:typelevel.Sequenced[c.Expr[String], List[c.Expr[String]], List[c.Expr[String]]] = (a:c.Expr[String], b:List[c.Expr[String]]) => a +: b
+					implicit def AndThenListElem:typelevel.Sequenced[List[c.Expr[String]], c.Expr[String], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:c.Expr[String]) => a :+ b
+					implicit def AndThenListList:typelevel.Sequenced[List[c.Expr[String]], List[c.Expr[String]], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:List[c.Expr[String]]) => a ++: b
+					final class ListRepeatTypes[A] extends typelevel.Repeated[List[A], List[A]] {
 						type Acc = scala.collection.mutable.Builder[A, List[A]]
 						def init():Acc = List.newBuilder
 						def append(acc:Acc, elem:List[A]):Unit = {acc ++= elem}
 						def result(acc:Acc):List[A] = acc.result
 					}
-					implicit def ListRepeatTypes[A]:Implicits.RepeatTypes[List[A], List[A]] = new ListRepeatTypes[A]
+					implicit def ListRepeatTypes[A]:typelevel.Repeated[List[A], List[A]] = new ListRepeatTypes[A]
 					val EqualsChar = CodePointIn("=").map(x => constExpr(x.toString))
 					val AndChar = CodePointIn("&").map(x => constExpr(x.toString))
 

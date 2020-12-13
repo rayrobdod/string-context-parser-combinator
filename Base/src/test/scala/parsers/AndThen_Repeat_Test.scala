@@ -274,11 +274,11 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 					ThenTrace(
 						ThenTrace(
 							LeafTrace(Expecting("rep"), initialInput),
-							LeafTrace(Expecting("delim"), InputNoArgs("bac", 43)),
+							LeafTrace(Expecting("delim"), InputNoArgs("bac", 43))
 						),
-						LeafTrace(Expecting("rep"), InputNoArgs("ac", 44)),
+						LeafTrace(Expecting("rep"), InputNoArgs("ac", 44))
 					),
-					LeafTrace(Expecting("right"), InputNoArgs("c", 45)),
+					LeafTrace(Expecting("right"), InputNoArgs("c", 45))
 				),
 				Cut.False
 			)

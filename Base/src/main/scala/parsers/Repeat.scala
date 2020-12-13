@@ -7,7 +7,7 @@ final class Repeat[Expr, A, Z](
 	min:Int,
 	max:Int,
 	delimiter:Parser[Expr, Unit],
-	ev:Implicits.RepeatTypes[A, Z]
+	ev:typelevel.Repeated[A, Z]
 ) extends AbstractParser[Expr, Z] {
 	require(min >= 0)
 	require(max >= 1)
@@ -74,7 +74,7 @@ final class Repeat[Expr, A, Z](
 		}
 	}
 
-	override def andThen[B, Z2](rhs:Parser[Expr, B])(implicit ev:Implicits.AndThenTypes[Z,B,Z2]):Parser[Expr, Z2] = {
+	override def andThen[B, Z2](rhs:Parser[Expr, B])(implicit ev:typelevel.Sequenced[Z,B,Z2]):Parser[Expr, Z2] = {
 		new RepeatAndThen[Expr, A, Z, B, Z2](this.inner, this.min, this.max, this.delimiter, this.ev, rhs, ev)
 	}
 }

@@ -6,7 +6,7 @@ private[parsers] final class Map[Expr, A, Z](
 ) extends AbstractParser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		backing.parse(input) match {
-			case Success(value, rest, trace, cut) => Success(mapping(value), rest, trace, cut)
+			case success@Success(_, _, _ , _) => success.map(mapping)
 			case failure@Failure(_, _) => failure
 		}
 	}

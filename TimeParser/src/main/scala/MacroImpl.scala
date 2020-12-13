@@ -17,11 +17,11 @@ trait ParsersImplictly extends scpcParsers {
 
 /** Adds symbolic methods to Parsers */
 class ParserWithSymbolic[U, A](val backing:Parser[U, A]) extends AnyVal {
-	def ~[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]) = backing.andThen(rhs)(ev)
-	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:Implicits.AndThenTypes[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
+	def ~[B, Z](rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
+	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
 	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
-	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:Implicits.RepeatTypes[A, Z]) = backing.repeat(min, max)(ev)
-	def opt[Z](implicit ev:Implicits.OptionallyTypes[A, Z]) = backing.optionally(ev)
+	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
+	def opt[Z](implicit ev:typelevel.Optionally[A, Z]) = backing.optionally(ev)
 }
 
 object MacroImpl {
@@ -29,7 +29,7 @@ object MacroImpl {
 	private[this] final class Digit(val value:Int)
 	private[this] final class Digits(val value:Int)
 
-	private[this] implicit object DigitRepeatTypes extends Implicits.RepeatTypes[Digit, Digits] {
+	private[this] implicit object DigitRepeatTypes extends typelevel.Repeated[Digit, Digits] {
 		class Box(var value:Int)
 		type Acc = Box
 		def init():Acc = new Box(0)

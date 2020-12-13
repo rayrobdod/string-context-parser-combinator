@@ -4,7 +4,7 @@ package parsers
 private[parsers] final class AndThenWithCut[Expr, A, B, Z](
 	left:Parser[Expr, A],
 	right:Parser[Expr, B],
-	ev:Implicits.AndThenTypes[A, B, Z]
+	ev:typelevel.Sequenced[A, B, Z]
 ) extends Parser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		left.parse(input) match {
