@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.uriTest
 
 import java.net.URI
 import org.scalatest.funspec.AnyFunSpec
-import com.rayrobdod.stringContextParserCombinatorExample.uri.UriStringContext
+import com.rayrobdod.stringContextParserCombinatorExample.uri._
 
 final class StringContextTest extends AnyFunSpec {
 	describe("StringContext.uri") {

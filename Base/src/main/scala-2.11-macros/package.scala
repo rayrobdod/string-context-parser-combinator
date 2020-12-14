@@ -3,6 +3,7 @@ package com.rayrobdod
 import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
 import scala.language.higherKinds
+import scala.reflect.api.Exprs
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 
@@ -57,15 +58,40 @@ package object stringContextParserCombinator {
 		}
 	}
 
+	/**
+	 * Returns a string representation of this input, suitable for printing to a users
+	 */
+	private[this] def inputDescription(input:Input[Exprs#Expr[_]]):String = {
+		if (input.isEmpty) {
+			"end of input"
+		} else {
+			scala.collection.immutable.Range(0, input.args.size)
+				.map(i => s"${input.parts(i)._1}$${${input.args(i).tree}}")
+				.mkString("\"", "", input.parts(input.args.size)._1 + "\"")
+		}
+	}
+
+	/**
+	 * Returns the position of this input
+	 */
+	private[this] def inputPosition(input:Input[Exprs#Expr[_]]):PositionPoint = {
+		if (input.parts(0)._1.length != 0) {
+			input.parts(0)._2
+		} else if (input.args.nonEmpty) {
+			PositionPoint(input.args(0).tree.pos)
+		} else {
+			input.parts(0)._2
+		}
+	}
+
 	private[this] def reportFailure(c:Context)(failure:Failure[c.Expr[_]]):Nothing = {
 		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
-		val remainingDescription = trimmedTrace.leftMostRemaining.description
-		val remainingPosition = trimmedTrace.leftMostRemaining.position
+		val remainingDescription = inputDescription(trimmedTrace.leftMostRemaining)
+		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
 		val expectingDescription = trimmedTrace.expectingDescription
 
 		c.abort(remainingPosition.cast(c), s"Found ${remainingDescription} ; Expected ${expectingDescription}")
 	}
-
 
 	/**
 	 * A macro impl scaffold, which takes care of extracting strings from a

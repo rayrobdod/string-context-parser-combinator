@@ -1,15 +1,13 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.reflect.api.Exprs
-
 /**
  * The input to a {@link Parser}
  *
  * @group Input/Result
  */
 final class Input[+Expr](
-	private val parts:List[(String, PositionPoint)],
-	private val args:List[Expr]
+	private[stringContextParserCombinator] val parts:List[(String, PositionPoint)],
+	private[stringContextParserCombinator] val args:List[Expr]
 ) {
 	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],
@@ -37,32 +35,6 @@ final class Input[+Expr](
 	 * {@link Failure}
 	 */
 	private[stringContextParserCombinator] def isEmpty:Boolean = parts.head._1.isEmpty && args.isEmpty
-
-	/**
-	 * Returns a string representation of this input, suitable for printing to a users
-	 */
-	private[stringContextParserCombinator] def description(implicit ev:Expr <:< Exprs#Expr[_]):String = {
-		if (this.isEmpty) {
-			"end of input"
-		} else {
-			scala.collection.immutable.Range(0, args.size)
-				.map(i => s"${parts(i)._1}$${${ev(args(i)).tree}}")
-				.mkString("\"", "", parts(args.size)._1 + "\"")
-		}
-	}
-
-	/**
-	 * Returns the position of this input
-	 */
-	private[stringContextParserCombinator] def position(implicit ev:Expr <:< Exprs#Expr[_]):PositionPoint = {
-		if (parts(0)._1.length != 0) {
-			parts(0)._2
-		} else if (args.nonEmpty) {
-			PositionPoint(ev(args(0)).tree.pos)
-		} else {
-			parts(0)._2
-		}
-	}
 
 	override def toString:String = s"Input(${parts}, ${args})"
 	override def hashCode:Int = java.util.Objects.hash(parts, args)

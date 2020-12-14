@@ -59,7 +59,7 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
 		this.CodePointWhere(
-			{x:CodePoint => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
+			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
 			Expecting("CodePointIn(\"" + chooseFrom + "\")")
 		)
 	}
