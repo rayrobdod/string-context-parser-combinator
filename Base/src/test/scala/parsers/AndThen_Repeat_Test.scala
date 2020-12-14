@@ -5,7 +5,7 @@ import org.scalatest.funspec.AnyFunSpec
 
 final class AndThen_Repeat_Test extends AnyFunSpec {
 	final case class SuccessValue(x:Int)
-	def InputPart(str:String, pos:Int) = ((str, PositionPoint(pos)))
+	def InputPart(str:String, pos:Int) = ((str, Position(pos)))
 	def InputNoArgs(str:String, pos:Int) = new Input[Nothing](InputPart(str, pos) :: Nil, Nil)
 
 	describe ("AndThen / Repeat") {

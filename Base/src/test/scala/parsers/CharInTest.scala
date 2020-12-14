@@ -6,9 +6,9 @@ import org.scalatest.funspec.AnyFunSpec
 
 final class CharInTest extends AnyFunSpec {
 	final case class Expr(value:String)
-	def InputPart(str:String, pos:Int) = ((str, PositionPoint(pos)))
+	def InputPart(str:String, pos:Int) = ((str, Position(pos)))
 
-	def expectSuccess(head:Char, restOfSet:Set[Char], tail:(List[(String, PositionPoint)], List[Expr])) = {
+	def expectSuccess(head:Char, restOfSet:Set[Char], tail:(List[(String, Position)], List[Expr])) = {
 		val input = new Input(((s"${head}${tail._1.head._1}", tail._1.head._2 + -1)) :: tail._1.tail, tail._2)
 		val parserSet = restOfSet + head
 		val expected = Success(
@@ -38,13 +38,13 @@ final class CharInTest extends AnyFunSpec {
 			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: InputPart("More", 1) :: Nil, Expr("Arg") :: Nil))
 		}
 		it ("1 | 1") {
-			expectSuccess('1', Set.empty, (("", PositionPoint(1)) :: Nil, Nil))
+			expectSuccess('1', Set.empty, (("", Position(1)) :: Nil, Nil))
 		}
 		it ("123 | 1") {
-			expectSuccess('1', Set('2', '3'), (("", PositionPoint(1)) :: Nil, Nil))
+			expectSuccess('1', Set('2', '3'), (("", Position(1)) :: Nil, Nil))
 		}
 		it ("1 | 123") {
-			expectSuccess('1', Set.empty, (("23", PositionPoint(2)) :: Nil, Nil))
+			expectSuccess('1', Set.empty, (("23", Position(2)) :: Nil, Nil))
 		}
 	}
 }

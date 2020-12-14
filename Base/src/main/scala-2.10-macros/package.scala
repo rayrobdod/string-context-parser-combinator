@@ -76,11 +76,11 @@ package object stringContextParserCombinator {
 	/**
 	 * Returns the position of this input
 	 */
-	private[this] def inputPosition(input:Input[Exprs#Expr[_]]):PositionPoint = {
+	private[this] def inputPosition(input:Input[Exprs#Expr[_]]):Position = {
 		if (input.parts(0)._1.length != 0) {
 			input.parts(0)._2
 		} else if (input.args.nonEmpty) {
-			PositionPoint(input.args(0).tree.pos)
+			Position(input.args(0).tree.pos)
 		} else {
 			input.parts(0)._2
 		}
@@ -92,7 +92,7 @@ package object stringContextParserCombinator {
 		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
 		val expectingDescription = trimmedTrace.expectingDescription
 
-		c.abort(remainingPosition.cast(c), s"Found ${remainingDescription} ; Expected ${expectingDescription}")
+		remainingPosition.throwError(c)(s"Found ${remainingDescription} ; Expected ${expectingDescription}")
 	}
 
 
@@ -132,7 +132,7 @@ package object stringContextParserCombinator {
 				ExtensionClassSelectChain(),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => (c.eval(c.Expr[String](c.resetAllAttrs(x.tree.duplicate))), PositionPoint(x.tree.pos))})
+				strings.map({x => (c.eval(c.Expr[String](c.resetAllAttrs(x.tree.duplicate))), Position(x.tree.pos))})
 			}
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
@@ -161,13 +161,12 @@ package stringContextParserCombinator {
 
 
 
-	/** A position's point - divorced from the position's context */
-	final case class PositionPoint(val value:Int) extends AnyVal {
-		def cast(c:Context):c.Position = c.enclosingPosition.withPoint(value)
-		def +(x:Int):PositionPoint = PositionPoint(this.value + x)
-		def >(rhs:PositionPoint):Boolean = this.value > rhs.value
+	/** A position in a source file */
+	final case class Position(value:Int) extends AnyVal {
+		def +(x:Int):Position = new Position(this.value + x)
+		def throwError(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(value), msg)
 	}
-	object PositionPoint {
-		def apply(x:scala.reflect.api.Position):PositionPoint = new PositionPoint(x.point)
+	object Position {
+		def apply(x:scala.reflect.api.Position):Position = new Position(x.point)
 	}
 }

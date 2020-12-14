@@ -4,7 +4,7 @@ package parsers
 import org.scalatest.funspec.AnyFunSpec
 
 final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
-	def InputPart(str:String, pos:Int) = ((str, PositionPoint(pos)))
+	def InputPart(str:String, pos:Int) = ((str, Position(pos)))
 
 	describe("OrElse / AndThenWithCut") {
 		it ("all failures reports the first part of each andThen chain, having not reached the cut yet") {

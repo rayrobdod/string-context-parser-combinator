@@ -8,9 +8,14 @@ val scala213Ver = "2.13.4"
 val scala30Ver = "3.0.0-M2"
 
 lazy val sharedSettings = Seq(
-	libraryDependencies ++= Seq(
-		"org.scalatest" %% "scalatest" % "3.2.3" % "test",
-	),
+	libraryDependencies ++= (scalaBinaryVersion.value match {
+		case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
+			"org.scalatest" %% "scalatest" % "3.2.3" % "test",
+		)
+		case "3.0.0-M2" => Seq(
+			"org.scalatest" % "scalatest_3.0.0-M2" % "3.2.3" % "test",
+		)
+	}),
 	scalacOptions += "-feature",
 	scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" => Seq("-target:jvm-1.7")

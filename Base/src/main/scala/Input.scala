@@ -6,7 +6,7 @@ package com.rayrobdod.stringContextParserCombinator
  * @group Input/Result
  */
 final class Input[+Expr](
-	private[stringContextParserCombinator] val parts:List[(String, PositionPoint)],
+	private[stringContextParserCombinator] val parts:List[(String, Position)],
 	private[stringContextParserCombinator] val args:List[Expr]
 ) {
 	private[stringContextParserCombinator] def consume[A](
