@@ -100,6 +100,7 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
+		scala30Ver,
 	))
 
 lazy val uri = (projectMatrix in file("UriParser"))
