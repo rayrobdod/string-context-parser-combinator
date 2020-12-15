@@ -38,7 +38,7 @@ object MacroImpl {
 	}
 
 	import com.rayrobdod.stringContextParserCombinator.Parsers._
-	private[this] def IsDigit:Parser[Digit] = CharIn('0' to '9').map(x => new Digit(x - '0'))
+	private[this] val IsDigit:Parser[Digit] = CharIn('0' to '9').map(x => new Digit(x - '0'))
 
 	private[this] def Int2Digits(min:Int, max:Int) = (IsDigit.rep(2, 2))
 			.map(_.value)
