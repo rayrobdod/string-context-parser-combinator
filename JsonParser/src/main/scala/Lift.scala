@@ -31,19 +31,19 @@ object Lift {
 		Lift( scalajson.ast.JString.apply _ )
 
 	type Array[A] = Lift[A, JArray]
-	implicit def seq[A](implicit child:Lift[A, JValue]) =
+	implicit def seq[A](implicit child:Lift[A, JValue]):Lift[scala.collection.immutable.Seq[A], JArray] =
 		Lift[scala.collection.immutable.Seq[A], JArray](
 			xs => JArray(xs.map(child.apply _).toVector)
 		)
 
 	type KeyValue[A] = Lift[A, (java.lang.String, JValue)]
-	implicit def keyValue[K, V](implicit liftKey:Lift[K, JString], liftValue:Lift[V, JValue]) =
+	implicit def keyValue[K, V](implicit liftKey:Lift[K, JString], liftValue:Lift[V, JValue]):Lift[Tuple2[K, V], Tuple2[java.lang.String, JValue]] =
 		Lift[Tuple2[K, V], Tuple2[java.lang.String, JValue]](
 			kv => (liftKey(kv._1).value, liftValue(kv._2))
 		)
 
 	type Object[A] = Lift[A, JObject]
-	implicit def map[A](implicit child:Lift[A, JValue]) =
+	implicit def map[A](implicit child:Lift[A, JValue]):Lift[scala.collection.immutable.Map[java.lang.String, A], JObject] =
 		Lift[scala.collection.immutable.Map[java.lang.String, A], JObject](
 			xs => JObject(xs.mapValues(child.apply _).toMap)
 		)

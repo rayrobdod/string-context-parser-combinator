@@ -71,14 +71,21 @@ lazy val json = (projectMatrix in file("JsonParser"))
 	.settings(
 		name := "json",
 		publish / skip := true,
-		libraryDependencies ++= Seq(
-			"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
-		),
+		libraryDependencies ++= (scalaBinaryVersion.value match {
+			case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
+				"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
+			)
+			case _ => Seq(
+				"org.scala-lang.platform" % "scalajson_2.13" % "1.0.0-M4"
+			)
+		}),
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala210Ver,
 		scala211Ver,
 		scala212Ver,
+		scala213Ver,
+		scala30Ver,
 	))
 
 lazy val time = (projectMatrix in file("TimeParser"))

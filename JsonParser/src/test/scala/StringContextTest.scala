@@ -3,8 +3,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.jsonTest
 import scala.collection.immutable.{Map, Vector}
 import scalajson.ast._
 import org.scalatest.funspec.AnyFunSpec
-import com.rayrobdod.stringContextParserCombinatorExample.json.JsonStringContext
-import com.rayrobdod.stringContextParserCombinatorExample.json.Lift
+import com.rayrobdod.stringContextParserCombinatorExample.json._
 
 final class StringContextTest extends AnyFunSpec {
 	describe("StringContext.json") {
