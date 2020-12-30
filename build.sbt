@@ -32,14 +32,21 @@ lazy val sharedSettings = Seq(
 		case "2.11" | "2.12" | "2.13" => (Compile / sourceDirectory).value / "scala-2.11-macros"
 		case _ => (Compile / sourceDirectory).value / "scala-3-macros"
 	}),
-	scalacOptions in doc in Compile ++= Seq(
-		"-doc-title", name.value,
-		"-doc-version", version.value,
-		"-doc-root-content", ((scalaSource in Compile).value / "rootdoc.txt").toString,
-		"-implicits",
-		"-groups",
-		"-sourcepath", baseDirectory.value.toString,
-	),
+	scalacOptions in doc in Compile ++= (scalaBinaryVersion.value match {
+		case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
+			"-doc-title", name.value,
+			"-doc-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
+			"-doc-root-content", ((scalaSource in Compile).value / "rootdoc.txt").toString,
+			"-implicits",
+			"-groups",
+			"-sourcepath", baseDirectory.value.toString,
+		)
+		case _ => Seq(
+			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
+			"-siteroot", (target.value / "api").toString,
+			"-sourcepath", baseDirectory.value.toString,
+		)
+	}),
 	Test / testOptions += Tests.Argument(
 		"-oS",
 	),
