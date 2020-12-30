@@ -1,7 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-private[parsers] final class AndThen[Expr, A, B, Z](
+private[stringContextParserCombinator]
+final class AndThen[Expr, A, B, Z](
 	left:Parser[Expr, A], right:Parser[Expr, B], ev:typelevel.Sequenced[A, B, Z]
 ) extends Parser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {

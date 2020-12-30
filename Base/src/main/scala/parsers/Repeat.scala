@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-private[parsers]
+private[stringContextParserCombinator]
 final class Repeat[Expr, A, Z](
 	inner:Parser[Expr, A],
 	min:Int,

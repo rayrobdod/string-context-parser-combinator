@@ -80,9 +80,9 @@ package object stringContextParserCombinator {
 	def macroimpl[Z](parser:Parser[Expr[_], Expr[Z]])(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using c:Quotes):Expr[Z] = {
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
-			case _ => scala.quoted.report.throwError(s"Do not know how to process this tree", sc)
+			case _ => scala.quoted.quotes.reflect.report.throwError(s"Do not know how to process this tree", sc)
 		}
-		val strings2 = strings.map(x => ((x.unliftOrError, Position(x)))).toList
+		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
 		val args2 = Varargs.unapply(args).get.toList
 
 		val input = new Input(strings2, args2)
@@ -115,14 +115,22 @@ package stringContextParserCombinator {
 		final class Impl(q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int) extends Position {
 			def +(rhs:Int):Position = new Impl(q)(file, start + rhs, end)
 			def throwError(msg:String):Nothing = {
-				q.reflect.Reporting.error(msg, file, start, end)
-				throw new scala.quoted.runtime.StopMacroExpansion
+				q.reflect.report.throwError(msg, q.reflect.Position(file, start, end))
 			}
 		}
 
-		def apply(expr:Expr[_])(using q:Quotes):Position = Position(q.reflect.Term.of(expr).pos)
-		def apply(using q:Quotes)(pos:q.reflect.Position):Position = Position(using q)(pos.sourceFile, pos.start, pos.end)
-		def apply(using q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int):Position = new Impl(q)(file, start, end)
+		def apply(expr:Expr[_])(using q:Quotes):Position = {
+			import q.reflect._
+			stringContextParserCombinator.Position(expr.asTerm.pos)
+		}
+
+		def apply(using q:Quotes)(pos:q.reflect.Position):Position = {
+			Position(using q)(pos.sourceFile, pos.start, pos.end)
+		}
+
+		def apply(using q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int):Position = {
+			new Impl(q)(file, start, end)
+		}
 
 		private[stringContextParserCombinator] def apply(point:Int):Position = {
 			final case class Impl2(point:Int) extends Position {

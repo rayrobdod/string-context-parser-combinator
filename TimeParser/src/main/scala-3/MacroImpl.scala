@@ -7,9 +7,13 @@ import scala.quoted._
 import com.rayrobdod.stringContextParserCombinator._
 
 given Conversion[String, Parsers.Parser[Unit]] = Parsers.IsString(_)
-given [A](using Quotes) as Conversion[Type[A], Parsers.Parser[Expr[A]]] {
-	  def apply(typ:Type[A]):Parsers.Parser[Expr[A]] = Parsers.OfType[A](using typ)
+given [A](using Quotes) : Conversion[Type[A], Parsers.Parser[Expr[A]]] = {
+	new Conversion[Type[A], Parsers.Parser[Expr[A]]] {
+		def apply(typ:Type[A]):Parsers.Parser[Expr[A]] = Parsers.OfType[A](using typ)
+	}
 }
+
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.given_Conversion_String_Parser
 
 /** Adds symbolic methods to Parsers */
 extension [U, A, B, Z] (backing:Parser[U, A])
@@ -65,10 +69,10 @@ object MacroImpl {
 			//'{java.time.Month.valueOf(${Expr(name)})}, but using the enum value
 			import scala.quoted.quotes.reflect._
 			val _root = defn.RootPackage
-			val _java = _root.field("java")
-			val _time = _java.field("time")
-			val _month = _time.field("Month")
-			val _instance = _month.field(name)
+			val _java = _root.memberField("java")
+			val _time = _java.memberField("time")
+			val _month = _time.memberField("Month")
+			val _instance = _month.memberField(name)
 
 			Ref(_root).select(_java).select(_time).select(_month).select(_instance).asExprOf[Month]
 		}

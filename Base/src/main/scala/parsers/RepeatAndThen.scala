@@ -11,7 +11,7 @@ package parsers
  * With this, after failing to match when the repeat sucks up everything, this will try again with the
  * repeat accepting one less "1" than before, which then allows the rest of the parser to succeed
  */
-private[parsers]
+private[stringContextParserCombinator]
 final class RepeatAndThen[Expr, A, AS, B, Z](
 	inner:Parser[Expr, A],
 	min:Int,

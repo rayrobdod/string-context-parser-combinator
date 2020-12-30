@@ -113,65 +113,9 @@ package object parsers {
 		Expecting("s/" + reg.toString + "/")
 	)
 
-	/** Succeeds only at the end of the given input */
-	private[stringContextParserCombinator]
-	def End[Expr](
-	):Parser[Expr, Unit] = {
-		new End()
-	}
-
 	private[stringContextParserCombinator]
 	def NilParser[Expr]:Parser[Expr, Unit] = new Parser[Expr, Unit] {
 		def parse(input:Input[Expr]):Result[Expr, Unit] = Success((), input, EmptyTrace(input), Cut.False)
-	}
-
-	/* * * Mapping * * */
-
-	private[stringContextParserCombinator]
-	def Map[Expr, A, Z](
-		backing:Parser[Expr,A], mapping:Function1[A, Z]
-	):Parser[Expr, Z] = {
-		new Map(backing, mapping)
-	}
-
-	private[stringContextParserCombinator]
-	def FlatMap[Expr, A, Z](
-		backing:Parser[Expr, A], mapping:Function1[A, Parser[Expr, Z]]
-	):Parser[Expr, Z] = {
-		new FlatMap(backing, mapping)
-	}
-
-	private[stringContextParserCombinator]
-	def Filter[Expr, A](
-		backing:Parser[Expr, A], predicate:Function1[A, Boolean], description:Expecting
-	):Parser[Expr, A] = {
-		new Filter(backing, predicate, description)
-	}
-
-	private[stringContextParserCombinator]
-	def Opaque[Expr, A](
-		backing:Parser[Expr, A], description:Expecting
-	):Parser[Expr, A] = {
-		new Opaque(backing, description)
-	}
-
-	/** Used to allow mutually recursive parsers */
-	private[stringContextParserCombinator]
-	def DelayedConstruction[Expr, A](
-		backing:Function0[Parser[Expr, A]]
-	):Parser[Expr, A] = {
-		new DelayedConstruction(backing)
-	}
-
-	private[stringContextParserCombinator]
-	def Repeat[Expr, A, Z](
-		backing:Parser[Expr, A],
-		min:Int,
-		max:Int,
-		delimiter:Parser[Expr, Unit],
-		ev:typelevel.Repeated[A, Z]
-	):Parser[Expr, Z] = {
-		new Repeat(backing, min, max, delimiter, ev)
 	}
 
 	private[stringContextParserCombinator]
@@ -185,30 +129,5 @@ package object parsers {
 			def append(acc:Acc, elem:A):Unit = acc.value = ev.some(elem)
 			def result(acc:Acc):Z = acc.value
 		})
-	}
-
-	/* * * Combinations * * */
-
-	private[stringContextParserCombinator]
-	def AndThen[Expr, A, B, Z](
-		left:Parser[Expr, A], right:Parser[Expr, B], ev:typelevel.Sequenced[A, B, Z]
-	):Parser[Expr, Z] = {
-		new AndThen(left, right, ev)
-	}
-
-	private[stringContextParserCombinator]
-	def AndThenWithCut[Expr, A, B, Z](
-		left:Parser[Expr, A], right:Parser[Expr, B], ev:typelevel.Sequenced[A, B, Z]
-	):Parser[Expr, Z] = {
-		new AndThenWithCut(left, right, ev)
-	}
-
-	private[stringContextParserCombinator]
-	def OrElse[Expr, A, B, Z](
-		left:Parser[Expr, A],
-		right:Parser[Expr, B],
-		combiner:typelevel.Eithered[A, B, Z]
-	):Parser[Expr, Z] = {
-		new OrElse(left, right, combiner)
 	}
 }
