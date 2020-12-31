@@ -81,10 +81,10 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		publish / skip := true,
 		libraryDependencies ++= (scalaBinaryVersion.value match {
 			case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
-				"org.scala-lang.platform" %% "scalajson" % "1.0.0-M4",
+				"org.json4s" %% "json4s-ast" % "3.6.10",
 			)
 			case _ => Seq(
-				"org.scala-lang.platform" % "scalajson_2.13" % "1.0.0-M4"
+				"org.json4s" % "json4s-ast_2.13" % "3.6.10",
 			)
 		}),
 	)

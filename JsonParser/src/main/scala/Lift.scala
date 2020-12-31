@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample.json
 
-import scalajson.ast._
+import org.json4s.JsonAST._
 
 trait Lift[-A, +Z]{
 	def apply(value:A):Z
@@ -12,39 +12,39 @@ object Lift {
 	implicit def jvalue[A <: JValue]:Lift[A, A] =
 		Lift(scala.Predef.identity)
 
-	type Boolean[A] = Lift[A, JBoolean]
-	implicit val bool:Lift[scala.Boolean, JBoolean] =
-		Lift( scalajson.ast.JBoolean.apply _ )
+	type Boolean[A] = Lift[A, JBool]
+	implicit val bool:Lift[scala.Boolean, JBool] =
+		Lift( JBool.apply _ )
 
-	type Number[A] = Lift[A, JNumber]
-	implicit val int:Lift[scala.Int, JNumber] =
-		Lift( scalajson.ast.JNumber.apply _ )
-	implicit val long:Lift[scala.Long, JNumber] =
-		Lift( scalajson.ast.JNumber.apply _ )
-	implicit val bigint:Lift[scala.math.BigInt, JNumber] =
-		Lift( scalajson.ast.JNumber.apply _ )
-	implicit val bigdecimal:Lift[scala.math.BigDecimal, JNumber] =
-		Lift( scalajson.ast.JNumber.apply _ )
+	type Number[A] = Lift[A, JValue with JNumber]
+	implicit val int:Lift[scala.Int, JValue with JNumber] =
+		Lift( x => JLong.apply(x) )
+	implicit val long:Lift[scala.Long, JValue with JNumber] =
+		Lift( JLong.apply _ )
+	implicit val bigint:Lift[scala.math.BigInt, JValue with JNumber] =
+		Lift( JInt.apply _ )
+	implicit val bigdecimal:Lift[scala.math.BigDecimal, JValue with JNumber] =
+		Lift( JDecimal.apply _ )
 
 	type String[A] = Lift[A, JString]
 	implicit val string:Lift[java.lang.String, JString] =
-		Lift( scalajson.ast.JString.apply _ )
+		Lift( JString.apply _ )
 
 	type Array[A] = Lift[A, JArray]
 	implicit def seq[A](implicit child:Lift[A, JValue]):Lift[scala.collection.immutable.Seq[A], JArray] =
 		Lift[scala.collection.immutable.Seq[A], JArray](
-			xs => JArray(xs.map(child.apply _).toVector)
+			xs => JArray(xs.map(child.apply _).toList)
 		)
 
 	type KeyValue[A] = Lift[A, (java.lang.String, JValue)]
 	implicit def keyValue[K, V](implicit liftKey:Lift[K, JString], liftValue:Lift[V, JValue]):Lift[Tuple2[K, V], Tuple2[java.lang.String, JValue]] =
 		Lift[Tuple2[K, V], Tuple2[java.lang.String, JValue]](
-			kv => (liftKey(kv._1).value, liftValue(kv._2))
+			kv => (liftKey(kv._1).values, liftValue(kv._2))
 		)
 
 	type Object[A] = Lift[A, JObject]
 	implicit def map[A](implicit child:Lift[A, JValue]):Lift[scala.collection.immutable.Map[java.lang.String, A], JObject] =
 		Lift[scala.collection.immutable.Map[java.lang.String, A], JObject](
-			xs => JObject(xs.mapValues(child.apply _).toMap)
+			xs => JObject(xs.mapValues(child.apply _).toList)
 		)
 }

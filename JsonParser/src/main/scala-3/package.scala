@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample
 
-import scalajson.ast.JValue
+import org.json4s.JsonAST.JValue
 
 package object json {
 	extension (inline sc:scala.StringContext)

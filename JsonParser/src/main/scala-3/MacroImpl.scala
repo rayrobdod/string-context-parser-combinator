@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.{Map, Seq, Vector}
 import scala.quoted.{Expr, Quotes, Type}
-import scalajson.ast._
+import org.json4s.JsonAST._
 import com.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
@@ -26,22 +26,22 @@ object MacroImpl {
 		def result(builder:Expr[Builder])(using Quotes):Expr[CC]
 	}
 
-	private object VectorCollectionAssembly extends CollectionAssembly[JValue, Vector[JValue]] {
-		type Builder = scala.collection.mutable.Builder[JValue, Vector[JValue]]
-		override def builderType(using Quotes):Type[Builder] = implicitly[Type[scala.collection.mutable.Builder[JValue, Vector[JValue]]]]
-		override def newBuilder(using Quotes):Expr[Builder] = '{ Vector.newBuilder[JValue] }
+	private object VectorCollectionAssembly extends CollectionAssembly[JValue, List[JValue]] {
+		type Builder = scala.collection.mutable.Builder[JValue, List[JValue]]
+		override def builderType(using Quotes):Type[Builder] = implicitly[Type[Builder]]
+		override def newBuilder(using Quotes):Expr[Builder] = '{ List.newBuilder[JValue] }
 		override def insertOne(builder:Expr[Builder], item:Expr[JValue])(using Quotes):Expr[Builder] = '{ $builder.addOne($item) }
 		override def insertMany(builder:Expr[Builder], items:Expr[TraversableOnce[JValue]])(using Quotes):Expr[Builder] = '{ $builder.addAll($items) }
-		override def result(builder:Expr[Builder])(using Quotes):Expr[Vector[JValue]] = '{ $builder.result() }
+		override def result(builder:Expr[Builder])(using Quotes):Expr[List[JValue]] = '{ $builder.result() }
 	}
 
-	private object MapCollectionAssembly extends CollectionAssembly[(String, JValue), Map[String, JValue]] {
-		type Builder = scala.collection.mutable.Builder[(String, JValue), Map[String, JValue]]
+	private object MapCollectionAssembly extends CollectionAssembly[(String, JValue), List[(String, JValue)]] {
+		type Builder = scala.collection.mutable.Builder[(String, JValue), List[(String, JValue)]]
 		override def builderType(using Quotes):Type[Builder] = implicitly[Type[Builder]]
-		override def newBuilder(using Quotes):Expr[Builder] = '{ Map.newBuilder[String, JValue] }
+		override def newBuilder(using Quotes):Expr[Builder] = '{ List.newBuilder[(String, JValue)] }
 		override def insertOne(builder:Expr[Builder], item:Expr[(String, JValue)])(using Quotes):Expr[Builder] = '{ $builder.addOne($item) }
 		override def insertMany(builder:Expr[Builder], items:Expr[TraversableOnce[(String, JValue)]])(using Quotes):Expr[Builder] = '{ $builder.addAll($items) }
-		override def result(builder:Expr[Builder])(using Quotes):Expr[Map[String, JValue]] = '{ $builder.result() }
+		override def result(builder:Expr[Builder])(using Quotes):Expr[List[(String, JValue)]] = '{ $builder.result() }
 	}
 
 	private def assembleCollection[A, CC]
@@ -72,23 +72,23 @@ object MacroImpl {
 	import com.rayrobdod.stringContextParserCombinator.Parsers._
 	private val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
 
-	private def NullP(using Quotes):Parser[Expr[JNull.type]] = IsString("null").map(_ => '{ scalajson.ast.JNull })
+	private def NullP(using Quotes):Parser[Expr[JNull.type]] = IsString("null").map(_ => '{ _root_.org.json4s.JsonAST.JNull })
 
-	private def BooleanP(using Quotes):Parser[Expr[JBoolean]] = {
-		val TrueI = IsString("true").map(_ => '{ scalajson.ast.JTrue })
-		val FalseI = IsString("false").map(_ => '{ scalajson.ast.JFalse })
-		val LiftedV = Lifted[Lift.Boolean, JBoolean](
-			new TypeFunction[Lift.Boolean]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JBoolean]] }},
-			myLiftFunction[JBoolean, Lift.Boolean],
-			Expecting("A for Lift[A, JBoolean]")
+	private def BooleanP(using Quotes):Parser[Expr[JBool]] = {
+		val TrueI = IsString("true").map(_ => '{ _root_.org.json4s.JsonAST.JBool.True })
+		val FalseI = IsString("false").map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
+		val LiftedV = Lifted[Lift.Boolean, JBool](
+			new TypeFunction[Lift.Boolean]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JBool]] }},
+			myLiftFunction[JBool, Lift.Boolean],
+			Expecting("A for Lift[A, JBool]")
 		)
 		LiftedV orElse TrueI orElse FalseI
 	}
 
-	private def NumberP(using Quotes):Parser[Expr[JNumber]] = {
+	private def NumberP(using Quotes):Parser[Expr[JValue with JNumber]] = {
 		import scala.Predef.charWrapper
 
-		val NumberI:Parser[Expr[JNumber]] = {
+		val NumberI:Parser[Expr[JValue with JNumber]] = {
 			def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
 
 			/* Concatenate every capture in the following parser and combine into one long string */
@@ -110,13 +110,13 @@ object MacroImpl {
 				andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
 				andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
 			).map({x =>
-				'{ scalajson.ast.JNumber.fromString( ${Expr[String](x)} ).get }
+				'{ _root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply( ${Expr[String](x)} )) }
 			})
 		}.opaque(Expecting("Number Literal"))
-		val AstV:Parser[Expr[JNumber]] = OfType[JNumber]
-		val LiftedV = Lifted[Lift.Number, JNumber](
-			new TypeFunction[Lift.Number]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JNumber]] }},
-			myLiftFunction[JNumber, Lift.Number],
+		val AstV:Parser[Expr[JValue with JNumber]] = OfType[JValue with JNumber]
+		val LiftedV = Lifted[Lift.Number, JValue with JNumber](
+			new TypeFunction[Lift.Number]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JValue with JNumber]] }},
+			myLiftFunction[JValue with JNumber, Lift.Number],
 			Expecting("A for Lift[A, JNumber]")
 		)
 		AstV orElse LiftedV orElse NumberI
@@ -138,7 +138,7 @@ object MacroImpl {
 		val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 		val JCharsI:Parser[Expr[String]] = JCharP.repeat(1).map(Expr.apply _)
 		val ScalaVInner:Parser[Expr[String]] = OfType[String]
-		val AstVInner:Parser[Expr[String]] = OfType[JString].map(x => '{ $x.value })
+		val AstVInner:Parser[Expr[String]] = OfType[JString].map(x => '{ $x.values })
 		val Content:Parser[Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
 			.map(strs => concatenateStrings(strs))
 		(DelimiterP andThen Content andThen DelimiterP)
@@ -146,15 +146,15 @@ object MacroImpl {
 
 	private def StringP(using Quotes):Parser[Expr[String]] = {
 		val ScalaVOuter:Parser[Expr[String]] = OfType[String]
-		val AstVOuter:Parser[Expr[String]] = OfType[JString].map(x => '{ $x.value })
+		val AstVOuter:Parser[Expr[String]] = OfType[JString].map(x => '{ $x.values })
 		val Immediate:Parser[Expr[String]] = StringBase
 		AstVOuter orElse ScalaVOuter orElse Immediate
 	}
 
 	private def JStringP(using Quotes):Parser[Expr[JString]] = {
-		val ScalaVOuter:Parser[Expr[JString]] = OfType[String].map(x => '{ scalajson.ast.JString.apply($x) })
+		val ScalaVOuter:Parser[Expr[JString]] = OfType[String].map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x) })
 		val AstVOuter:Parser[Expr[JString]] = OfType[JString]
-		val Immediate:Parser[Expr[JString]] = StringBase.map(x => '{ scalajson.ast.JString.apply($x)})
+		val Immediate:Parser[Expr[JString]] = StringBase.map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x)})
 		AstVOuter orElse ScalaVOuter orElse Immediate
 	}
 
@@ -174,7 +174,7 @@ object MacroImpl {
 			myLiftFunction[JArray, Lift.Array],
 			Expecting("A for Lift[A, JArray]")
 		)
-		val LiftedArrayV2 = LiftedArrayV.map(x => '{ $x.value })
+		val LiftedArrayV2 = LiftedArrayV.map(x => '{ $x.arr })
 
 		val SplicableValue:Parser[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]] = (
 			ValueP.map(x => Left(x)) orElse
@@ -207,7 +207,7 @@ object MacroImpl {
 			myLiftFunction[JObject, Lift.Object],
 			Expecting("A for Lift[A, JObject]")
 		)
-		val ObjectV2 = ObjectV.map(x => '{ $x.value })
+		val ObjectV2 = ObjectV.map(x => '{ $x.obj })
 
 		val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
 			new TypeFunction[Lift.KeyValue]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, (java.lang.String, JValue)]] }},
