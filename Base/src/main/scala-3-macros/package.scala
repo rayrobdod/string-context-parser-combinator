@@ -103,8 +103,6 @@ package stringContextParserCombinator {
 	/** Support for Parsers.Lifted; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[CC[A], Z] {def apply[A](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes, Type[A]):Expr[Z]}
 
-	trait TypeFunction[Lifter[A]]{def apply[A](t:Type[A])(using Quotes):Type[Lifter[A]]}
-
 
 	/** A position in a source file */
 	trait Position {

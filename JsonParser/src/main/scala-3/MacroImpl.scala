@@ -78,7 +78,6 @@ object MacroImpl {
 		val TrueI = IsString("true").map(_ => '{ _root_.org.json4s.JsonAST.JBool.True })
 		val FalseI = IsString("false").map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
 		val LiftedV = Lifted[Lift.Boolean, JBool](
-			new TypeFunction[Lift.Boolean]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JBool]] }},
 			myLiftFunction[JBool, Lift.Boolean],
 			Expecting("A for Lift[A, JBool]")
 		)
@@ -115,7 +114,6 @@ object MacroImpl {
 		}.opaque(Expecting("Number Literal"))
 		val AstV:Parser[Expr[JValue with JNumber]] = OfType[JValue with JNumber]
 		val LiftedV = Lifted[Lift.Number, JValue with JNumber](
-			new TypeFunction[Lift.Number]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JValue with JNumber]] }},
 			myLiftFunction[JValue with JNumber, Lift.Number],
 			Expecting("A for Lift[A, JNumber]")
 		)
@@ -170,7 +168,6 @@ object MacroImpl {
 		val Suffix:Parser[Unit] = IsString("]")
 
 		val LiftedArrayV = Lifted[Lift.Array, JArray](
-			new TypeFunction[Lift.Array]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JArray]] }},
 			myLiftFunction[JArray, Lift.Array],
 			Expecting("A for Lift[A, JArray]")
 		)
@@ -203,14 +200,12 @@ object MacroImpl {
 		val Suffix:Parser[Unit] = IsString("}")
 
 		val ObjectV = Lifted[Lift.Object, JObject](
-			new TypeFunction[Lift.Object]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, JObject]] }},
 			myLiftFunction[JObject, Lift.Object],
 			Expecting("A for Lift[A, JObject]")
 		)
 		val ObjectV2 = ObjectV.map(x => '{ $x.obj })
 
 		val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
-			new TypeFunction[Lift.KeyValue]{def apply[A](inType:Type[A])(using Quotes) = { '[ Lift[$inType, (java.lang.String, JValue)]] }},
 			myLiftFunction[(java.lang.String, JValue), Lift.KeyValue],
 			Expecting("A for Lift[A, (String, JValue)]")
 		)

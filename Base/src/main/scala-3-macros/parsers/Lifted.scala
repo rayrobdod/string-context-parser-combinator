@@ -17,17 +17,18 @@ object Lifted {
 	}
 
 	def apply[Lifter[A], Z](
-		lifterType:TypeFunction[Lifter],
 		lift:LiftFunction[Lifter, Z],
 		description:Expecting,
-	)(	using Quotes,
+		)(using
+		Quotes,
+		Type[Lifter],
 	):AbstractParser[Expr[_], Expr[Z]] = {
 		new AbstractParser[Expr[_], Expr[Z]] {
 			def parse(input:Input[Expr[_]]):Result[Expr[_], Expr[Z]] = {
 				input.consume(
 					_ => None,
 					arg => (Some(arg)
-						.collect({case '{ $x: t } => new MyTupleOpt(x, Expr.summon(using lifterType(implicitly[Type[t]])))})
+						.collect({case '{ $x: t } => new MyTupleOpt(x, Expr.summon[Lifter[t]])})
 						.flatMap(_.transpose)
 						.map(_.liftApply[Z](lift))
 					),
