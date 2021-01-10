@@ -16,13 +16,13 @@ lazy val sharedSettings = Seq(
 			"org.scalatest" % "scalatest_3.0.0-M3" % "3.2.3" % "test",
 		)
 	}),
-	scalacOptions += "-feature",
-	scalacOptions ++= (scalaBinaryVersion.value match {
+	Compile / compile / scalacOptions += "-feature",
+	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" => Seq("-target:jvm-1.7")
 		case "2.12" | "2.13" => Seq("-target:jvm-1.8")
 		case _ => Seq("-release", "8")
 	}),
-	scalacOptions ++= (scalaBinaryVersion.value match {
+	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" => Seq.empty
 		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit")
 		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
@@ -44,10 +44,11 @@ lazy val sharedSettings = Seq(
 		)
 		case _ => Seq(
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
-			"-siteroot", (target.value / "api").toString,
+			"-siteroot", ((sourceDirectory).value / "docs" / "public").toString,
 			"-sourcepath", baseDirectory.value.toString,
 		)
 	}),
+	Compile / doc / fileInputOptions += "-siteroot",
 	Test / testOptions += Tests.Argument(
 		"-oS",
 	),

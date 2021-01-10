@@ -58,20 +58,20 @@ package object stringContextParserCombinator {
 	 *
 	 * == Usage ==
 	 *
-	 * Given a StringContext extension class
+	 * Given a StringContext extension
 	 * {{{
 	 * package object \$package {
-	 * 	implicit final class \$extensionclass(val backing:StringContext) extends AnyVal {
-	 * 		def \$method(args:\$paramtype*):\$rettype = macro \$impl_method
+	 * 	extension (inline sc:scala.StringContext)
+	 * 		inline def \$method(inline args:\$paramtype*):\$rettype = macro \$impl_method
 	 * 	}
 	 * }
 	 * }}}
 	 *
 	 * Then, macro implementation should consist of
 	 * {{{
-	 * def \$impl_method(c:Context)(args:c.Expr[\$paramtype]*):c.Expr[\$rettype] = {
-	 * 	val parser = ???
-	 * 	macroimpl(c)("\$package.package.\$extensionclass", parser)(args)
+	 * def \$impl_method(sc:Expr[scala.StringContext], args:c.Expr[\$paramtype]*)(using Quotes):Expr[\$rettype] = {
+	 * 	val parser:Parser[Expr[\$rettype]] = ???
+	 * 	macroimpl(parser)(sc, args)
 	 * }
 	 * }}}
 	 *
