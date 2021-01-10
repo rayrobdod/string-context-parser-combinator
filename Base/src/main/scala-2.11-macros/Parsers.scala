@@ -57,7 +57,7 @@ trait Parsers {
 
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
 	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] =
-		parsers.OfType[ctx.type, A](tpe)
+		new parsers.OfType[ctx.type, A](tpe)
 
 	/** A parser that succeeds if a "lift" type can be implicitly summoned
 	 *
@@ -118,7 +118,7 @@ object Parsers {
 
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
 	def OfType[Ctx <: Context with Singleton, A](implicit tpe:Ctx#TypeTag[A]):Parser[Ctx#Expr[_], Ctx#Expr[A]] =
-		parsers.OfType[Ctx, A](tpe)
+		new parsers.OfType[Ctx, A](tpe)
 
 	/** A parser that succeeds if a "lift" type can be implicitly summoned
 	 *

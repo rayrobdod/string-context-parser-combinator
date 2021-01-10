@@ -38,8 +38,8 @@ trait Parsers {
 		parsers.IsString(str)
 
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType[A](using tpe:Type[A])(using Quotes):Parser[Expr[A]] =
-		parsers.OfType(tpe)
+	def OfType[A](using Type[A], Quotes):Parser[Expr[A]] =
+		new parsers.OfType[A]
 
 	/** A parser that succeeds if a "lift" type can be implicitly summoned
 	 *
