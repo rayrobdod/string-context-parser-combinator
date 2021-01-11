@@ -166,13 +166,12 @@ object MacroImpl {
 						c.universe.reify(_root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply(xExpr.splice)))
 					})
 				}.opaque(Expecting("Number Literal"))
-				val AstV:Parser[c.Expr[JValue with JNumber]] = OfType[JValue with JNumber]
 				val LiftedV = Lifted[Lift.Number, JValue with JNumber](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JValue with JNumber])),
 					myLiftFunction[JValue with JNumber, Lift.Number](c),
 					Expecting("A for Lift[A, JNumber]")
 				)
-				AstV orElse LiftedV orElse NumberI
+				LiftedV orElse NumberI
 			}
 
 			val StringBase:Parser[c.Expr[String]] = {

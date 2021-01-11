@@ -112,12 +112,11 @@ object MacroImpl {
 				'{ _root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply( ${Expr[String](x)} )) }
 			})
 		}.opaque(Expecting("Number Literal"))
-		val AstV:Parser[Expr[JValue with JNumber]] = OfType[JValue with JNumber]
 		val LiftedV = Lifted[Lift.Number, JValue with JNumber](
 			myLiftFunction[JValue with JNumber, Lift.Number],
 			Expecting("A for Lift[A, JNumber]")
 		)
-		AstV orElse LiftedV orElse NumberI
+		LiftedV orElse NumberI
 	}
 
 	private def StringBase(using Quotes):Parser[Expr[String]] = {
@@ -215,7 +214,7 @@ object MacroImpl {
 		val SplicableValue:Parser[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]] = (
 			(WhitespaceP andThen KeyValueV andThen WhitespaceP)
 				.map(x => Left(x)) orElse
-			(KeyV andThen Separator andThen ValueP)
+			(KeyV andThen Separator andThenWithCut ValueP)
 				.map(x => {val (k, v) = x; '{ Tuple2.apply($k, $v) }})
 				.map(x => Left(x)) orElse
 			(WhitespaceP andThen IsString("..") andThen ObjectV2 andThen WhitespaceP)
