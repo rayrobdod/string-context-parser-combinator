@@ -231,8 +231,7 @@ object MacroImpl {
 				}
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
 					Prefix
-						andThenWithCut WhitespaceP
-						andThen SplicableValue.repeat(delimiter = Delim)
+						andThenWithCut SplicableValue.repeat(delimiter = Delim)
 						andThen Suffix
 				)
 				val Literal:Parser[c.Expr[JArray]] = (
@@ -276,8 +275,7 @@ object MacroImpl {
 				}
 				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
 					Prefix
-						andThenWithCut WhitespaceP
-						andThen SplicableValue.repeat(delimiter = Delim)
+						andThenWithCut SplicableValue.repeat(delimiter = Delim)
 						andThen Suffix
 				)
 				val Literal:Parser[c.Expr[JObject]] = (

@@ -179,10 +179,8 @@ object MacroImpl {
 				andThen WhitespaceP).map(x => Right(x))
 		)
 		val LiteralPresplice:Parser[List[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]]] = (
-			(Prefix andThen WhitespaceP andThen (
-				Suffix.map(_ => List.empty) orElse
-				((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
-			))
+			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
+			Prefix andThenWithCut (SplicableValue.repeat(delimiter = Delim) andThen Suffix)
 		)
 		val Literal:Parser[Expr[JArray]] = (
 			LiteralPresplice
@@ -223,10 +221,8 @@ object MacroImpl {
 				.map(x => Right(x))
 		)
 		val LiteralPresplice:Parser[List[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]]] = (
-			(Prefix andThen WhitespaceP andThen (
-				Suffix.map(_ => List.empty) orElse
-				((SplicableValue andThen (Delim andThen SplicableValue).repeat()) andThen Suffix)
-			))
+			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
+			Prefix andThenWithCut (SplicableValue.repeat(delimiter = Delim) andThen Suffix)
 		)
 		val Literal:Parser[Expr[JObject]] = (
 			LiteralPresplice
