@@ -185,7 +185,8 @@ object MacroImpl {
 						IsString("r").map(_ => '\r') orElse
 						IsString("b").map(_ => '\b') orElse
 						IsString("f").map(_ => '\f') orElse
-						IsString("t").map(_ => '\t')
+						IsString("t").map(_ => '\t') orElse
+						(IsString("u") andThen CharIn(('1' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar))
 					))
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate

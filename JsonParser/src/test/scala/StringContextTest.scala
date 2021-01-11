@@ -112,6 +112,14 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JString("\t")
 			assertResult(exp)(json""" "\t" """)
 		}
+		it ("Accepts a literal escaped-backslash string") {
+			val exp = JString("\\")
+			assertResult(exp)(json""" "\\" """)
+		}
+		it ("Accepts a literal escaped-unicode string") {
+			val exp = JString("\u1234")
+			assertResult(exp)(json""" "\u1234" """)
+		}
 
 		it ("Accepts a provided Vector") {
 			val arg = List(JBool.True, JBool.False)
