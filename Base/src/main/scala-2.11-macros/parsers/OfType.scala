@@ -1,9 +1,10 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
-private[parsers]
+/** Succeeds if the next input element is an `arg` with the given type; captures the expression */
+private[stringContextParserCombinator]
 final class OfType[Ctx <: Context with Singleton, A](
 	tpetag:Ctx#TypeTag[A]
 ) extends AbstractParser[Ctx#Expr[_], Ctx#Expr[A]] {

@@ -6,9 +6,9 @@ import org.scalatest.funspec.AnyFunSpec
 final class OrElseTest extends AnyFunSpec {
 	describe("OrElse") {
 		it("`Success | Whatever` returns that success") {
-			val initialInput = new Input[Nothing](("1234", PositionPoint(42)) :: Nil, Nil)
-			val leftEndInput = new Input[Nothing](("wxyz", PositionPoint(151)) :: Nil, Nil)
-			val rightEndInput = new Input[Nothing](("wxyz", PositionPoint(151)) :: Nil, Nil)
+			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
+			val leftEndInput = new Input[Nothing](("wxyz", Position(151)) :: Nil, Nil)
+			val rightEndInput = new Input[Nothing](("wxyz", Position(151)) :: Nil, Nil)
 
 			val leftResult = new Object
 			val rightResult = new Object
@@ -28,8 +28,8 @@ final class OrElseTest extends AnyFunSpec {
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it("`Cut | Whatever` returns that failure") {
-			val initialInput = new Input[Nothing](("1234", PositionPoint(42)) :: Nil, Nil)
-			val rightEndInput = new Input[Nothing](("wxyz", PositionPoint(151)) :: Nil, Nil)
+			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
+			val rightEndInput = new Input[Nothing](("wxyz", Position(151)) :: Nil, Nil)
 
 			val rightResult = new Object
 			val leftExpect = Expecting("Left")
@@ -46,8 +46,8 @@ final class OrElseTest extends AnyFunSpec {
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it("`Failure | Success` returns that success") {
-			val initialInput = new Input[Nothing](("1234", PositionPoint(42)) :: Nil, Nil)
-			val rightEndInput = new Input[Nothing](("wxyz", PositionPoint(151)) :: Nil, Nil)
+			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
+			val rightEndInput = new Input[Nothing](("wxyz", Position(151)) :: Nil, Nil)
 
 			val rightResult = new Object
 			val leftExpect = Expecting("Left")
@@ -66,7 +66,7 @@ final class OrElseTest extends AnyFunSpec {
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it("`Failure | Cut` returns a failure that mentions only the cut branch") {
-			val initialInput = new Input[Nothing](("1234", PositionPoint(42)) :: Nil, Nil)
+			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
 
 			val leftExpect = Expecting("Left")
 			val rightExpect = Expecting("Right")
@@ -82,7 +82,7 @@ final class OrElseTest extends AnyFunSpec {
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it("`Failure | Failure` returns a failure that mentions both branches") {
-			val initialInput = new Input[Nothing](("1234", PositionPoint(42)) :: Nil, Nil)
+			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
 
 			val leftExpect = Expecting("Left")
 			val rightExpect = Expecting("Right")

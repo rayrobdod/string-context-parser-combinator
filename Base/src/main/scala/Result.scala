@@ -1,8 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.reflect.api.Exprs
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
-
 /**
  * The result of a parse
  * @group Input/Result
@@ -40,29 +37,7 @@ final case class Success[+Expr, +A](
  * @param trace a trace of the parsers that lead to this result
  * @param isCut true if other OrElse branches should be ignored
  */
-final case class Failure[+Expr](trace:Trace[Expr], isCut:Cut) extends Result[Expr, Nothing] {
-	private def remainingDescription(implicit ev:Expr <:< Exprs#Expr[_]):String = {
-		trace
-			.removeRequiredThens
-			.leftMostRemaining
-			.description
-	}
-
-	private def remainingPosition(implicit ev:Expr <:< Exprs#Expr[_]):PositionPoint = {
-		trace
-			.removeRequiredThens
-			.leftMostRemaining
-			.position
-	}
-
-	private def expectingDescription:String = {
-		trace
-			.removeRequiredThens
-			.removeEmptyTraces
-			.expectingDescription
-	}
-
-	def report(c:Context)(implicit ev:Expr <:< c.Expr[_]):Nothing = {
-		c.abort(remainingPosition.cast(c), s"Found ${remainingDescription} ; Expected ${expectingDescription}")
-	}
-}
+final case class Failure[+Expr](
+	trace:Trace[Expr],
+	isCut:Cut
+) extends Result[Expr, Nothing]

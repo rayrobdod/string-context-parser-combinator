@@ -4,7 +4,7 @@ package parsers
 import org.scalatest.funspec.AnyFunSpec
 
 final class RepeatTest extends AnyFunSpec {
-	def InputPart(str:String, pos:Int) = ((str, PositionPoint(pos)))
+	def InputPart(str:String, pos:Int) = ((str, Position(pos)))
 
 	describe ("Repeat") {
 		it ("`a*` matches ``") {

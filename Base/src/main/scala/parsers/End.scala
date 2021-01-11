@@ -1,7 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-private[parsers] final class End[Expr] extends AbstractParser[Expr, Unit] {
+private[stringContextParserCombinator]
+final class End[Expr] extends AbstractParser[Expr, Unit] {
 	override def parse(input:Input[Expr]):Result[Expr, Unit] = {
 		val trace = LeafTrace(this.expecting, input)
 		if (input.isEmpty) {

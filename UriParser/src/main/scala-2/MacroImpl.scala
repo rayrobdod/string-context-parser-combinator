@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.uri
 
 import java.net.URI
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import com.rayrobdod.stringContextParserCombinatorExample.uri.MacroCompat.Context
 
 object MacroImpl {
 	/**

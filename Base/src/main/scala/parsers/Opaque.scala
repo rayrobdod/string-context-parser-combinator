@@ -1,7 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-private[parsers] final class Opaque[Expr, A](
+private[stringContextParserCombinator]
+final class Opaque[Expr, A](
 	backing:Parser[Expr, A],
 	description:Expecting
 ) extends AbstractParser[Expr, A] {

@@ -3,8 +3,9 @@ package com.rayrobdod
 import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
 import scala.language.higherKinds
+import scala.reflect.api.Exprs
 import scala.reflect.api.Universe
-import com.rayrobdod.stringContextParserCombinator.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
 /**
  * A library for implementing StringContext methods via Parser Combinators
@@ -19,7 +20,6 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
-		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
 				c.universe.Select(
@@ -36,7 +36,6 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
-		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
 				val (nameInit, nameLast) = {
@@ -59,6 +58,40 @@ package object stringContextParserCombinator {
 		}
 	}
 
+	/**
+	 * Returns a string representation of this input, suitable for printing to a users
+	 */
+	private[this] def inputDescription(input:Input[Exprs#Expr[_]]):String = {
+		if (input.isEmpty) {
+			"end of input"
+		} else {
+			scala.collection.immutable.Range(0, input.args.size)
+				.map(i => s"${input.parts(i)._1}$${${input.args(i).tree}}")
+				.mkString("\"", "", input.parts(input.args.size)._1 + "\"")
+		}
+	}
+
+	/**
+	 * Returns the position of this input
+	 */
+	private[this] def inputPosition(input:Input[Exprs#Expr[_]]):Position = {
+		if (input.parts(0)._1.length != 0) {
+			input.parts(0)._2
+		} else if (input.args.nonEmpty) {
+			Position(input.args(0).tree.pos)
+		} else {
+			input.parts(0)._2
+		}
+	}
+
+	private[this] def reportFailure(c:Context)(failure:Failure[c.Expr[_]]):Nothing = {
+		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
+		val remainingDescription = inputDescription(trimmedTrace.leftMostRemaining)
+		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
+		val expectingDescription = trimmedTrace.expectingDescription
+
+		remainingPosition.throwError(c)(s"Found ${remainingDescription} ; Expected ${expectingDescription}")
+	}
 
 	/**
 	 * A macro impl scaffold, which takes care of extracting strings from a
@@ -96,7 +129,7 @@ package object stringContextParserCombinator {
 				ExtensionClassSelectChain(),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => (MacroCompat.eval(c)(x), PositionPoint(x.tree.pos))})
+				strings.map({x => (c.eval(x), Position(x.tree.pos))})
 			}
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
@@ -109,12 +142,10 @@ package object stringContextParserCombinator {
 				s.value
 			}
 			case f:Failure[_] => {
-				f.report(c)
+				reportFailure(c)(f)
 			}
 		}
 	}
-
-
 }
 
 package stringContextParserCombinator {
@@ -126,24 +157,13 @@ package stringContextParserCombinator {
 	trait LiftFunction[U <: Context with Singleton, CC[A], Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):U#Expr[Z]}
 
 
-	// CodePoint extending AnyVal, parameterized methods, and using CodePoint::toString results in a
-	// surprisingly high number of NoSuchMethodErrors, at least before 2.12.
-	// `java.lang.NoSuchMethodError: 'java.lang.String com.rayrobdod.stringContextParserCombinator.CodePoint$.toString$extension(int)`
-	/** A unicode codepoint */
-	final case class CodePoint(val value:Int) {
-		override def toString:String = new String(Array[Int](value), 0, 1)
-	}
 
-	/** A position's point - divorced from the position's context */
-	final case class PositionPoint(val value:Int) extends AnyVal {
-		def cast(c:Context):c.Position = c.enclosingPosition.withPoint(value)
-		def +(x:Int):PositionPoint = PositionPoint(this.value + x)
-		def >(rhs:PositionPoint):Boolean = this.value > rhs.value
+	/** A position in a source file */
+	final case class Position(value:Int) extends AnyVal {
+		def +(x:Int):Position = new Position(this.value + x)
+		def throwError(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(value), msg)
 	}
-	object PositionPoint {
-		def apply(x:scala.reflect.api.Position):PositionPoint = new PositionPoint(x.point)
+	object Position {
+		def apply(x:scala.reflect.api.Position):Position = new Position(x.point)
 	}
-
-	/** Represent a textual description of under what conditions a parser would return success */
-	final case class Expecting(val description:String)
 }

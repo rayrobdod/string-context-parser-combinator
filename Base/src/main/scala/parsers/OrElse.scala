@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 package parsers
 
-private[parsers]
+private[stringContextParserCombinator]
 final class OrElse[Expr, A, B, Z](
 	left:Parser[Expr, A],
 	right:Parser[Expr, B],
