@@ -190,25 +190,34 @@ object MacroImpl {
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
-				val ScalaVInner:Parser[c.Expr[String]] = OfType[String]
-				val AstVInner:Parser[c.Expr[String]] = OfType[JString].map(x => c.universe.reify(x.splice.values))
-				val Content:Parser[c.Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
+				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, JString](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
+					myLiftFunction[JString, Lift.String](c),
+					Expecting("A for Lift[A, JString]")
+				).map(x => c.universe.reify(x.splice.values))
+				val Content:Parser[c.Expr[String]] = (LiftedV orElse JCharsI).repeat()
 					.map(strs => concatenateStrings(c)(strs))
 				(DelimiterP andThenWithCut Content andThen DelimiterP)
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
-				val ScalaVOuter:Parser[c.Expr[String]] = OfType[String]
-				val AstVOuter:Parser[c.Expr[String]] = OfType[JString].map(x => c.universe.reify(x.splice.values))
+				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, JString](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
+					myLiftFunction[JString, Lift.String](c),
+					Expecting("A for Lift[A, JString]")
+				).map(x => c.universe.reify(x.splice.values))
 				val Immediate:Parser[c.Expr[String]] = StringBase
-				AstVOuter orElse ScalaVOuter orElse Immediate
+				LiftedV orElse Immediate
 			}
 
 			val JStringP:Parser[c.Expr[JString]] = {
-				val ScalaVOuter:Parser[c.Expr[JString]] = OfType[String].map(x => c.universe.reify(_root_.org.json4s.JsonAST.JString.apply(x.splice)))
-				val AstVOuter:Parser[c.Expr[JString]] = OfType[JString]
+				val LiftedV:Parser[c.Expr[JString]] = Lifted[Lift.String, JString](
+					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
+					myLiftFunction[JString, Lift.String](c),
+					Expecting("A for Lift[A, JString]")
+				)
 				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.universe.reify(_root_.org.json4s.JsonAST.JString.apply(x.splice)))
-				AstVOuter orElse ScalaVOuter orElse Immediate
+				LiftedV orElse Immediate
 			}
 
 			val ArrayP:Parser[c.Expr[JArray]] = DelayedConstruction(() => {

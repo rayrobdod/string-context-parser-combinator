@@ -13,7 +13,9 @@ object MacroImpl {
 		strings match {
 			case Seq() => '{ "" }
 			case Seq(x) => x
-			case _ => '{ ${Expr.ofSeq(strings)}.mkString }
+			case _ => '{
+				${strings.foldLeft('{new _root_.java.lang.StringBuilder()})({(builder, part) => '{$builder.append($part)}})}.toString
+			}
 		}
 	}
 
@@ -69,6 +71,27 @@ object MacroImpl {
 		}
 	}
 
+	/**
+	 * A micro-optimization; basically just removes a call to an identity function if Lifted created one
+	 */
+	private def unwrapIdentityLift[A <: JValue](using Quotes, Type[A])(in:Expr[A]):Expr[A] = in match {
+		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[A].apply(${param}) } => param
+		case _ => in
+	}
+
+	/**
+	 * A micro-optimization; particularly useful since Lifted lifts to a JString and Map keys and
+	 * string building take java Strings; the macro is particularly likely to wrap a java String
+	 * and then immediately unwrap that string.
+	 *
+	 * that is, generate something like `Lift.string.apply("abcd").values`
+	 */
+	private def jstringExprToStringExpr(using Quotes)(in:Expr[JString]):Expr[String] = in match {
+		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.string.apply(${param}) } => param
+		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[JString].apply(${param}) } => '{ $param.values }
+		case _ => '{ $in.values }
+	}
+
 	import com.rayrobdod.stringContextParserCombinator.Parsers._
 	private val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat().map(_ => ())
 
@@ -80,7 +103,7 @@ object MacroImpl {
 		val LiftedV = Lifted[Lift.Boolean, JBool](
 			myLiftFunction[JBool, Lift.Boolean],
 			Expecting("A for Lift[A, JBool]")
-		)
+		).map(unwrapIdentityLift _)
 		LiftedV orElse TrueI orElse FalseI
 	}
 
@@ -115,7 +138,7 @@ object MacroImpl {
 		val LiftedV = Lifted[Lift.Number, JValue with JNumber](
 			myLiftFunction[JValue with JNumber, Lift.Number],
 			Expecting("A for Lift[A, JNumber]")
-		)
+		).map(unwrapIdentityLift _)
 		LiftedV orElse NumberI
 	}
 
@@ -135,25 +158,31 @@ object MacroImpl {
 		)
 		val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 		val JCharsI:Parser[Expr[String]] = JCharP.repeat(1).map(Expr.apply _)
-		val ScalaVInner:Parser[Expr[String]] = OfType[String]
-		val AstVInner:Parser[Expr[String]] = OfType[JString].map(x => '{ $x.values })
-		val Content:Parser[Expr[String]] = (AstVInner orElse ScalaVInner orElse JCharsI).repeat()
+		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, JString](
+			myLiftFunction[JString, Lift.String],
+			Expecting("A for Lift[A, JString]")
+		).map(jstringExprToStringExpr _)
+		val Content:Parser[Expr[String]] = (LiftedV orElse JCharsI).repeat()
 			.map(strs => concatenateStrings(strs))
-		(DelimiterP andThen Content andThen DelimiterP)
+		(DelimiterP andThenWithCut Content andThen DelimiterP)
 	}
 
 	private def StringP(using Quotes):Parser[Expr[String]] = {
-		val ScalaVOuter:Parser[Expr[String]] = OfType[String]
-		val AstVOuter:Parser[Expr[String]] = OfType[JString].map(x => '{ $x.values })
+		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, JString](
+			myLiftFunction[JString, Lift.String],
+			Expecting("A for Lift[A, JString]")
+		).map(jstringExprToStringExpr _)
 		val Immediate:Parser[Expr[String]] = StringBase
-		AstVOuter orElse ScalaVOuter orElse Immediate
+		LiftedV orElse Immediate
 	}
 
 	private def JStringP(using Quotes):Parser[Expr[JString]] = {
-		val ScalaVOuter:Parser[Expr[JString]] = OfType[String].map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x) })
-		val AstVOuter:Parser[Expr[JString]] = OfType[JString]
+		val LiftedV:Parser[Expr[JString]] = Lifted[Lift.String, JString](
+			myLiftFunction[JString, Lift.String],
+			Expecting("A for Lift[A, JString]")
+		).map(unwrapIdentityLift _)
 		val Immediate:Parser[Expr[JString]] = StringBase.map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x)})
-		AstVOuter orElse ScalaVOuter orElse Immediate
+		LiftedV orElse Immediate
 	}
 
 	/** An AndThenTypes that melds the shape of an A followed by a repeating A into a single List */
@@ -170,7 +199,7 @@ object MacroImpl {
 		val LiftedArrayV = Lifted[Lift.Array, JArray](
 			myLiftFunction[JArray, Lift.Array],
 			Expecting("A for Lift[A, JArray]")
-		)
+		).map(unwrapIdentityLift _)
 		val LiftedArrayV2 = LiftedArrayV.map(x => '{ $x.arr })
 
 		val SplicableValue:Parser[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]] = (
@@ -200,7 +229,7 @@ object MacroImpl {
 		val ObjectV = Lifted[Lift.Object, JObject](
 			myLiftFunction[JObject, Lift.Object],
 			Expecting("A for Lift[A, JObject]")
-		)
+		).map(unwrapIdentityLift _)
 		val ObjectV2 = ObjectV.map(x => '{ $x.obj })
 
 		val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](

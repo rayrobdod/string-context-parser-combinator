@@ -74,7 +74,7 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JDecimal(BigDecimal("4.20"))
 			assertResult(exp)(json"$param")
 		}
-		it ("Accepts a custom lift") {
+		it ("Accepts a custom lift number") {
 			object Pi {}
 			implicit val liftPi:Lift[Pi.type, JValue with JNumber] = Lift(_ => JDecimal(BigDecimal("3.14")))
 			val exp = JDecimal(BigDecimal("3.14"))
@@ -89,6 +89,12 @@ final class StringContextTest extends AnyFunSpec {
 		it ("Accepts a JString string") {
 			val exp = JString("abcd")
 			assertResult(exp)(json"$exp")
+		}
+		it ("Accepts a custom lift string") {
+			object Pi {}
+			implicit val liftPi:Lift[Pi.type, JString] = Lift(_ => JString("π"))
+			val exp = JString("π")
+			assertResult(exp)(json"$Pi")
 		}
 		it ("Accepts a literal string") {
 			val exp = JString("abcd")
@@ -107,6 +113,12 @@ final class StringContextTest extends AnyFunSpec {
 			val inner = JString("123")
 			val exp = JString("ab123cd")
 			assertResult(exp)(json""""ab${inner}cd"""")
+		}
+		it ("Accepts a custom lift embedded in a string") {
+			object Pi {}
+			implicit val liftPi:Lift[Pi.type, JString] = Lift(_ => JString("π"))
+			val exp = JString("1π2")
+			assertResult(exp)(json""" "1${Pi}2" """)
 		}
 		it ("Accepts a literal escaped-tab string") {
 			val exp = JString("\t")
