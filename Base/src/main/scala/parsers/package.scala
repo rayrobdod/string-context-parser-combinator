@@ -22,6 +22,31 @@ package parsers {
 }
 
 package object parsers {
+
+	private def unescape(in:Char):String = in match {
+		case '\"' => "\\\""
+		case '\\' => "\\\\"
+		case '\b' => "\\b"
+		case '\f' => "\\f"
+		case '\n' => "\\n"
+		case '\r' => "\\r"
+		case '\t' => "\\t"
+		case x if x < ' ' => f"\\u${x.toInt}%04d"
+		case x => f"$x"
+	}
+
+	private def unescape(in:CodePoint):String = in.value match {
+		case '\"' => "\\\""
+		case '\\' => "\\\\"
+		case '\b' => "\\b"
+		case '\f' => "\\f"
+		case '\n' => "\\n"
+		case '\r' => "\\r"
+		case '\t' => "\\t"
+		case x if x < ' ' => f"\\u${x}%04d"
+		case _ => in.toString
+	}
+
 	/* * * Leaf parsers * * */
 
 	/** Succeeds if the next character is a member of the given Set; captures that character */
@@ -30,7 +55,7 @@ package object parsers {
 		chooseFrom:Set[Char]
 	):Parser[Expr, Char] = CharWhere(
 		chooseFrom.contains _,
-		Expecting(chooseFrom.mkString("CharIn(\"", "", "\")"))
+		Expecting(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
@@ -39,7 +64,7 @@ package object parsers {
 		chooseFrom:Seq[Char]
 	):Parser[Expr, Char] = CharWhere(
 		chooseFrom.contains _,
-		Expecting(chooseFrom.mkString("CharIn(\"", "", "\")"))
+		Expecting(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
@@ -60,7 +85,7 @@ package object parsers {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
 		this.CodePointWhere(
 			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
-			Expecting("CodePointIn(\"" + chooseFrom + "\")")
+			Expecting(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -71,7 +96,7 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			Expecting(chooseFrom.mkString("CodePointIn(\"", "", "\")"))
+			Expecting(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -82,7 +107,7 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			Expecting(chooseFrom.mkString("CodePointIn(\"", "", "\")"))
+			Expecting(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -101,7 +126,7 @@ package object parsers {
 		value:String
 	):Parser[Expr, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
-		Expecting("\"" + value + "\"")
+		Expecting(value.map(unescape _).mkString("\"", "", "\""))
 	)
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
