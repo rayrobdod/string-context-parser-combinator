@@ -185,12 +185,6 @@ object MacroImpl {
 		LiftedV orElse Immediate
 	}
 
-	/** An AndThenTypes that melds the shape of an A followed by a repeating A into a single List */
-	private implicit def headTailSequenced[A]:typelevel.Sequenced[A, Seq[A], List[A]] = new HeadTailSequenced
-	private final class HeadTailSequenced[A] extends typelevel.Sequenced[A, Seq[A], List[A]] {
-		def aggregate(a:A, bs:Seq[A]):List[A] = a :: bs.toList
-	}
-
 	private def ArrayP(using Quotes):Parser[Expr[JArray]] = DelayedConstruction(() => {
 		val Prefix:Parser[Unit] = IsString("[")
 		val Delim:Parser[Unit] = IsString(",")
