@@ -5,108 +5,108 @@ import scala.language.implicitConversions
 import scala.Predef.charWrapper
 import scala.quoted._
 import com.rayrobdod.stringContextParserCombinator._
-
-given Conversion[String, Parsers.Parser[Unit]] = Parsers.IsString(_)
-given [A](using Quotes) : Conversion[Type[A], Parsers.Parser[Expr[A]]] = {
-	new Conversion[Type[A], Parsers.Parser[Expr[A]]] {
-		def apply(typ:Type[A]):Parsers.Parser[Expr[A]] = Parsers.OfType[A](using typ)
-	}
-}
-
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.given_Conversion_String_Parser
-
-/** Adds symbolic methods to Parsers */
-extension [U, A, B, Z] (backing:Parser[U, A])
-	def ~(rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-	def ~/(rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
-
-extension [U, A, Z >: A] (backing:Parser[U, A])
-	def |(rhs:Parser[U, Z]) = backing.orElse(rhs)
-
-extension [U, A, Z] (backing:Parser[U, A])
-	def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
-	def opt(implicit ev:typelevel.Optionally[A, Z]) = backing.optionally(ev)
-
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.{Digit, Digits}
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.ExprConversions.given
+import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given
 
 object MacroImpl {
-	/** Represents a base-ten digit. */
-	private[this] final class Digit(val value:Int)
-	private[this] final class Digits(val value:Int)
+	private given Conversion[String, Parsers.Parser[Unit]] = Parsers.IsString(_)
 
-	private[this] implicit object DigitRepeatTypes extends typelevel.Repeated[Digit, Digits] {
-		final class Box(var value:Int)
-		type Acc = Box
-		def init():Acc = new Box(0)
-		def append(acc:Acc, elem:Digit):Unit = {acc.value *= 10; acc.value += elem.value}
-		def result(acc:Acc):Digits = new Digits(acc.value)
+	private given given_Sequenced_Expr_YearMonth(using Quotes):typelevel.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
+		def aggregate(left:Expr[Year], right:Expr[Month]):Expr[YearMonth] = (left, right) match {
+			case (Expr(year), Expr(month)) => '{YearMonth.of(${Expr(year.getValue())}, ${Expr(month.getValue())})}
+			case (Expr(year), month) => '{YearMonth.of(${Expr(year.getValue())}, $month)}
+			case (year, Expr(month)) => '{$year.atMonth(${Expr(month.getValue())})}
+			case (year, month) => '{$year.atMonth($month)}
+		}
 	}
 
-	import com.rayrobdod.stringContextParserCombinator.Parsers._
-	private[this] val IsDigit:Parser[Digit] = CharIn('0' to '9').map(x => new Digit(x - '0'))
+	private given given_Sequenced_Expr_DateTime(using Quotes):typelevel.Sequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
+		def aggregate(left:Expr[LocalDate], right:Expr[LocalTime]):Expr[LocalDateTime] = (left, right) match {
+			case (Expr(date), Expr(time)) => '{
+				LocalDateTime.of(
+					${Expr(date.getYear())}, ${Expr(date.getMonthValue())}, ${Expr(date.getDayOfMonth())},
+					${Expr(time.getHour())}, ${Expr(time.getMinute())}, ${Expr(time.getSecond())}, ${Expr(time.getNano())},
+				)
+			}
+			case ('{LocalDate.of($y:Int, $mo:Int, $d:Int)}, '{LocalTime.of($h, $mi, $s, $n)}) => '{
+				LocalDateTime.of($y, $mo, $d, $h, $mi, $s, $n)
+			}
+			case ('{LocalDate.of($y:Int, $mo:Month, $d:Int)}, '{LocalTime.of($h, $mi, $s, $n)}) => '{
+				LocalDateTime.of($y, $mo, $d, $h, $mi, $s, $n)
+			}
+			case (date, Expr(time)) => '{
+				$date.atTime(
+					${Expr(time.getHour())}, ${Expr(time.getMinute())}, ${Expr(time.getSecond())}, ${Expr(time.getNano())}
+				)
+			}
+			case (date, time) => '{ $date.atTime($time) }
+		}
+	}
 
-	private[this] def Int2Digits(min:Int, max:Int) = (IsDigit.rep(2, 2))
+	/** Adds symbolic methods to Parsers */
+	extension [U, A, B, Z] (backing:Parser[U, A])
+		def ~(rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
+		def ~/(rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
+		def |(rhs:Parser[U, B])(implicit ev:typelevel.Eithered[A,B,Z]) = backing.orElse(rhs)(ev)
+
+	/** Adds symbolic methods to Parsers */
+	extension [U, A, Z] (backing:Parser[U, A])
+		def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
+		def opt(implicit ev:typelevel.Optionally[A, Z]) = backing.optionally(ev)
+
+
+
+	import com.rayrobdod.stringContextParserCombinator.Parsers._
+
+	private val digit:Parser[Digit] = CharIn('0' to '9')
+		.map(Digit.apply _)
+		.opaque(Expecting("AsciiDigit"))
+
+	private val sign:Parser[Sign] = CharIn("+-").opt.map({x => Sign(x != Some('-'))})
+
+	private[this] def Int2Digits(min:Int, max:Int) = (digit.rep(2, 2))
 			.map(_.value)
-			.filter(x => min <= x && x <= max, Expecting(String.format("""%02d <= $value <= %02d""", Integer.valueOf(min), Integer.valueOf(max))))
+			.filter(x => min <= x && x <= max, Expecting(f"${min}%02d <= $$value <= ${max}%02d"))
 
 	private[this] def YearP(using Quotes):Parser[Expr[Year]] = {
 		val LiteralP:Parser[Expr[Year]] = {
-			(CharIn("-+").opt ~ IsDigit.rep(1, 9).map(_.value))
-				.map({x => if (x._1 == Some('-')) {-x._2} else {x._2}})
+			(sign ~ digit.rep(1, 9))
 				.opaque(Expecting("\"-999999999\"-\"999999999\""))
-				.map(x =>
-					{
-						val xExpr = Expr[Int](x)
-						'{ java.time.Year.of($xExpr) }
-					}
-				)
+				.map(Year.of _)
+				.map(Expr.apply _)
 		}
 		val VariableP:Parser[Expr[Year]] = OfType[Year]
 		VariableP | LiteralP
 	}
 
 	private[this] def MonthP(using Quotes):Parser[Expr[Month]] = {
-		def monthOfTree(name:String):Expr[Month] = {
-			//'{java.time.Month.valueOf(${Expr(name)})}, but using the enum value
-			import scala.quoted.quotes.reflect._
-			val _root = defn.RootPackage
-			val _java = _root.memberField("java")
-			val _time = _java.memberField("time")
-			val _month = _time.memberField("Month")
-			val _instance = _month.memberField(name)
-
-			Ref(_root).select(_java).select(_time).select(_month).select(_instance).asExprOf[Month]
-		}
 		val LiteralP:Parser[Expr[Month]] = {
 			Int2Digits(1, 12)
 				.map(Month.of _)
-				.map(_.name)
-				.map(monthOfTree _)
+				.map(Expr.apply _)
 		}
 		val VariableP:Parser[Expr[Month]] = OfType[Month]
 		VariableP | LiteralP
 	}
 
-	private[this] def Day31P(using Quotes):Parser[Expr[Int]] = {
-		val LiteralP:Parser[Expr[Int]] = {
-			Int2Digits(1, 31)
-				.map(x => Expr(x))
-		}
-		LiteralP
-	}
-
 	private[this] def YearMonthP(using Quotes):Parser[Expr[YearMonth]] = {
-		val PartsP:Parser[Expr[YearMonth]] = (YearP ~ "-" ~/ MonthP).map(x => {
-			val (y, m) = x
-			'{ $y.atMonth($m) }
-		})
+		val PartsP:Parser[Expr[YearMonth]] = (YearP ~ "-" ~/ MonthP)
 		val VariableP:Parser[Expr[YearMonth]] = OfType[YearMonth]
 		VariableP | PartsP
 	}
 
 	private[this] def LocalDateP(using Quotes):Parser[Expr[LocalDate]] = {
-		val YearMonthVariantP:Parser[Expr[LocalDate]] = (YearMonthP ~ "-" ~/ Day31P).map(x => {
-			val (ym, day) = x
-			'{ $ym.atDay($day) }
+		val YearMonthVariantP = (YearMonthP ~ "-").flatMap(_ match {
+			case Expr(ym) => Int2Digits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day)))
+			case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => Int2Digits(1, Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, ${Expr(day)})})
+			case '{YearMonth.of($y:Int, ${Expr(m)}:Month)} => Int2Digits(1, m.maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, ${Expr(day)})})
+			case '{($year:Year).atMonth(${Expr(m)}:Int)} => Int2Digits(1, Month.of(m).maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay(${Expr(day)})})
+			case '{($year:Year).atMonth(${Expr(m)}:Month)} => Int2Digits(1, m.maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay(${Expr(day)})})
+			case '{YearMonth.of($y:Int, $m:Int)} => Int2Digits(1, 31).map(day => '{LocalDate.of($y, $m, ${Expr(day)})})
+			case '{YearMonth.of($y:Int, $m:Month)} => Int2Digits(1, 31).map(day => '{LocalDate.of($y, $m, ${Expr(day)})})
+			case ym => Int2Digits(1, 31).map(day => '{$ym.atDay(${Expr(day)})})
 		})
 		val VariableP:Parser[Expr[LocalDate]] = OfType[LocalDate]
 		VariableP | YearMonthVariantP
@@ -148,7 +148,7 @@ object MacroImpl {
 				val (second, n) = sn.getOrElse((constZero, None))
 				val nano = n.getOrElse(constZero)
 
-				'{ java.time.LocalTime.of($hour, $minute, $second, $nano) }
+				'{ LocalTime.of($hour, $minute, $second, $nano) }
 			})
 		val VariableP:Parser[Expr[LocalTime]] = OfType[LocalTime]
 		VariableP | LiteralP
@@ -156,10 +156,6 @@ object MacroImpl {
 
 	private[this] def LocalDateTimeP(using Quotes):Parser[Expr[LocalDateTime]] = {
 		(LocalDateP ~ "T" ~/ LocalTimeP)
-			.map({dt =>
-				val (date, time) = dt
-				'{ $date.atTime($time) }
-			})
 	}
 
 	def stringContext_localdate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDate] = {
