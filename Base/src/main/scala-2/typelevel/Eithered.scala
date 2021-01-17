@@ -1,8 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 package typelevel
 
-// TODO: use scala 3's union type `A | B`
-
 /**
  * Describes how to represent the union of two types
  */
