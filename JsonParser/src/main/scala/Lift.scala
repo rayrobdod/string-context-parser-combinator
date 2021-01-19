@@ -2,13 +2,25 @@ package com.rayrobdod.stringContextParserCombinatorExample.json
 
 import org.json4s.JsonAST._
 
+/**
+ * A conversion from `A` to `Z` that, if found via implicit search, is treated as automatic by the
+ * json interpolation.
+ *
+ * Is a parameterized Lift class instead of one lift per `Z` mostly as an optimization:
+ * * so that all Lifts can all share the 'JValue' converter
+ * * and to reduce class count
+ */
 trait Lift[-A, +Z]{
 	def apply(value:A):Z
 }
 
+/**
+ * Predefined given `Lift` values
+ */
 object Lift {
 	def apply[A, Z](fn:Function1[A, Z]):Lift[A, Z] = new Lift[A, Z] {def apply(value:A) = fn(value)}
 
+	/** allows any jvalue subclass to lift to itself */
 	implicit def jvalue[A <: JValue]:Lift[A, A] =
 		Lift(scala.Predef.identity)
 

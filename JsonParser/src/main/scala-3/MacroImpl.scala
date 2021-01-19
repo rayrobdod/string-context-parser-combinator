@@ -46,10 +46,10 @@ object MacroImpl {
 		override def result(builder:Expr[Builder])(using Quotes):Expr[List[(String, JValue)]] = '{ $builder.result() }
 	}
 
-	private def assembleCollection[A, CC]
+	private def assembleCollection[A : Type, CC : Type]
 			(assembly:CollectionAssembly[A, CC])
 			(parts:List[Either[Expr[A], Expr[TraversableOnce[A]]]])
-			(using c:Quotes, ta:Type[A], tc:Type[CC])
+			(using Quotes)
 	:Expr[CC] = {
 		given scala.quoted.Type[assembly.Builder] = assembly.builderType
 		assembly.result(
@@ -63,9 +63,9 @@ object MacroImpl {
 	}
 
 	import scala.language.higherKinds
-	private def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]](using Type[Lifter], Type[Z]):LiftFunction[Lifter, Z] = {
+	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Z] = {
 		new LiftFunction[Lifter, Z] {
-			def apply[A](lifter:Expr[Lifter[A]], a:Expr[A])(using Quotes, Type[A]):Expr[Z] = {
+			def apply[A : Type](lifter:Expr[Lifter[A]], a:Expr[A])(using Quotes):Expr[Z] = {
 				'{ $lifter.apply($a) }
 			}
 		}
@@ -74,7 +74,7 @@ object MacroImpl {
 	/**
 	 * A micro-optimization; basically just removes a call to an identity function if Lifted created one
 	 */
-	private def unwrapIdentityLift[A <: JValue](using Quotes, Type[A])(in:Expr[A]):Expr[A] = in match {
+	private def unwrapIdentityLift[A <: JValue : Type](using Quotes)(in:Expr[A]):Expr[A] = in match {
 		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[A].apply(${param}) } => param
 		case _ => in
 	}

@@ -65,6 +65,12 @@ lazy val base = (projectMatrix in file("Base"))
 			case _ => Seq()
 		}),
 		libraryDependencies := libraryDependencies.value.map(_.withDottyCompat(scalaVersion.value)),
+		console / initialCommands := """
+			import scala.quoted.{Expr, Quotes}
+			import com.rayrobdod.stringContextParserCombinator.{Parser => _, _}
+			import com.rayrobdod.stringContextParserCombinator.Parsers._
+			import com.rayrobdod.stringContextParserCombinator.typelevel._
+		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala210Ver,
@@ -88,6 +94,10 @@ lazy val json = (projectMatrix in file("JsonParser"))
 				"org.json4s" % "json4s-ast_2.13" % "3.6.10",
 			)
 		}),
+		console / initialCommands := """
+			import org.json4s.JsonAST._
+			import com.rayrobdod.stringContextParserCombinatorExample.json._
+		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala210Ver,
@@ -103,6 +113,10 @@ lazy val time = (projectMatrix in file("TimeParser"))
 	.settings(
 		name := "time",
 		publish / skip := true,
+		console / initialCommands := """
+			import java.time._
+			import com.rayrobdod.stringContextParserCombinatorExample.datetime._
+		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala210Ver,
@@ -118,6 +132,10 @@ lazy val uri = (projectMatrix in file("UriParser"))
 	.settings(
 		name := "uri",
 		publish / skip := true,
+		console / initialCommands := """
+			import java.net.URI
+			import com.rayrobdod.stringContextParserCombinatorExample.uri._
+		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala210Ver,

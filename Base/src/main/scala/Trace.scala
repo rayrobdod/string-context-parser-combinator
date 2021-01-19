@@ -4,6 +4,7 @@ package com.rayrobdod.stringContextParserCombinator
  * A representation of how a result came to be
  * @group Input/Result
  */
+private[stringContextParserCombinator]
 sealed trait Trace[+Expr] {
 	private[stringContextParserCombinator] def removeRequiredThens:Trace[Expr]
 	private[stringContextParserCombinator] def removeEmptyTraces:Trace[Expr]

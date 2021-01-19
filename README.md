@@ -1,7 +1,11 @@
 # string context parser combinator
-[![Build status](https://ci.appveyor.com/api/projects/status/rwtfcrrc7xkjsg6s?svg=true)](https://ci.appveyor.com/project/rayrobdod/string-context-parser-combinator)
+[![Build status](https://ci.appveyor.com/api/projects/status/rwtfcrrc7xkjsg6s/branch/master?svg=true)](https://ci.appveyor.com/project/rayrobdod/string-context-parser-combinator)
 ![Run tests](https://github.com/rayrobdod/string-context-parser-combinator/workflows/Run%20tests/badge.svg)
 
-Make writing string context implementations easier using parser combinators
+This is a library for making parsers for String Context extension implementations.
 
-The library is in the `Base/` project; the other projects are sample usages of that library.
+Basically, this is a partser combinator library, but compared to other string context libraries, it has extra leaf
+parsers which match the 'hole' or 'arg' parts of interpolated strings and is otherwise designed to be used in
+scala macros.
+
+The library is contained within the `Base/` project. The other projects are sample uses of the library.

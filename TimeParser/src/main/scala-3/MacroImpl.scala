@@ -163,7 +163,7 @@ object MacroImpl {
 		macroimpl[LocalDate](Aggregate)(sc, args)
 	}
 
-	def stringContext_localtime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using q:Quotes):Expr[LocalTime] = {
+	def stringContext_localtime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalTime] = {
 		val Aggregate = (this.LocalTimeP ~ Parsers.End())
 		macroimpl[LocalTime](Aggregate)(sc, args)
 	}

@@ -1,12 +1,13 @@
 package com.rayrobdod.stringContextParserCombinator
 
 /** Represents whether parsing has passed by a cut */
-sealed trait Cut {
+private[stringContextParserCombinator] sealed trait Cut {
 	def |(other:Cut):Cut
 	def toBoolean:Boolean
 }
 
-object Cut {
+/** The instances of `Cut` */
+private[stringContextParserCombinator] object Cut {
 	object True extends Cut {
 		override def |(other:Cut):Cut = this
 		override def toBoolean:Boolean = true

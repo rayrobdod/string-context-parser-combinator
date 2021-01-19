@@ -19,7 +19,7 @@ package object stringContextParserCombinator {
 	/**
 	 * Returns a string representation of this input, suitable for printing to a users
 	 */
-	private[this] def inputDescription(input:Input[Expr[_]])(using c:Quotes):String = {
+	private[this] def inputDescription(input:Input[Expr[_]])(using Quotes):String = {
 		if (input.isEmpty) {
 			"end of input"
 		} else {
@@ -42,7 +42,7 @@ package object stringContextParserCombinator {
 		}
 	}
 
-	private[this] def reportFailure(failure:Failure[Expr[_]])(using c:Quotes):Nothing = {
+	private[this] def reportFailure(failure:Failure[Expr[_]])(using Quotes):Nothing = {
 		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
 		val remainingDescription = inputDescription(trimmedTrace.leftMostRemaining)
 		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
@@ -56,28 +56,25 @@ package object stringContextParserCombinator {
 	 * StringContext prefix, creating a parser with that value, then interpreting
 	 * the parse result
 	 *
-	 * == Usage ==
+	 * ## Usage
 	 *
 	 * Given a StringContext extension
-	 * {{{
-	 * package object \$package {
+	 * ```scala
 	 * 	extension (inline sc:scala.StringContext)
 	 * 		inline def \$method(inline args:\$paramtype*):\$rettype = macro \$impl_method
-	 * 	}
-	 * }
-	 * }}}
+	 * ```
 	 *
 	 * Then, macro implementation should consist of
-	 * {{{
-	 * def \$impl_method(sc:Expr[scala.StringContext], args:c.Expr[\$paramtype]*)(using Quotes):Expr[\$rettype] = {
+	 * ```scala
+	 * def \$impl_method(sc:Expr[scala.StringContext], args:Expr[Seq[\$paramtype]])(using Quotes):Expr[\$rettype] = {
 	 * 	val parser:Parser[Expr[\$rettype]] = ???
 	 * 	macroimpl(parser)(sc, args)
 	 * }
-	 * }}}
+	 * ```
 	 *
 	 * @group macro
 	 */
-	def macroimpl[Z](parser:Parser[Expr[_], Expr[Z]])(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using c:Quotes):Expr[Z] = {
+	def macroimpl[Z](parser:Parser[Expr[_], Expr[Z]])(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Z] = {
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
 			case _ => scala.quoted.quotes.reflect.report.throwError(s"Do not know how to process this tree", sc)
@@ -101,7 +98,7 @@ package object stringContextParserCombinator {
 
 package stringContextParserCombinator {
 	/** Support for Parsers.Lifted; represents a macro-level function that combines a CC[A] and an A. */
-	trait LiftFunction[CC[A], Z] {def apply[A](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes, Type[A]):Expr[Z]}
+	trait LiftFunction[CC[A], Z] {def apply[A : Type](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes):Expr[Z]}
 
 
 	/** A position in a source file */
@@ -110,7 +107,7 @@ package stringContextParserCombinator {
 		def throwError(msg:String):Nothing
 	}
 	object Position {
-		final class Impl(q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int) extends Position {
+		private final class Impl(q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int) extends Position {
 			def +(rhs:Int):Position = new Impl(q)(file, start + rhs, end)
 			def throwError(msg:String):Nothing = {
 				q.reflect.report.throwError(msg, q.reflect.Position(file, start, end))
@@ -119,15 +116,8 @@ package stringContextParserCombinator {
 
 		def apply(expr:Expr[_])(using q:Quotes):Position = {
 			import q.reflect._
-			stringContextParserCombinator.Position(expr.asTerm.pos)
-		}
-
-		def apply(using q:Quotes)(pos:q.reflect.Position):Position = {
-			Position(using q)(pos.sourceFile, pos.start, pos.end)
-		}
-
-		def apply(using q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int):Position = {
-			new Impl(q)(file, start, end)
+			val pos = expr.asTerm.pos
+			new Impl(q)(pos.sourceFile, pos.start, pos.end)
 		}
 
 		private[stringContextParserCombinator] def apply(point:Int):Position = {

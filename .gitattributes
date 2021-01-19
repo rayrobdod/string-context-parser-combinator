@@ -1,0 +1,9 @@
+*.java	text	diff=java
+*.md	text	diff=markdown
+*.properties	text
+*.sbt	text
+*.scala	text	diff=scala
+*.yml	text	diff=yaml
+/.gitattributes	text	filter=sort
+/.gitignore	text	filter=sort
+/project/plugins.sbt	filter=sort
