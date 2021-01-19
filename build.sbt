@@ -46,6 +46,7 @@ lazy val sharedSettings = Seq(
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-siteroot", ((sourceDirectory).value / "docs" / "public").toString,
 			"-sourcepath", baseDirectory.value.toString,
+			"-revision", git.gitHeadCommit.value.get,
 		)
 	}),
 	Compile / doc / fileInputOptions += "-siteroot",
@@ -144,3 +145,8 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		scala213Ver,
 		scala30Ver,
 	))
+
+publish / skip := true
+enablePlugins(GhpagesPlugin)
+(ghpagesSynchLocal / mappings) := (base.jvm(scala30Ver) / Compile / packageDoc / mappings).value
+ghpagesCommitOptions := Seq("-m", s"Render of ${git.gitHeadCommit.value.get}")
