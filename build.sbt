@@ -4,23 +4,23 @@ ThisBuild / organization := "com.rayrobdod"
 val scala210Ver = "2.10.7"
 val scala211Ver = "2.11.12"
 val scala212Ver = "2.12.12"
-val scala213Ver = "2.13.4"
-val scala30Ver = "3.0.0-M3"
+val scala213Ver = "2.13.5"
+val scala30Ver = "3.0.0-RC1"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
-			"org.scalatest" %% "scalatest" % "3.2.3" % "test",
+			"org.scalatest" %% "scalatest" % "3.2.5" % "test",
 		)
-		case "3.0.0-M3" => Seq(
-			"org.scalatest" % "scalatest_3.0.0-M3" % "3.2.3" % "test",
+		case "3.0.0-RC1" => Seq(
+			"org.scalatest" % "scalatest_3.0.0-RC1" % "3.2.5" % "test",
 		)
 	}),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" => Seq("-target:jvm-1.7")
 		case "2.12" | "2.13" => Seq("-target:jvm-1.8")
-		case _ => Seq("-release", "8")
+		case _ => if (scala.util.Properties.isJavaAtLeast("9")) {Seq("-release", "8")} else {Seq.empty}
 	}),
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" => Seq.empty
@@ -44,9 +44,10 @@ lazy val sharedSettings = Seq(
 		)
 		case _ => Seq(
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
-			"-siteroot", ((sourceDirectory).value / "docs" / "public").toString,
-			"-sourcepath", baseDirectory.value.toString,
 			"-revision", git.gitHeadCommit.value.get,
+			"-siteroot", ((sourceDirectory).value / "docs" / "public").toString,
+			"-social-links:github::https://github.com/rayrobdod/string-context-parser-combinator",
+			"-source-links:Base=github://rayrobdod/string-context-parser-combinator#Base",
 		)
 	}),
 	Compile / doc / fileInputOptions += "-siteroot",

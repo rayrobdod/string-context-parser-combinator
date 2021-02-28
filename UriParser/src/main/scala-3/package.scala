@@ -7,5 +7,6 @@ import java.net.URI
  */
 package object uri {
 	extension (inline sc:scala.StringContext)
-		inline def uri(inline args:Any*):URI = ${MacroImpl.stringContext_uri('sc, 'args)}
+		transparent inline def uri(inline args:Any*):URI =
+			${MacroImpl.stringContext_uri('sc, 'args)}
 }
