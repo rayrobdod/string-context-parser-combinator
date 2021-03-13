@@ -11,9 +11,9 @@ object Lifted {
 		lifterType:Function1[c.Type, c.Type],
 		lift:LiftFunction[c.type, Lifter, Z],
 		description:Expecting
-	):AbstractParser[c.Expr[_], c.Expr[Z]] = {
-		new AbstractParser[c.Expr[_], c.Expr[Z]] {
-			override def parse(input:Input[c.Expr[_]]):Result[c.Expr[_], c.Expr[Z]] = {
+	):AbstractParser[c.Expr[_], Z] = {
+		new AbstractParser[c.Expr[_], Z] {
+			override def parse(input:Input[c.Expr[_]]):Result[c.Expr[_], Z] = {
 				input.consume(
 					_ => None,
 					arg => (Some(arg)

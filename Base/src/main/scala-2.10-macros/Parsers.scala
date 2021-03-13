@@ -63,7 +63,7 @@ trait Parsers {
 	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 */
-	def Lifted[Lifter[A], Z](lifterType:Function1[ctx.Type, ctx.Type], lift:LiftFunction[ctx.type, Lifter, Z], description:Expecting):Parser[ctx.Expr[Z]] =
+	def Lifted[Lifter[A], Z](lifterType:Function1[ctx.Type, ctx.Type], lift:LiftFunction[ctx.type, Lifter, Z], description:Expecting):Parser[Z] =
 		parsers.Lifted(ctx)(lifterType, lift, description)
 
 	/** A parser that succeeds iff the input is empty */
@@ -124,7 +124,7 @@ object Parsers {
 	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 */
-	def Lifted[Lifter[A], Z](c:Context)(lifterType:Function1[c.Type, c.Type], lift:LiftFunction[c.type, Lifter, Z], description:Expecting):Parser[c.Expr[_], c.Expr[Z]] =
+	def Lifted[Lifter[A], Z](c:Context)(lifterType:Function1[c.Type, c.Type], lift:LiftFunction[c.type, Lifter, Z], description:Expecting):Parser[c.Expr[_], Z] =
 		parsers.Lifted(c)(lifterType, lift, description)
 
 	/** A parser that succeeds iff the input is empty */

@@ -41,12 +41,11 @@ trait Parsers {
 	def OfType[A : Type](using Quotes):Parser[Expr[A]] =
 		new parsers.OfType[A]
 
-	/** A parser that succeeds if a "lift" type can be implicitly summoned
+	/** A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 	 *
-	 * The type of object to attempt to summon is determined by calling lifterType using the type of the next `arg` input
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 */
-	def Lifted[Lifter[A] : Type, Z](lift:LiftFunction[Lifter, Z], description:Expecting)(using Quotes):Parser[Expr[Z]] =
+	def Lifted[Lifter[A] : Type, Z](lift:LiftFunction[Lifter, Z], description:Expecting)(using Quotes):Parser[Z] =
 		parsers.Lifted(lift, description)
 
 	/** A parser that succeeds iff the input is empty */

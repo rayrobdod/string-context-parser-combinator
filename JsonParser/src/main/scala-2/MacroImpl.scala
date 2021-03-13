@@ -97,8 +97,8 @@ object MacroImpl {
 	}
 
 	import scala.language.higherKinds
-	def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]](c:Context):LiftFunction[c.type, Lifter, Z] = {
-		new LiftFunction[c.type, Lifter, Z] {
+	def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]](c:Context):LiftFunction[c.type, Lifter, c.Expr[Z]] = {
+		new LiftFunction[c.type, Lifter, c.Expr[Z]] {
 			def apply[A](lifter:c.Expr[Lifter[A]], a:c.Expr[A]):c.Expr[Z] = {
 				c.Expr(
 					c.universe.Apply(
@@ -129,7 +129,7 @@ object MacroImpl {
 			val BooleanP:Parser[c.Expr[JBool]] = {
 				val TrueI = IsString("true").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.True))
 				val FalseI = IsString("false").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.False))
-				val LiftedV = Lifted[Lift.Boolean, JBool](
+				val LiftedV = Lifted[Lift.Boolean, c.Expr[JBool]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JBool])),
 					myLiftFunction[JBool, Lift.Boolean](c),
 					Expecting("A for Lift[A, JBool]")
@@ -166,7 +166,7 @@ object MacroImpl {
 						c.universe.reify(_root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply(xExpr.splice)))
 					})
 				}.opaque(Expecting("Number Literal"))
-				val LiftedV = Lifted[Lift.Number, JValue with JNumber](
+				val LiftedV = Lifted[Lift.Number, c.Expr[JValue with JNumber]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JValue with JNumber])),
 					myLiftFunction[JValue with JNumber, Lift.Number](c),
 					Expecting("A for Lift[A, JNumber]")
@@ -190,7 +190,7 @@ object MacroImpl {
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
-				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, JString](
+				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
 					Expecting("A for Lift[A, JString]")
@@ -201,7 +201,7 @@ object MacroImpl {
 			}
 
 			val StringP:Parser[c.Expr[String]] = {
-				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, JString](
+				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
 					Expecting("A for Lift[A, JString]")
@@ -211,7 +211,7 @@ object MacroImpl {
 			}
 
 			val JStringP:Parser[c.Expr[JString]] = {
-				val LiftedV:Parser[c.Expr[JString]] = Lifted[Lift.String, JString](
+				val LiftedV:Parser[c.Expr[JString]] = Lifted[Lift.String, c.Expr[JString]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
 					Expecting("A for Lift[A, JString]")
@@ -225,7 +225,7 @@ object MacroImpl {
 				val Delim:Parser[Unit] = IsString(",")
 				val Suffix:Parser[Unit] = IsString("]")
 
-				val LiftedArrayV = Lifted[Lift.Array, JArray](
+				val LiftedArrayV = Lifted[Lift.Array, c.Expr[JArray]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JArray])),
 					myLiftFunction[JArray, Lift.Array](c),
 					Expecting("A for Lift[A, JArray]")
@@ -258,14 +258,14 @@ object MacroImpl {
 				val Delim:Parser[Unit] = IsString(",")
 				val Suffix:Parser[Unit] = IsString("}")
 
-				val ObjectV = Lifted[Lift.Object, JObject](
+				val ObjectV = Lifted[Lift.Object, c.Expr[JObject]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JObject])),
 					myLiftFunction[JObject, Lift.Object](c),
 					Expecting("A for Lift[A, JObject]")
 				)
 				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("obj"))))
 
-				val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
+				val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
 					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
 					Expecting("A for Lift[A, (String, JValue)]")

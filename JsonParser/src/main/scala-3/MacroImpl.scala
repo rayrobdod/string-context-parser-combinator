@@ -63,8 +63,8 @@ object MacroImpl {
 	}
 
 	import scala.language.higherKinds
-	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Z] = {
-		new LiftFunction[Lifter, Z] {
+	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Expr[Z]] = {
+		new LiftFunction[Lifter, Expr[Z]] {
 			def apply[A : Type](lifter:Expr[Lifter[A]], a:Expr[A])(using Quotes):Expr[Z] = {
 				'{ $lifter.apply($a) }
 			}
@@ -100,7 +100,7 @@ object MacroImpl {
 	private def BooleanP(using Quotes):Parser[Expr[JBool]] = {
 		val TrueI = IsString("true").map(_ => '{ _root_.org.json4s.JsonAST.JBool.True })
 		val FalseI = IsString("false").map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
-		val LiftedV = Lifted[Lift.Boolean, JBool](
+		val LiftedV = Lifted[Lift.Boolean, Expr[JBool]](
 			myLiftFunction[JBool, Lift.Boolean],
 			Expecting("A for Lift[A, JBool]")
 		).map(unwrapIdentityLift _)
@@ -135,7 +135,7 @@ object MacroImpl {
 				'{ _root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply( ${Expr[String](x)} )) }
 			})
 		}.opaque(Expecting("Number Literal"))
-		val LiftedV = Lifted[Lift.Number, JValue with JNumber](
+		val LiftedV = Lifted[Lift.Number, Expr[JValue with JNumber]](
 			myLiftFunction[JValue with JNumber, Lift.Number],
 			Expecting("A for Lift[A, JNumber]")
 		).map(unwrapIdentityLift _)
@@ -158,7 +158,7 @@ object MacroImpl {
 		)
 		val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 		val JCharsI:Parser[Expr[String]] = JCharP.repeat(1).map(Expr.apply _)
-		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, JString](
+		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
 			Expecting("A for Lift[A, JString]")
 		).map(jstringExprToStringExpr _)
@@ -168,7 +168,7 @@ object MacroImpl {
 	}
 
 	private def StringP(using Quotes):Parser[Expr[String]] = {
-		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, JString](
+		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
 			Expecting("A for Lift[A, JString]")
 		).map(jstringExprToStringExpr _)
@@ -177,7 +177,7 @@ object MacroImpl {
 	}
 
 	private def JStringP(using Quotes):Parser[Expr[JString]] = {
-		val LiftedV:Parser[Expr[JString]] = Lifted[Lift.String, JString](
+		val LiftedV:Parser[Expr[JString]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
 			Expecting("A for Lift[A, JString]")
 		).map(unwrapIdentityLift _)
@@ -190,7 +190,7 @@ object MacroImpl {
 		val Delim:Parser[Unit] = IsString(",")
 		val Suffix:Parser[Unit] = IsString("]")
 
-		val LiftedArrayV = Lifted[Lift.Array, JArray](
+		val LiftedArrayV = Lifted[Lift.Array, Expr[JArray]](
 			myLiftFunction[JArray, Lift.Array],
 			Expecting("A for Lift[A, JArray]")
 		).map(unwrapIdentityLift _)
@@ -220,13 +220,13 @@ object MacroImpl {
 		val Delim:Parser[Unit] = IsString(",")
 		val Suffix:Parser[Unit] = IsString("}")
 
-		val ObjectV = Lifted[Lift.Object, JObject](
+		val ObjectV = Lifted[Lift.Object, Expr[JObject]](
 			myLiftFunction[JObject, Lift.Object],
 			Expecting("A for Lift[A, JObject]")
 		).map(unwrapIdentityLift _)
 		val ObjectV2 = ObjectV.map(x => '{ $x.obj })
 
-		val KeyValueV = Lifted[Lift.KeyValue, (java.lang.String, JValue)](
+		val KeyValueV = Lifted[Lift.KeyValue, Expr[(java.lang.String, JValue)]](
 			myLiftFunction[(java.lang.String, JValue), Lift.KeyValue],
 			Expecting("A for Lift[A, (String, JValue)]")
 		)
