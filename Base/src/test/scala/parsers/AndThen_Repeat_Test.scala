@@ -231,5 +231,63 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}
 		}
+		it ("right associative variant of \"'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
+			val initialInput = SinglePartInput("[a:a]", 42)
+			val parser = IsString[Nothing]("[") andThen (IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](",")) andThen IsString[Nothing]("]"))
+
+			val expected = Failure(
+				SingleExpecting("\",\"",44) ++
+					SingleExpecting("\"]\"",44) ++
+					SingleExpecting("\"]\"",43) ++
+					SingleExpecting("\"a\"",43) ++
+					SingleExpecting("\"[\"",42),
+				Cut.False
+			)
+
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
+			val initialInput = SinglePartInput("[a:a]", 42)
+			val parser = IsString[Nothing]("[") andThen IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](",")) andThen IsString[Nothing]("]")
+
+			val expected = Failure(
+				SingleExpecting("\",\"",44) ++
+					SingleExpecting("\"]\"",44) ++
+					SingleExpecting("\"]\"",43) ++
+					SingleExpecting("\"a\"",43) ++
+					SingleExpecting("\"[\"",42),
+				Cut.False
+			)
+
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("right associative variant of \"'[' ~/ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
+			val initialInput = SinglePartInput("[a:a]", 42)
+			val parser = IsString[Nothing]("[") andThenWithCut (IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](",")) andThen IsString[Nothing]("]"))
+
+			val expected = Failure(
+				SingleExpecting("\",\"",44) ++
+					SingleExpecting("\"]\"",44) ++
+					SingleExpecting("\"]\"",43) ++
+					SingleExpecting("\"a\"",43),
+				Cut.True
+			)
+
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("'[' ~/ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
+			val initialInput = SinglePartInput("[a:a]", 42)
+			val parser = IsString[Nothing]("[") andThenWithCut IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](",")) andThen IsString[Nothing]("]")
+
+			val expected = Failure(
+				SingleExpecting("\",\"",44) ++
+					SingleExpecting("\"]\"",44) ++
+					SingleExpecting("\"]\"",43) ++
+					SingleExpecting("\"a\"",43),
+				Cut.True
+			)
+
+			assertResult(expected){parser.parse(initialInput)}
+		}
 	}
 }
