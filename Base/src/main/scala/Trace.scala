@@ -27,10 +27,10 @@ final case class EmptyTrace[+Expr](remaining:Input[Expr]) extends Trace[Expr] {
  * @group Input/Result
  */
 private[stringContextParserCombinator]
-final case class LeafTrace[+Expr](parser:Expecting, remaining:Input[Expr]) extends Trace[Expr] {
+final case class LeafTrace[+Expr](parser:ExpectingDescription, remaining:Input[Expr]) extends Trace[Expr] {
 	def removeRequiredThens:Trace[Expr] = this
 	def removeEmptyTraces:Trace[Expr] = this
-	def expectingDescription:String = parser.description
+	def expectingDescription:String = parser.value
 	def leftMostRemaining:Input[Expr] = remaining
 }
 
@@ -83,7 +83,7 @@ final case class ThenTrace[+Expr](left:Trace[Expr], right:Trace[Expr]) extends T
  * @group Input/Result
  */
 private[stringContextParserCombinator]
-final case class FilterTrace[+Expr](filter:Expecting, backing:Trace[Expr]) extends Trace[Expr] {
+final case class FilterTrace[+Expr](filter:ExpectingDescription, backing:Trace[Expr]) extends Trace[Expr] {
 	def removeRequiredThens:Trace[Expr] = this
 	def removeEmptyTraces:Trace[Expr] = this
 	def expectingDescription:String = {
@@ -91,7 +91,7 @@ final case class FilterTrace[+Expr](filter:Expecting, backing:Trace[Expr]) exten
 			case _:OrTrace[_] | _:ThenTrace[_] => s"(${x.expectingDescription})"
 			case _ => x.expectingDescription
 		}
-		s"${impl(backing)} where ${filter.description}"
+		s"${impl(backing)} where ${filter.value}"
 	}
 	def leftMostRemaining:Input[Expr] = backing.leftMostRemaining
 }

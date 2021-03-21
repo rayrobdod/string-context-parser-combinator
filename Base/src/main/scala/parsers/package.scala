@@ -9,7 +9,7 @@ package parsers {
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
 	private[parsers] final class PartsParser[Expr, +A](
 		partsFn:String => Option[(A, Int)],
-		expecting: => Expecting
+		expecting: => ExpectingDescription
 	) extends AbstractParser[Expr, A] {
 		def parse(input:Input[Expr]):Result[Expr, A] = {
 			input.consume(
@@ -55,7 +55,7 @@ package object parsers {
 		chooseFrom:Set[Char]
 	):Parser[Expr, Char] = CharWhere(
 		chooseFrom.contains _,
-		Expecting(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
+		ExpectingDescription(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
@@ -64,14 +64,14 @@ package object parsers {
 		chooseFrom:Seq[Char]
 	):Parser[Expr, Char] = CharWhere(
 		chooseFrom.contains _,
-		Expecting(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
+		ExpectingDescription(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
 	def CharWhere[Expr](
 		predicate:Function1[Char, Boolean],
-		description: => Expecting
+		description: => ExpectingDescription
 	):Parser[Expr, Char] = new PartsParser(
 		pt => Option((pt.charAt(0), 1)).filter(x => predicate(x._1)),
 		description
@@ -85,7 +85,7 @@ package object parsers {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
 		this.CodePointWhere(
 			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
-			Expecting(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -96,7 +96,7 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			Expecting(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -107,14 +107,14 @@ package object parsers {
 	):Parser[Expr, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			Expecting(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
 	def CodePointWhere[Expr](
-		predicate:Function1[CodePoint, Boolean], description:Expecting
+		predicate:Function1[CodePoint, Boolean], description:ExpectingDescription
 	):Parser[Expr, CodePoint] = new PartsParser(
 		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
 		description
@@ -126,7 +126,7 @@ package object parsers {
 		value:String
 	):Parser[Expr, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
-		Expecting(value.map(unescape _).mkString("\"", "", "\""))
+		ExpectingDescription(value.map(unescape _).mkString("\"", "", "\""))
 	)
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
@@ -135,7 +135,7 @@ package object parsers {
 		reg:scala.util.matching.Regex
 	):Parser[Expr, String] = new PartsParser(
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
-		Expecting("s/" + reg.toString + "/")
+		ExpectingDescription("s/" + reg.toString + "/")
 	)
 
 	private[stringContextParserCombinator]

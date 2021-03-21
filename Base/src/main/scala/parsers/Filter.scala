@@ -3,7 +3,9 @@ package parsers
 
 private[stringContextParserCombinator]
 final class Filter[Expr, A](
-	backing:Parser[Expr, A], predicate:Function1[A, Boolean], val predicateDescription:Expecting
+	backing:Parser[Expr, A],
+	predicate:Function1[A, Boolean],
+	predicateDescription:ExpectingDescription
 ) extends AbstractParser[Expr, A] {
 	def parse(input:Input[Expr]):Result[Expr, A] = {
 		backing.parse(input) match {

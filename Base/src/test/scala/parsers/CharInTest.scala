@@ -14,7 +14,7 @@ final class CharInTest extends AnyFunSpec {
 		val expected = Success(
 			head,
 			new Input(tail._1, tail._2),
-			LeafTrace(Expecting(parserSet.mkString("CharIn(\"", "", "\")")), input),
+			LeafTrace(ExpectingDescription(parserSet.mkString("CharIn(\"", "", "\")")), input),
 			Cut.False
 		)
 		val parser = CharIn[Expr](parserSet)
@@ -23,7 +23,7 @@ final class CharInTest extends AnyFunSpec {
 
 	def expectFailure(parserSet:Set[Char], input:Input[Expr]) = {
 		val expected = Failure(
-			LeafTrace(Expecting(parserSet.mkString("CharIn(\"", "", "\")")), input),
+			LeafTrace(ExpectingDescription(parserSet.mkString("CharIn(\"", "", "\")")), input),
 			Cut.False
 		)
 		val parser = CharIn[Expr](parserSet)

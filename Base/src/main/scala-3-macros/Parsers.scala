@@ -23,7 +23,7 @@ trait Parsers {
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] =
-		parsers.CharWhere(fn, Expecting(description))
+		parsers.CharWhere(fn, ExpectingDescription(description))
 
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	def CodePointIn(str:String):Parser[CodePoint] =
@@ -31,7 +31,7 @@ trait Parsers {
 
 	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] =
-		parsers.CodePointWhere(fn, Expecting(description))
+		parsers.CodePointWhere(fn, ExpectingDescription(description))
 
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	def IsString(str:String):Parser[Unit] =
@@ -45,8 +45,8 @@ trait Parsers {
 	 *
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 */
-	def Lifted[Lifter[A] : Type, Z](lift:LiftFunction[Lifter, Z], description:Expecting)(using Quotes):Parser[Z] =
-		parsers.Lifted(lift, description)
+	def Lifted[Lifter[A] : Type, Z](lift:LiftFunction[Lifter, Z], description:String)(using Quotes):Parser[Z] =
+		parsers.Lifted(lift, ExpectingDescription(description))
 
 	/** A parser that succeeds iff the input is empty */
 	def End():Parser[Unit] =

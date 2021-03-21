@@ -23,7 +23,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a*` matches `a`") {
 			val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"a",
@@ -37,7 +37,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a*` matches `aaaa`") {
 			val initialInput = new Input[Nothing](InputPart("aaaa", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"aaaa",
@@ -61,7 +61,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a+` does not match ``") {
 			val initialInput = new Input[Nothing](InputPart("", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Failure[Nothing](
 				LeafTrace(childExpecting, new Input(List(InputPart("", 42)), List())),
@@ -73,7 +73,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a+` matches `a`") {
 			val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"a",
@@ -87,7 +87,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a+` matches `aaaa`") {
 			val initialInput = new Input[Nothing](InputPart("aaaa", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"aaaa",
@@ -124,7 +124,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a?` matches `a`") {
 			val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"a",
@@ -138,7 +138,7 @@ final class RepeatTest extends AnyFunSpec {
 		it ("`a?` does not match all of `aaaa`") {
 			val initialInput = new Input[Nothing](InputPart("aaaa", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"a",
@@ -182,7 +182,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = new Input[Nothing](InputPart("a", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
 			val delimParser = CharIn("b").map(_ => ())
-			val childExpecting = Expecting("CharIn(\"a\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success[Nothing, String](
 				"a",
@@ -197,8 +197,8 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = new Input[Nothing](InputPart("ababa", 42) :: Nil, Nil)
 			val childParser = CharIn("a")
 			val delimParser = CharIn("b").map(_ => ())
-			val childExpecting = Expecting("CharIn(\"a\")")
-			val delimExpecting = Expecting("CharIn(\"b\")")
+			val childExpecting = ExpectingDescription("CharIn(\"a\")")
+			val delimExpecting = ExpectingDescription("CharIn(\"b\")")
 
 			val expected = Success[Nothing, String](
 				"aaa",
@@ -228,8 +228,8 @@ final class RepeatTest extends AnyFunSpec {
 
 			val expected = Failure[Nothing](
 				ThenTrace(
-					LeafTrace(Expecting("CharIn(\"a\")"), new Input(List(InputPart("a", 42)), List())),
-					LeafTrace(Expecting("CharIn(\"b\")"), new Input(List(InputPart("", 43)), List()))
+					LeafTrace(ExpectingDescription("CharIn(\"a\")"), new Input(List(InputPart("a", 42)), List())),
+					LeafTrace(ExpectingDescription("CharIn(\"b\")"), new Input(List(InputPart("", 43)), List()))
 				),
 				Cut.False
 			)
@@ -238,10 +238,10 @@ final class RepeatTest extends AnyFunSpec {
 		}
 
 		describe("`(a ~/ b ~ c)*`") {
-			val childExpecting = Expecting("childExpecting")
+			val childExpecting = ExpectingDescription("childExpecting")
 			val childParser = (CharIn[Nothing]("a")
 				andThenWithCut CharIn[Nothing]("b")
-				andThen CharIn[Nothing]("c")).opaque(childExpecting)
+				andThen CharIn[Nothing]("c")).opaque("childExpecting")
 			val parser = childParser.repeat()
 
 			it ("matches ``; no cut") {

@@ -12,8 +12,8 @@ final class OrElseTest extends AnyFunSpec {
 
 			val leftResult = new Object
 			val rightResult = new Object
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser = new ConstSuccess(leftResult, leftEndInput, leftExpect, Cut.False)
 			val rightParser = new ConstSuccess(rightResult, rightEndInput, rightExpect, Cut.False)
@@ -32,8 +32,8 @@ final class OrElseTest extends AnyFunSpec {
 			val rightEndInput = new Input[Nothing](("wxyz", Position(151)) :: Nil, Nil)
 
 			val rightResult = new Object
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser = new ConstFailure(leftExpect, Cut.True)
 			val rightParser = new ConstSuccess(rightResult, rightEndInput, rightExpect, Cut.False)
@@ -50,8 +50,8 @@ final class OrElseTest extends AnyFunSpec {
 			val rightEndInput = new Input[Nothing](("wxyz", Position(151)) :: Nil, Nil)
 
 			val rightResult = new Object
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser:Parser[Nothing, Object] = new ConstFailure(leftExpect, Cut.False)
 			val rightParser:Parser[Nothing, Object] = new ConstSuccess(rightResult, rightEndInput, rightExpect, Cut.False)
@@ -68,8 +68,8 @@ final class OrElseTest extends AnyFunSpec {
 		it("`Failure | Cut` returns a failure that mentions only the cut branch") {
 			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
 
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser = new ConstFailure(leftExpect, Cut.False)
 			val rightParser = new ConstFailure(rightExpect, Cut.True)
@@ -84,8 +84,8 @@ final class OrElseTest extends AnyFunSpec {
 		it("`Failure | Failure` returns a failure that mentions both branches") {
 			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
 
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser = new ConstFailure(leftExpect, Cut.False)
 			val rightParser = new ConstFailure(rightExpect, Cut.False)

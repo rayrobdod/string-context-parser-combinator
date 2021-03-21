@@ -12,7 +12,7 @@ final class OfType[Ctx <: Context with Singleton, A](
 		input.consume(
 			_ => None,
 			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[Ctx#Expr[A]]),
-			Expecting(s"OfType(${tpetag.tpe})")
+			ExpectingDescription(s"OfType(${tpetag.tpe})")
 		)
 	}
 }

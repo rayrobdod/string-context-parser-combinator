@@ -10,7 +10,7 @@ object Lifted {
 		c:Context)(
 		lifterType:Function1[c.Type, c.Type],
 		lift:LiftFunction[c.type, Lifter, Z],
-		description:Expecting
+		description:ExpectingDescription
 	):AbstractParser[c.Expr[_], Z] = {
 		new AbstractParser[c.Expr[_], Z] {
 			override def parse(input:Input[c.Expr[_]]):Result[c.Expr[_], Z] = {

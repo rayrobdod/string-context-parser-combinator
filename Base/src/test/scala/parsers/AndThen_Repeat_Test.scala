@@ -15,12 +15,12 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			(
 				"If the repeat is permissibly empty, and right fails, then fails and shows both inputs as expected options",
 				(0, Integer.MAX_VALUE),
-				Seq(Sequence.Output(None, InputNoArgs("1", 1), Expecting("1"), Cut.False)),
-				new ConstFailure(Expecting("right"), Cut.False),
+				Seq(Sequence.Output(None, InputNoArgs("1", 1), ExpectingDescription("1"), Cut.False)),
+				new ConstFailure(ExpectingDescription("right"), Cut.False),
 				Failure(
 					OrTrace(
-						LeafTrace(Expecting("1"), initialInput),
-						LeafTrace(Expecting("right"), initialInput)
+						LeafTrace(ExpectingDescription("1"), initialInput),
+						LeafTrace(ExpectingDescription("right"), initialInput)
 					),
 					Cut.False
 				)
@@ -28,42 +28,42 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			(
 				"If the repeat is permissibly empty, and right fails with cut, then fails and shows the cut as expected",
 				(0, Integer.MAX_VALUE),
-				Seq(Sequence.Output(None, InputNoArgs("1", 1), Expecting("1"), Cut.False)),
-				new ConstFailure(Expecting("right"), Cut.True),
+				Seq(Sequence.Output(None, InputNoArgs("1", 1), ExpectingDescription("1"), Cut.False)),
+				new ConstFailure(ExpectingDescription("right"), Cut.True),
 				Failure(
-					LeafTrace(Expecting("right"), initialInput),
+					LeafTrace(ExpectingDescription("right"), initialInput),
 					Cut.True
 				)
 			),
 			(
 				"If the repeat is permissibly empty, and right succeeds, then result is success",
 				(0, Integer.MAX_VALUE),
-				Seq(Sequence.Output(None, InputNoArgs("1", 1), Expecting("1"), Cut.False)),
-				new ConstSuccess(SuccessValue(0xCAFE), InputNoArgs("right", 0xCAFE), Expecting("right"), Cut.False),
+				Seq(Sequence.Output(None, InputNoArgs("1", 1), ExpectingDescription("1"), Cut.False)),
+				new ConstSuccess(SuccessValue(0xCAFE), InputNoArgs("right", 0xCAFE), ExpectingDescription("right"), Cut.False),
 				Success(
 					(Seq.empty, SuccessValue(0xCAFE)),
 					InputNoArgs("right", 0xCAFE),
-					LeafTrace(Expecting("right"), initialInput),
+					LeafTrace(ExpectingDescription("right"), initialInput),
 					Cut.False
 				)
 			),
 			(
 				"If the repeat is a failed cut, then the result matches that failure",
 				(0, Integer.MAX_VALUE),
-				Seq(Sequence.Output(None, InputNoArgs("1", 1), Expecting("1"), Cut.True)),
-				new ConstSuccess(SuccessValue(0xCAFE), InputNoArgs("right", 0xCAFE), Expecting("right"), Cut.False),
+				Seq(Sequence.Output(None, InputNoArgs("1", 1), ExpectingDescription("1"), Cut.True)),
+				new ConstSuccess(SuccessValue(0xCAFE), InputNoArgs("right", 0xCAFE), ExpectingDescription("right"), Cut.False),
 				Failure(
-					LeafTrace(Expecting("1"), initialInput),
+					LeafTrace(ExpectingDescription("1"), initialInput),
 					Cut.True
 				)
 			),
 			(
 				"If the repeat has a failed cut, then the result matches that failure",
 				(0, Integer.MAX_VALUE),
-				Seq(Sequence.Output(None, InputNoArgs("1", 1), Expecting("1"), Cut.True)),
-				new ConstSuccess(SuccessValue(0xCAFE), InputNoArgs("right", 0xCAFE), Expecting("right"), Cut.False),
+				Seq(Sequence.Output(None, InputNoArgs("1", 1), ExpectingDescription("1"), Cut.True)),
+				new ConstSuccess(SuccessValue(0xCAFE), InputNoArgs("right", 0xCAFE), ExpectingDescription("right"), Cut.False),
 				Failure(
-					LeafTrace(Expecting("1"), initialInput),
+					LeafTrace(ExpectingDescription("1"), initialInput),
 					Cut.True
 				)
 			)
@@ -81,8 +81,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("a", 42)
 			val leftParser = CharIn("a").repeat()
 			val rightParser = CharIn("b")
-			val leftExpecting = Expecting("CharIn(\"a\")")
-			val rightExpecting = Expecting("CharIn(\"b\")")
+			val leftExpecting = ExpectingDescription("CharIn(\"a\")")
+			val rightExpecting = ExpectingDescription("CharIn(\"b\")")
 
 			val expected = Failure(
 				ThenTrace(
@@ -102,8 +102,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("ac", 42)
 			val leftParser = CharIn("a").repeat()
 			val rightParser = CharIn("b")
-			val leftExpecting = Expecting("CharIn(\"a\")")
-			val rightExpecting = Expecting("CharIn(\"b\")")
+			val leftExpecting = ExpectingDescription("CharIn(\"a\")")
+			val rightExpecting = ExpectingDescription("CharIn(\"b\")")
 
 			val expected = Failure(
 				ThenTrace(
@@ -123,7 +123,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("a", 42)
 			val leftParser = CharIn("a").repeat(3,5)
 			val rightParser = CharIn("b")
-			val leftExpecting = Expecting("CharIn(\"a\")")
+			val leftExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Failure(
 				ThenTrace(
@@ -140,8 +140,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("aaaaaaaa", 42)
 			val leftParser = CharIn("a").repeat(3,5)
 			val rightParser = CharIn("b")
-			val leftExpecting = Expecting("CharIn(\"a\")")
-			val rightExpecting = Expecting("CharIn(\"b\")")
+			val leftExpecting = ExpectingDescription("CharIn(\"a\")")
+			val rightExpecting = ExpectingDescription("CharIn(\"b\")")
 
 			val expected = Failure(
 				ThenTrace(
@@ -170,8 +170,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("aa", 42)
 			val leftParser = CharIn("ab").repeat()
 			val rightParser = CharIn("a")
-			val leftExpecting = Expecting("CharIn(\"ab\")")
-			val rightExpecting = Expecting("CharIn(\"a\")")
+			val leftExpecting = ExpectingDescription("CharIn(\"ab\")")
+			val rightExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success(
 				("a", 'a'),
@@ -190,8 +190,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("aaa", 42)
 			val leftParser = CharIn("ab").repeat()
 			val rightParser = CharIn("a")
-			val leftExpecting = Expecting("CharIn(\"ab\")")
-			val rightExpecting = Expecting("CharIn(\"a\")")
+			val leftExpecting = ExpectingDescription("CharIn(\"ab\")")
+			val rightExpecting = ExpectingDescription("CharIn(\"a\")")
 
 			val expected = Success(
 				("aa", 'a'),
@@ -221,20 +221,20 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 				ThenTrace(
 					ThenTrace(
 						ThenTrace(
-							LeafTrace(Expecting("CharIn(\"a\")"), InputNoArgs("abcd", 42)),
-							LeafTrace(Expecting("CharIn(\"b\")"), InputNoArgs("bcd", 43))
+							LeafTrace(ExpectingDescription("CharIn(\"a\")"), InputNoArgs("abcd", 42)),
+							LeafTrace(ExpectingDescription("CharIn(\"b\")"), InputNoArgs("bcd", 43))
 						),
 						ThenTrace(
-							LeafTrace(Expecting("CharIn(\"c\")"), InputNoArgs("cd", 44)),
-							LeafTrace(Expecting("CharIn(\"d\")"), InputNoArgs("d", 45))
+							LeafTrace(ExpectingDescription("CharIn(\"c\")"), InputNoArgs("cd", 44)),
+							LeafTrace(ExpectingDescription("CharIn(\"d\")"), InputNoArgs("d", 45))
 						)
 					),
 					OrTrace(
 						OrTrace(
-							LeafTrace(Expecting("CharIn(\"a\")"), InputNoArgs("", 46)),
-							LeafTrace(Expecting("CharIn(\"c\")"), InputNoArgs("", 46))
+							LeafTrace(ExpectingDescription("CharIn(\"a\")"), InputNoArgs("", 46)),
+							LeafTrace(ExpectingDescription("CharIn(\"c\")"), InputNoArgs("", 46))
 						),
-						LeafTrace(Expecting("\"abcd\""), InputNoArgs("", 46))
+						LeafTrace(ExpectingDescription("\"abcd\""), InputNoArgs("", 46))
 					)
 				),
 				Cut.True
@@ -245,15 +245,15 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("unexpected right with any repeat and delimiter fails and shows delimiter and right as options") {
 			val initialInput = InputNoArgs("az", 42)
-			val leftParser = CharIn("a").opaque(Expecting("rep")).repeat(delimiter = IsString("b").map(_ => ()).opaque(Expecting("delim")))
-			val rightParser = CharIn("c").opaque(Expecting("right"))
+			val leftParser = CharIn("a").opaque("rep").repeat(delimiter = IsString("b").map(_ => ()).opaque("delim"))
+			val rightParser = CharIn("c").opaque("right")
 
 			val expected = Failure(
 				ThenTrace(
-					LeafTrace(Expecting("rep"), initialInput),
+					LeafTrace(ExpectingDescription("rep"), initialInput),
 					OrTrace(
-						LeafTrace(Expecting("delim"), InputNoArgs("z", 43)),
-						LeafTrace(Expecting("right"), InputNoArgs("z", 43))
+						LeafTrace(ExpectingDescription("delim"), InputNoArgs("z", 43)),
+						LeafTrace(ExpectingDescription("right"), InputNoArgs("z", 43))
 					)
 				),
 				Cut.False
@@ -264,8 +264,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("successful with delimiter") {
 			val initialInput = InputNoArgs("abac", 42)
-			val leftParser = CharIn("a").opaque(Expecting("rep")).repeat(delimiter = IsString("b").map(_ => ()).opaque(Expecting("delim")))
-			val rightParser = CharIn("c").opaque(Expecting("right"))
+			val leftParser = CharIn("a").opaque("rep").repeat(delimiter = IsString("b").map(_ => ()).opaque("delim"))
+			val rightParser = CharIn("c").opaque("right")
 
 			val expected = Success(
 				("aa", 'c'),
@@ -273,12 +273,12 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 				ThenTrace(
 					ThenTrace(
 						ThenTrace(
-							LeafTrace(Expecting("rep"), initialInput),
-							LeafTrace(Expecting("delim"), InputNoArgs("bac", 43))
+							LeafTrace(ExpectingDescription("rep"), initialInput),
+							LeafTrace(ExpectingDescription("delim"), InputNoArgs("bac", 43))
 						),
-						LeafTrace(Expecting("rep"), InputNoArgs("ac", 44))
+						LeafTrace(ExpectingDescription("rep"), InputNoArgs("ac", 44))
 					),
-					LeafTrace(Expecting("right"), InputNoArgs("c", 45))
+					LeafTrace(ExpectingDescription("right"), InputNoArgs("c", 45))
 				),
 				Cut.False
 			)

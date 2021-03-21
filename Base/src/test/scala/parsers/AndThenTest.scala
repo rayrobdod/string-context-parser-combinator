@@ -12,8 +12,8 @@ final class AndThenTest extends AnyFunSpec {
 
 			val leftResult = new Object
 			val rightResult = new Object
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect, Cut.False)
 			val rightParser = new ConstSuccess(rightResult, endInput, rightExpect, Cut.False)
@@ -33,10 +33,10 @@ final class AndThenTest extends AnyFunSpec {
 		it ("if the first child is failure, then forwards that failure") {
 			val initialInput = new Input[Nothing](("1234", Position(42)) :: Nil, Nil)
 
-			val leftExpect = Expecting("Left")
+			val leftExpect = ExpectingDescription("Left")
 
 			val leftParser = new ConstFailure(leftExpect, Cut.False)
-			val rightParser = new ConstSuccess(new Object, new Input[Nothing](("wxyz", Position(13)) :: Nil, Nil), Expecting("Right"), Cut.False)
+			val rightParser = new ConstSuccess(new Object, new Input[Nothing](("wxyz", Position(13)) :: Nil, Nil), ExpectingDescription("Right"), Cut.False)
 
 			val expected = Failure[Nothing](LeafTrace(leftExpect, initialInput), Cut.False)
 
@@ -48,8 +48,8 @@ final class AndThenTest extends AnyFunSpec {
 			val middleInput = new Input[Nothing](("abcd", Position(151)) :: Nil, Nil)
 
 			val leftResult = new Object
-			val leftExpect = Expecting("Left")
-			val rightExpect = Expecting("Right")
+			val leftExpect = ExpectingDescription("Left")
+			val rightExpect = ExpectingDescription("Right")
 
 			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect, Cut.False)
 			val rightParser = new ConstFailure(rightExpect, Cut.False)

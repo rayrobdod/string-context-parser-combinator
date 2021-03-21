@@ -124,7 +124,7 @@ object MacroImpl {
 							).optionally) orElse
 							(CodePointIn("3456789") andThen DigitChar.optionally)
 					)
-					(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).map(constExpr).opaque(Expecting("IPv4 Address"))
+					(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).map(constExpr).opaque("IPv4 Address")
 				}
 				val LiteralIpv6:Parser[c.Expr[String]] = {
 					val Segment:Parser[String] = HexChar.repeat(1,4)
@@ -153,7 +153,7 @@ object MacroImpl {
 							))
 						))
 					) andThen CodePointIn("]")
-					Regex.map(constExpr).opaque(Expecting("IPv6 Address"))
+					Regex.map(constExpr).opaque("IPv6 Address")
 				}
 				/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 				val VariableInetAddress:Parser[c.Expr[String]] = OfType(c.typeTag[java.net.InetAddress])

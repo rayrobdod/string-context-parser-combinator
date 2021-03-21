@@ -62,18 +62,18 @@ object MacroImpl {
 
 	private val digit:Parser[Digit] = CharIn('0' to '9')
 		.map(Digit.apply _)
-		.opaque(Expecting("AsciiDigit"))
+		.opaque("AsciiDigit")
 
 	private val sign:Parser[Sign] = CharIn("+-").opt.map({x => Sign(x != Some('-'))})
 
 	private[this] def Int2Digits(min:Int, max:Int) = (digit.rep(2, 2))
 			.map(_.value)
-			.filter(x => min <= x && x <= max, Expecting(f"${min}%02d <= $$value <= ${max}%02d"))
+			.filter(x => min <= x && x <= max, f"${min}%02d <= $$value <= ${max}%02d")
 
 	private[this] def YearP(using Quotes):Parser[Expr[Year]] = {
 		val LiteralP:Parser[Expr[Year]] = {
 			(sign ~ digit.rep(1, 9))
-				.opaque(Expecting("\"-999999999\"-\"999999999\""))
+				.opaque("\"-999999999\"-\"999999999\"")
 				.map(Year.of _)
 				.map(Expr.apply _)
 		}
@@ -134,7 +134,7 @@ object MacroImpl {
 		val LiteralP = CharIn('0' to '9').rep(1, 9)
 			.map(x => s"${x}000000000".substring(0, 9))
 			.map(Integer.parseInt _)
-			.opaque(Expecting("\"0\"-\"999999999\""))
+			.opaque("\"0\"-\"999999999\"")
 			.map(x => Expr(x))
 		LiteralP
 	}

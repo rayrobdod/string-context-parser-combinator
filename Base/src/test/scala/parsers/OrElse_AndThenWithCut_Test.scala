@@ -9,10 +9,10 @@ final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
 	describe("OrElse / AndThenWithCut") {
 		it ("all failures reports the first part of each andThen chain, having not reached the cut yet") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstFailure(Expecting("LeftLeft"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightLeftParser = new ConstFailure(Expecting("RightLeft"), Cut.False)
-			val rightRightParser = new ConstFailure(Expecting("RightRight"), Cut.False)
+			val leftLeftParser = new ConstFailure(ExpectingDescription("LeftLeft"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightLeftParser = new ConstFailure(ExpectingDescription("RightLeft"), Cut.False)
+			val rightRightParser = new ConstFailure(ExpectingDescription("RightRight"), Cut.False)
 
 			val expected = Failure[Nothing](
 				OrTrace(
@@ -26,10 +26,10 @@ final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
 		}
 		it ("(Success ~/ Failure) | Failure ") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), Expecting("LeftLeft"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightLeftParser = new ConstFailure(Expecting("RightLeft"), Cut.False)
-			val rightRightParser = new ConstFailure(Expecting("RightRight"), Cut.False)
+			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), ExpectingDescription("LeftLeft"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightLeftParser = new ConstFailure(ExpectingDescription("RightLeft"), Cut.False)
+			val rightRightParser = new ConstFailure(ExpectingDescription("RightRight"), Cut.False)
 
 			val expected = Failure[Nothing](
 				LeafTrace(leftRightParser.expecting, leftLeftParser.rest),
@@ -40,10 +40,10 @@ final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
 		}
 		it ("(Success ~/ Failure) | (Success ~/ Failure) ") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), Expecting("LeftLeft"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("rightleft", 0) :: Nil, Nil), Expecting("RightLeft"), Cut.False)
-			val rightRightParser = new ConstFailure(Expecting("RightRight"), Cut.False)
+			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), ExpectingDescription("LeftLeft"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("rightleft", 0) :: Nil, Nil), ExpectingDescription("RightLeft"), Cut.False)
+			val rightRightParser = new ConstFailure(ExpectingDescription("RightRight"), Cut.False)
 
 			val expected = Failure[Nothing](
 				LeafTrace(leftRightParser.expecting, leftLeftParser.rest),
@@ -54,10 +54,10 @@ final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
 		}
 		it ("(Success ~/ Success ~ Failure) | (Whatever)   is still cut ") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), Expecting("LeftLeft"), Cut.False)
-			val leftMiddleParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftmiddle", 0) :: Nil, Nil), Expecting("LeftMiddle"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("rightleft", 0) :: Nil, Nil), Expecting("RightLeft"), Cut.False)
+			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), ExpectingDescription("LeftLeft"), Cut.False)
+			val leftMiddleParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftmiddle", 0) :: Nil, Nil), ExpectingDescription("LeftMiddle"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("rightleft", 0) :: Nil, Nil), ExpectingDescription("RightLeft"), Cut.False)
 
 			val expected = Failure[Nothing](
 				ThenTrace(

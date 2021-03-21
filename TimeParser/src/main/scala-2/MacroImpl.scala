@@ -53,17 +53,17 @@ object MacroImpl {
 			}
 		}
 
-		val digit:Parser[Digit] = CharIn('0' to '9').map(Digit.apply _).opaque(Expecting("AsciiDigit"))
+		val digit:Parser[Digit] = CharIn('0' to '9').map(Digit.apply _).opaque("AsciiDigit")
 		val sign:Parser[Sign] = CharIn("-+").opt.map({x => new Sign(x != Some('-'))})
 
 		def Int2Digits(min:Int, max:Int) = (digit.rep(2, 2))
 			.map(_.value)
-			.filter(x => min <= x && x <= max, Expecting(String.format("""%02d <= $value <= %02d""", Integer.valueOf(min), Integer.valueOf(max))))
+			.filter(x => min <= x && x <= max, String.format("""%02d <= $value <= %02d""", Integer.valueOf(min), Integer.valueOf(max)))
 
 		def YearP:Parser[ctx.Expr[Year]] = {
 			val LiteralP:Parser[ctx.Expr[Year]] = {
 				(sign ~ digit.rep(1, 9))
-					.opaque(Expecting("\"-999999999\"-\"999999999\""))
+					.opaque("\"-999999999\"-\"999999999\"")
 					.map({x => ToExpr.WithContext(ctx)(Year.of(x))})
 			}
 			val VariableP:Parser[ctx.Expr[Year]] = OfType(ctx.typeTag[Year])
@@ -145,7 +145,7 @@ object MacroImpl {
 			val LiteralP = CharIn('0' to '9').rep(1, 9)
 				.map(x => s"${x}000000000".substring(0, 9))
 				.map(Integer.parseInt _)
-				.opaque(Expecting("\"0\"-\"999999999\""))
+				.opaque("\"0\"-\"999999999\"")
 				.map(x => ctx.Expr(ctx.universe.Literal(ctx.universe.Constant(x))))
 			LiteralP
 		}

@@ -102,7 +102,7 @@ object MacroImpl {
 		val FalseI = IsString("false").map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
 		val LiftedV = Lifted[Lift.Boolean, Expr[JBool]](
 			myLiftFunction[JBool, Lift.Boolean],
-			Expecting("A for Lift[A, JBool]")
+			"A for Lift[A, JBool]"
 		).map(unwrapIdentityLift _)
 		LiftedV orElse TrueI orElse FalseI
 	}
@@ -134,10 +134,10 @@ object MacroImpl {
 			).map({x =>
 				'{ _root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply( ${Expr[String](x)} )) }
 			})
-		}.opaque(Expecting("Number Literal"))
+		}.opaque("Number Literal")
 		val LiftedV = Lifted[Lift.Number, Expr[JValue with JNumber]](
 			myLiftFunction[JValue with JNumber, Lift.Number],
-			Expecting("A for Lift[A, JNumber]")
+			"A for Lift[A, JNumber]"
 		).map(unwrapIdentityLift _)
 		LiftedV orElse NumberI
 	}
@@ -160,7 +160,7 @@ object MacroImpl {
 		val JCharsI:Parser[Expr[String]] = JCharP.repeat(1).map(Expr.apply _)
 		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
-			Expecting("A for Lift[A, JString]")
+			"A for Lift[A, JString]"
 		).map(jstringExprToStringExpr _)
 		val Content:Parser[Expr[String]] = (LiftedV orElse JCharsI).repeat()
 			.map(strs => concatenateStrings(strs))
@@ -170,7 +170,7 @@ object MacroImpl {
 	private def StringP(using Quotes):Parser[Expr[String]] = {
 		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
-			Expecting("A for Lift[A, JString]")
+			"A for Lift[A, JString]"
 		).map(jstringExprToStringExpr _)
 		val Immediate:Parser[Expr[String]] = StringBase
 		LiftedV orElse Immediate
@@ -179,7 +179,7 @@ object MacroImpl {
 	private def JStringP(using Quotes):Parser[Expr[JString]] = {
 		val LiftedV:Parser[Expr[JString]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
-			Expecting("A for Lift[A, JString]")
+			"A for Lift[A, JString]"
 		).map(unwrapIdentityLift _)
 		val Immediate:Parser[Expr[JString]] = StringBase.map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x)})
 		LiftedV orElse Immediate
@@ -192,7 +192,7 @@ object MacroImpl {
 
 		val LiftedArrayV = Lifted[Lift.Array, Expr[JArray]](
 			myLiftFunction[JArray, Lift.Array],
-			Expecting("A for Lift[A, JArray]")
+			"A for Lift[A, JArray]"
 		).map(unwrapIdentityLift _)
 		val LiftedArrayV2 = LiftedArrayV.map(x => '{ $x.arr })
 
@@ -222,13 +222,13 @@ object MacroImpl {
 
 		val ObjectV = Lifted[Lift.Object, Expr[JObject]](
 			myLiftFunction[JObject, Lift.Object],
-			Expecting("A for Lift[A, JObject]")
+			"A for Lift[A, JObject]"
 		).map(unwrapIdentityLift _)
 		val ObjectV2 = ObjectV.map(x => '{ $x.obj })
 
 		val KeyValueV = Lifted[Lift.KeyValue, Expr[(java.lang.String, JValue)]](
 			myLiftFunction[(java.lang.String, JValue), Lift.KeyValue],
-			Expecting("A for Lift[A, (String, JValue)]")
+			"A for Lift[A, (String, JValue)]"
 		)
 
 		val KeyV = WhitespaceP andThen StringP andThen WhitespaceP

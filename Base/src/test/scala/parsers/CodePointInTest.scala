@@ -14,7 +14,7 @@ final class CodepointInTest extends AnyFunSpec {
 		val expected = Success(
 			head,
 			new Input(tail._1, tail._2),
-			LeafTrace(Expecting(parserSet.mkString("CodePointIn(\"", "", "\")")), input),
+			LeafTrace(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input),
 			Cut.False
 		)
 		val parser = CodePointIn[Expr](parserSet)
@@ -23,7 +23,7 @@ final class CodepointInTest extends AnyFunSpec {
 
 	def expectFailure(parserSet:Set[CodePoint], input:Input[Expr]) = {
 		val expected = Failure(
-			LeafTrace(Expecting(parserSet.mkString("CodePointIn(\"", "", "\")")), input),
+			LeafTrace(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input),
 			Cut.False
 		)
 		val parser = CodePointIn[Expr](parserSet)

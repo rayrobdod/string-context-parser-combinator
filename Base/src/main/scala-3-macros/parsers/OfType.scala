@@ -12,7 +12,7 @@ final class OfType[A : Type](using Quotes) extends AbstractParser[Expr[_], Expr[
 		input.consume(
 			_ => None,
 			arg => Some(arg).collect({case x if x.isExprOf[A] => x.asExprOf[A]}),
-			Expecting(Type.show[A])
+			ExpectingDescription(Type.show[A])
 		)
 	}
 }

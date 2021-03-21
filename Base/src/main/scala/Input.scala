@@ -12,7 +12,7 @@ final class Input[+Expr](
 	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],
 		argsFn:Expr => Option[A],
-		expecting: => Expecting
+		expecting: => ExpectingDescription
 	):Result[Expr, A] = {
 		val trace = LeafTrace(expecting, this)
 		def failure = Failure(trace, Cut.False)

@@ -4,7 +4,7 @@ package parsers
 private[stringContextParserCombinator]
 final class Opaque[Expr, A](
 	backing:Parser[Expr, A],
-	description:Expecting
+	description:ExpectingDescription
 ) extends AbstractParser[Expr, A] {
 	def parse(input:Input[Expr]):Result[Expr, A] = {
 		val trace = LeafTrace(description, input)

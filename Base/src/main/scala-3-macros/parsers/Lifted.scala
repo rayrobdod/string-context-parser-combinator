@@ -18,7 +18,7 @@ object Lifted {
 
 	def apply[Lifter[A] : Type, Z](
 		lift:LiftFunction[Lifter, Z],
-		description:Expecting,
+		description:ExpectingDescription,
 		)(using
 		Quotes,
 	):AbstractParser[Expr[_], Z] = {

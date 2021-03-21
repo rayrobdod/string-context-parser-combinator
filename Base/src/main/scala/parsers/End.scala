@@ -11,5 +11,5 @@ final class End[Expr] extends AbstractParser[Expr, Unit] {
 			Failure(trace, Cut.False)
 		}
 	}
-	private def expecting:Expecting = Expecting("EOF")
+	private def expecting:ExpectingDescription = ExpectingDescription("EOF")
 }

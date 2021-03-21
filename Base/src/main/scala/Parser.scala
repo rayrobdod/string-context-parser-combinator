@@ -19,13 +19,13 @@ trait Parser[Expr, +A] {
 		new parsers.FlatMap(this, fn)
 
 	/** Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate */
-	def filter(predicate:Function1[A, Boolean], description:Expecting):Parser[Expr, A] =
-		new parsers.Filter(this, predicate, description)
+	def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
+		new parsers.Filter(this, predicate, ExpectingDescription(description))
 
 
 	/** Returns a parser which invokes this parser, but has the given description upon failure */
-	def opaque(description:Expecting):Parser[Expr, A] =
-		new parsers.Opaque(this, description)
+	def opaque(description:String):Parser[Expr, A] =
+		new parsers.Opaque(this, ExpectingDescription(description))
 
 
 	/** Returns a parser which invokes this parser, and upon success invokes the other parser.

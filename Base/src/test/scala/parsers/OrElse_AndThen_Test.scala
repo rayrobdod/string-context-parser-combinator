@@ -9,10 +9,10 @@ final class OrElse_AndThen_Test extends AnyFunSpec {
 	describe("OrElse / AndThen") {
 		it ("all failures reports only the first part of each andThen chain") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstFailure(Expecting("LeftLeft"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightLeftParser = new ConstFailure(Expecting("RightLeft"), Cut.False)
-			val rightRightParser = new ConstFailure(Expecting("RightRight"), Cut.False)
+			val leftLeftParser = new ConstFailure(ExpectingDescription("LeftLeft"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightLeftParser = new ConstFailure(ExpectingDescription("RightLeft"), Cut.False)
+			val rightRightParser = new ConstFailure(ExpectingDescription("RightRight"), Cut.False)
 
 			val expected = Failure[Nothing](
 				OrTrace(
@@ -26,10 +26,10 @@ final class OrElse_AndThen_Test extends AnyFunSpec {
 		}
 		it ("Success ~ Failure | Failure ") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), Expecting("LeftLeft"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightLeftParser = new ConstFailure(Expecting("RightLeft"), Cut.False)
-			val rightRightParser = new ConstFailure(Expecting("RightRight"), Cut.False)
+			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), ExpectingDescription("LeftLeft"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightLeftParser = new ConstFailure(ExpectingDescription("RightLeft"), Cut.False)
+			val rightRightParser = new ConstFailure(ExpectingDescription("RightRight"), Cut.False)
 
 			val expected = Failure[Nothing](
 				OrTrace(
@@ -46,10 +46,10 @@ final class OrElse_AndThen_Test extends AnyFunSpec {
 		}
 		it ("Success ~ Failure | Success ~ Failure ") {
 			val initialInput = new Input[Nothing](InputPart("1234", 42) :: Nil, Nil)
-			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), Expecting("LeftLeft"), Cut.False)
-			val leftRightParser = new ConstFailure(Expecting("LeftRight"), Cut.False)
-			val rightLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("rightleft", 0) :: Nil, Nil), Expecting("RightLeft"), Cut.False)
-			val rightRightParser = new ConstFailure(Expecting("RightRight"), Cut.False)
+			val leftLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("leftleft", 0) :: Nil, Nil), ExpectingDescription("LeftLeft"), Cut.False)
+			val leftRightParser = new ConstFailure(ExpectingDescription("LeftRight"), Cut.False)
+			val rightLeftParser = new ConstSuccess(new Object, new Input[Nothing](InputPart("rightleft", 0) :: Nil, Nil), ExpectingDescription("RightLeft"), Cut.False)
+			val rightRightParser = new ConstFailure(ExpectingDescription("RightRight"), Cut.False)
 
 			val expected = Failure[Nothing](
 				OrTrace(

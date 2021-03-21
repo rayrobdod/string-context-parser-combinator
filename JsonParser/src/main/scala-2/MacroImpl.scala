@@ -122,7 +122,7 @@ object MacroImpl {
 			// not just so that the type is only computed once; around JArray, it suddenly looses its Lift TypeTag
 			val liftTypeConstructor = c.typeOf[Lift[_,_]].typeConstructor
 
-			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").opaque(Expecting("Whitespace")).repeat().map(_ => ())
+			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").opaque("Whitespace").repeat().map(_ => ())
 
 			val NullP:Parser[c.Expr[JNull.type]] = IsString("null").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JNull))
 
@@ -132,7 +132,7 @@ object MacroImpl {
 				val LiftedV = Lifted[Lift.Boolean, c.Expr[JBool]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JBool])),
 					myLiftFunction[JBool, Lift.Boolean](c),
-					Expecting("A for Lift[A, JBool]")
+					"A for Lift[A, JBool]"
 				)
 				LiftedV orElse TrueI orElse FalseI
 			}
@@ -165,11 +165,11 @@ object MacroImpl {
 						val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
 						c.universe.reify(_root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply(xExpr.splice)))
 					})
-				}.opaque(Expecting("Number Literal"))
+				}.opaque("Number Literal")
 				val LiftedV = Lifted[Lift.Number, c.Expr[JValue with JNumber]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JValue with JNumber])),
 					myLiftFunction[JValue with JNumber, Lift.Number](c),
-					Expecting("A for Lift[A, JNumber]")
+					"A for Lift[A, JNumber]"
 				)
 				LiftedV orElse NumberI
 			}
@@ -193,7 +193,7 @@ object MacroImpl {
 				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
-					Expecting("A for Lift[A, JString]")
+					"A for Lift[A, JString]"
 				).map(x => c.universe.reify(x.splice.values))
 				val Content:Parser[c.Expr[String]] = (LiftedV orElse JCharsI).repeat()
 					.map(strs => concatenateStrings(c)(strs))
@@ -204,7 +204,7 @@ object MacroImpl {
 				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
-					Expecting("A for Lift[A, JString]")
+					"A for Lift[A, JString]"
 				).map(x => c.universe.reify(x.splice.values))
 				val Immediate:Parser[c.Expr[String]] = StringBase
 				LiftedV orElse Immediate
@@ -214,7 +214,7 @@ object MacroImpl {
 				val LiftedV:Parser[c.Expr[JString]] = Lifted[Lift.String, c.Expr[JString]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
-					Expecting("A for Lift[A, JString]")
+					"A for Lift[A, JString]"
 				)
 				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.universe.reify(_root_.org.json4s.JsonAST.JString.apply(x.splice)))
 				LiftedV orElse Immediate
@@ -228,7 +228,7 @@ object MacroImpl {
 				val LiftedArrayV = Lifted[Lift.Array, c.Expr[JArray]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JArray])),
 					myLiftFunction[JArray, Lift.Array](c),
-					Expecting("A for Lift[A, JArray]")
+					"A for Lift[A, JArray]"
 				)
 				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("arr"))))
 
@@ -261,14 +261,14 @@ object MacroImpl {
 				val ObjectV = Lifted[Lift.Object, c.Expr[JObject]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JObject])),
 					myLiftFunction[JObject, Lift.Object](c),
-					Expecting("A for Lift[A, JObject]")
+					"A for Lift[A, JObject]"
 				)
 				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("obj"))))
 
 				val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
 					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
-					Expecting("A for Lift[A, (String, JValue)]")
+					"A for Lift[A, (String, JValue)]"
 				)
 
 				val KeyV = WhitespaceP andThen StringP andThen WhitespaceP
