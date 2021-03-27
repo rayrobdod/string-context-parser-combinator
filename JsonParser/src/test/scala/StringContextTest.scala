@@ -258,6 +258,12 @@ final class StringContextTest extends AnyFunSpec {
 			assertDoesNotCompile(""" json"{1:2}" """)
 		}
 
+		it ("Rejects an empty string") {
+			assertDoesNotCompile(""" json"" """)
+		}
+		it ("Rejects a whitespace-only string") {
+			assertDoesNotCompile(""" json"   " """)
+		}
 		it ("Rejects trailing content") {
 			assertDoesNotCompile(""" json"true false" """)
 		}

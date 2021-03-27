@@ -138,9 +138,10 @@ package object parsers {
 		ExpectingDescription("s/" + reg.toString + "/")
 	)
 
+	/** A parser that consumes no input and always succeeds */
 	private[stringContextParserCombinator]
 	def NilParser[Expr]:Parser[Expr, Unit] = new Parser[Expr, Unit] {
-		def parse(input:Input[Expr]):Result[Expr, Unit] = Success((), input, EmptyTrace(input), Cut.False)
+		def parse(input:Input[Expr]):Result[Expr, Unit] = Success((), input, Set.empty, Cut.False)
 	}
 
 	private[stringContextParserCombinator]

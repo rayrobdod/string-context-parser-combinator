@@ -7,10 +7,9 @@ final class Opaque[Expr, A](
 	description:ExpectingDescription
 ) extends AbstractParser[Expr, A] {
 	def parse(input:Input[Expr]):Result[Expr, A] = {
-		val trace = LeafTrace(description, input)
 		backing.parse(input) match {
-			case Success(value, rest, _, cut) => Success(value, rest, trace, cut)
-			case Failure(_, cut) => Failure(trace, cut)
+			case Success(value, rest, _, cut) => Success(value, rest, Set.empty, cut)
+			case Failure(_, cut) => Failure(Expecting(description, input.position), cut)
 		}
 	}
 }

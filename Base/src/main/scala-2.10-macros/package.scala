@@ -3,7 +3,6 @@ package com.rayrobdod
 import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
 import scala.language.higherKinds
-import scala.reflect.api.Exprs
 import scala.reflect.api.Universe
 import scala.reflect.macros.Context
 
@@ -60,39 +59,11 @@ package object stringContextParserCombinator {
 		}
 	}
 
-	/**
-	 * Returns a string representation of this input, suitable for printing to a users
-	 */
-	private[this] def inputDescription(input:Input[Exprs#Expr[_]]):String = {
-		if (input.isEmpty) {
-			"end of input"
-		} else {
-			scala.collection.immutable.Range(0, input.args.size)
-				.map(i => s"${input.parts(i)._1}$${${input.args(i).tree}}")
-				.mkString("\"", "", input.parts(input.args.size)._1 + "\"")
-		}
-	}
+	private[this] def reportFailure(c:Context)(failure:Failure):Nothing = {
+		val remainingPosition = failure.expecting.head.position
+		val expectingDescription = failure.expecting.map(_.description).mkString(" or ")
 
-	/**
-	 * Returns the position of this input
-	 */
-	private[this] def inputPosition(input:Input[Exprs#Expr[_]]):Position = {
-		if (input.parts(0)._1.length != 0) {
-			input.parts(0)._2
-		} else if (input.args.nonEmpty) {
-			Position(input.args(0).tree.pos)
-		} else {
-			input.parts(0)._2
-		}
-	}
-
-	private[this] def reportFailure(c:Context)(failure:Failure[c.Expr[_]]):Nothing = {
-		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
-		val remainingDescription = inputDescription(trimmedTrace.leftMostRemaining)
-		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
-		val expectingDescription = trimmedTrace.expectingDescription
-
-		remainingPosition.throwError(c)(s"Found ${remainingDescription} ; Expected ${expectingDescription}")
+		remainingPosition.throwError(c)(s"Expected ${expectingDescription}")
 	}
 
 
@@ -137,14 +108,14 @@ package object stringContextParserCombinator {
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[c.Expr[Any]](strings, args.toList)
+		val input = new Input[c.Expr[Any]](strings, args.toList, x => Position(x.tree.pos))
 
 		parser.parse(input) match {
 			case s:Success[_, _] => {
 				//System.out.println(s.value)
 				s.value
 			}
-			case f:Failure[_] => {
+			case f:Failure => {
 				reportFailure(c)(f)
 			}
 		}
@@ -162,10 +133,12 @@ package stringContextParserCombinator {
 
 
 	/** A position in a source file */
+	private[stringContextParserCombinator]
 	final case class Position(value:Int) extends AnyVal {
 		def +(x:Int):Position = new Position(this.value + x)
 		def throwError(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(value), msg)
 	}
+	private[stringContextParserCombinator]
 	object Position {
 		def apply(x:scala.reflect.api.Position):Position = new Position(x.point)
 	}

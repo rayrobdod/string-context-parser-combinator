@@ -16,39 +16,10 @@ import scala.quoted.Varargs
  * @groupprio Input/Result 300
  */
 package object stringContextParserCombinator {
-	/**
-	 * Returns a string representation of this input, suitable for printing to a users
-	 */
-	private[this] def inputDescription(input:Input[Expr[_]])(using Quotes):String = {
-		if (input.isEmpty) {
-			"end of input"
-		} else {
-			scala.collection.immutable.Range(0, input.args.size)
-				.map(i => s"${input.parts(i)._1}$${${input.args(i).show}}")
-				.mkString("\"", "", input.parts(input.args.size)._1 + "\"")
-		}
-	}
-
-	/**
-	 * Returns the position of this input
-	 */
-	private[this] def inputPosition(input:Input[Expr[_]])(using Quotes):Position = {
-		if (input.parts(0)._1.length != 0) {
-			input.parts(0)._2
-		} else if (input.args.nonEmpty) {
-			Position(input.args(0))
-		} else {
-			input.parts(0)._2
-		}
-	}
-
-	private[this] def reportFailure(failure:Failure[Expr[_]])(using Quotes):Nothing = {
-		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
-		val remainingDescription = inputDescription(trimmedTrace.leftMostRemaining)
-		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
-		val expectingDescription = trimmedTrace.expectingDescription
-
-		remainingPosition.throwError(s"Found ${remainingDescription} ; Expected ${expectingDescription}")
+	private[this] def reportFailure(failure:Failure)(using Quotes):Nothing = {
+		val remainingPosition = failure.expecting.head.position
+		val expectingDescription = "???"
+		remainingPosition.throwError(s"Expected ${expectingDescription}")
 	}
 
 	/**
@@ -82,7 +53,7 @@ package object stringContextParserCombinator {
 		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
 		val args2 = Varargs.unapply(args).get.toList
 
-		val input = new Input(strings2, args2)
+		val input = new Input(strings2, args2, x => Position(x))
 
 		parser.parse(input) match {
 			case Success(res, _, _, _) => {
@@ -102,10 +73,12 @@ package stringContextParserCombinator {
 
 
 	/** A position in a source file */
+	private[stringContextParserCombinator]
 	trait Position {
 		def +(rhs:Int):Position
 		def throwError(msg:String):Nothing
 	}
+	private[stringContextParserCombinator]
 	object Position {
 		private final class Impl(q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int) extends Position {
 			def +(rhs:Int):Position = new Impl(q)(file, start + rhs, end)
