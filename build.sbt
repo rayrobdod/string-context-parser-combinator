@@ -3,19 +3,14 @@ ThisBuild / organization := "com.rayrobdod"
 
 val scala210Ver = "2.10.7"
 val scala211Ver = "2.11.12"
-val scala212Ver = "2.12.12"
-val scala213Ver = "2.13.5"
-val scala30Ver = "3.0.0-RC1"
+val scala212Ver = "2.12.14"
+val scala213Ver = "2.13.6"
+val scala30Ver = "3.0.0"
 
 lazy val sharedSettings = Seq(
-	libraryDependencies ++= (scalaBinaryVersion.value match {
-		case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
-			"org.scalatest" %% "scalatest" % "3.2.5" % "test",
-		)
-		case "3.0.0-RC1" => Seq(
-			"org.scalatest" % "scalatest_3.0.0-RC1" % "3.2.5" % "test",
-		)
-	}),
+	libraryDependencies ++= Seq(
+		"org.scalatest" %% "scalatest" % "3.2.9" % "test",
+	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" => Seq("-target:jvm-1.7")
@@ -28,16 +23,16 @@ lazy val sharedSettings = Seq(
 		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
 		case _ => Seq.empty
 	}),
-	unmanagedSourceDirectories in Compile += (scalaBinaryVersion.value match {
+	Compile / unmanagedSourceDirectories += (scalaBinaryVersion.value match {
 		case "2.10" => (Compile / sourceDirectory).value / "scala-2.10-macros"
 		case "2.11" | "2.12" | "2.13" => (Compile / sourceDirectory).value / "scala-2.11-macros"
 		case _ => (Compile / sourceDirectory).value / "scala-3-macros"
 	}),
-	scalacOptions in doc in Compile ++= (scalaBinaryVersion.value match {
+	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
 			"-doc-title", name.value,
 			"-doc-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
-			"-doc-root-content", ((scalaSource in Compile).value / "rootdoc.txt").toString,
+			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.txt").toString,
 			"-implicits",
 			"-groups",
 			"-sourcepath", baseDirectory.value.toString,
@@ -66,7 +61,6 @@ lazy val base = (projectMatrix in file("Base"))
 			)
 			case _ => Seq()
 		}),
-		libraryDependencies := libraryDependencies.value.map(_.withDottyCompat(scalaVersion.value)),
 		console / initialCommands := """
 			import scala.quoted.{Expr, Quotes}
 			import com.rayrobdod.stringContextParserCombinator.{Parser => _, _}
@@ -90,10 +84,10 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		publish / skip := true,
 		libraryDependencies ++= (scalaBinaryVersion.value match {
 			case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
-				"org.json4s" %% "json4s-ast" % "3.6.10",
+				"org.json4s" %% "json4s-ast" % "3.6.11",
 			)
 			case _ => Seq(
-				"org.json4s" % "json4s-ast_2.13" % "3.6.10",
+				"org.json4s" % "json4s-ast_2.13" % "3.6.11",
 			)
 		}),
 		console / initialCommands := """
@@ -149,5 +143,5 @@ lazy val uri = (projectMatrix in file("UriParser"))
 
 publish / skip := true
 enablePlugins(GhpagesPlugin)
-(ghpagesSynchLocal / mappings) := (base.jvm(scala30Ver) / Compile / packageDoc / mappings).value
+ghpagesSynchLocal / mappings := (base.jvm(scala30Ver) / Compile / packageDoc / mappings).value
 ghpagesCommitOptions := Seq("-m", s"Render of ${git.gitHeadCommit.value.get}")
