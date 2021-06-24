@@ -5,11 +5,14 @@ import scala.collection.mutable.Builder
 
 /**
  * Describes how to combine a repeated value
+ *
+ * @tparam A the repeated input elements
+ * @tparam Z the result container
  */
 trait Repeated[-A, +Z] {
 	/** A mutable accumulator appropriate for holding `A` and transforming into `Z` */
 	type Acc
-	/** Returns an empty accumulator */
+	/** Returns a new empty accumulator */
 	def init():Acc
 	/** Inserts `elem` into `acc` */
 	def append(acc:Acc, elem:A):Unit

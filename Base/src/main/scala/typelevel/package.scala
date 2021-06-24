@@ -1,7 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 
 /**
- * Container for type-level logic
+ * Implicit values used by branch combinators that allow combinations of
+ * certain types to have more egronomic return types.
  */
 package object typelevel {
 }

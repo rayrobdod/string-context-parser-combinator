@@ -13,11 +13,11 @@ import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
 trait Parsers {
 	type Parser[A] = SCParser[Expr[_], A]
 
-	/** Succeeds if the next character is a member of the given String; captures that character */
+	/** Succeeds if the next character is a member of the given Seq; captures that character */
 	def CharIn(str:Seq[Char]):Parser[Char] =
 		parsers.CharIn(str)
 
-	/** Succeeds if the next character is a member of the given Seq; captures that character */
+	/** Succeeds if the next character is a member of the given String; captures that character */
 	def CharIn(str:String):Parser[Char] =
 		parsers.CharIn(scala.Predef.wrapString(str))
 

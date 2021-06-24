@@ -3,6 +3,9 @@ package com.rayrobdod.stringContextParserCombinatorExample.datetime
 import java.time._
 import scala.quoted._
 
+/**
+ * Contains [[scala.quoted.ToExpr]] and [[scala.quoted.FromExpr]] givens for select java.time types
+ */
 private[datetime] object ExprConversions {
 	given ToExpr[Year] with {
 		def apply(x:Year)(using Quotes):Expr[Year] = {

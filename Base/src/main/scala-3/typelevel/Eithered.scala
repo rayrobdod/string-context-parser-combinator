@@ -3,6 +3,10 @@ package typelevel
 
 /**
  * Describes how to represent the union of two types
+ *
+ * @tparam A the first choice
+ * @tparam B the second choice
+ * @tparam Z the result container
  */
 trait Eithered[-A, -B, +Z] {
 	def left(elem:A):Z

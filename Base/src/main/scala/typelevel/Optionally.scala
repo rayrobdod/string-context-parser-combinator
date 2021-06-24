@@ -3,6 +3,9 @@ package typelevel
 
 /**
  * Describes how to represent an optional value
+ *
+ * @tparam A the optional input elements
+ * @tparam Z the result container
  */
 trait Optionally[-A, +Z] {
 	/** Returns a `Z` value representing a missing `A` */
