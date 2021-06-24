@@ -10,7 +10,7 @@ import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
 /**
  * Methods to create leaf parsers
  */
-trait Parsers {
+object Parsers {
 	type Parser[A] = SCParser[Expr[_], A]
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
@@ -55,10 +55,4 @@ trait Parsers {
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
 		parsers.DelayedConstruction(fn)
-}
-
-/**
- * Methods to create leaf parsers
- */
-object Parsers extends Parsers {
 }
