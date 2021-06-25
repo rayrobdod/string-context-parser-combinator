@@ -28,10 +28,20 @@ final class RepeatTest extends AnyFunSpec {
 			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
 
 			val expected = Success[Nothing, String](
-				"a",
-				SinglePartInput("", 43),
-				childExpecting,
-				Cut.False
+				Success1(
+					"a",
+					SinglePartInput("", 43),
+					childExpecting,
+					Cut.False
+				),
+				List(
+					Success1(
+						"",
+						SinglePartInput("a", 42),
+						Set.empty,
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat()
 			assertResult(expected){parser.parse(initialInput)}
@@ -41,10 +51,38 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 
 			val expected = Success[Nothing, String](
-				"aaaa",
-				SinglePartInput("", 46),
-				SingleExpecting("CharIn(\"a\")", 46),
-				Cut.False
+				Success1(
+					"aaaa",
+					SinglePartInput("", 46),
+					SingleExpecting("CharIn(\"a\")", 46),
+					Cut.False
+				),
+				List(
+					Success1(
+						"aaa",
+						SinglePartInput("a", 45),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"aa",
+						SinglePartInput("aa", 44),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"a",
+						SinglePartInput("aaa", 43),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"",
+						SinglePartInput("aaaa", 42),
+						Set.empty,
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat()
 			assertResult(expected){parser.parse(initialInput)}
@@ -79,10 +117,32 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 
 			val expected = Success[Nothing, String](
-				"aaaa",
-				SinglePartInput("", 46),
-				SingleExpecting("CharIn(\"a\")", 46),
-				Cut.False
+				Success1(
+					"aaaa",
+					SinglePartInput("", 46),
+					SingleExpecting("CharIn(\"a\")", 46),
+					Cut.False
+				),
+				List(
+					Success1(
+						"aaa",
+						SinglePartInput("a", 45),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"aa",
+						SinglePartInput("aa", 44),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"a",
+						SinglePartInput("aaa", 43),
+						Set.empty,
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat(1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -106,10 +166,20 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 
 			val expected = Success[Nothing, String](
-				"a",
-				SinglePartInput("", 43),
-				Set.empty,
-				Cut.False
+				Success1(
+					"a",
+					SinglePartInput("", 43),
+					Set.empty[Expecting],
+					Cut.False
+				),
+				List(
+					Success1(
+						"",
+						SinglePartInput("a", 42),
+						Set.empty[Expecting],
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat(0, 1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -119,10 +189,20 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 
 			val expected = Success[Nothing, String](
-				"a",
-				SinglePartInput("aaa", 43),
-				Set.empty,
-				Cut.False
+				Success1(
+					"a",
+					SinglePartInput("aaa", 43),
+					Set.empty[Expecting],
+					Cut.False
+				),
+				List(
+					Success1(
+						"",
+						SinglePartInput("aaaa", 42),
+						Set.empty[Expecting],
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat(0, 1)
 			assertResult(expected){parser.parse(initialInput)}
@@ -133,12 +213,23 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 
 			val expected = Success[Nothing, Seq[String]](
-				Seq(""),
-				SinglePartInput("", 42),
-				SingleExpecting("CharIn(\"a\")", 42),
-				Cut.False
+				Success1(
+					Seq(""),
+					SinglePartInput("", 42),
+					SingleExpecting("CharIn(\"a\")", 42),
+					Cut.False
+				),
+				List(
+					Success1(
+						Seq(),
+						SinglePartInput("", 42),
+						Set.empty,
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat().repeat()
+
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
@@ -162,10 +253,20 @@ final class RepeatTest extends AnyFunSpec {
 			val delimParser = CharIn("b").map(_ => ())
 
 			val expected = Success[Nothing, String](
-				"a",
-				SinglePartInput("", 43),
-				SingleExpecting("CharIn(\"b\")", 43),
-				Cut.False
+				Success1(
+					"a",
+					SinglePartInput("", 43),
+					SingleExpecting("CharIn(\"b\")", 43),
+					Cut.False
+				),
+				List(
+					Success1(
+						"",
+						SinglePartInput("a", 42),
+						Set.empty,
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat(delimiter = delimParser)
 			assertResult(expected){parser.parse(initialInput)}
@@ -176,10 +277,32 @@ final class RepeatTest extends AnyFunSpec {
 			val delimParser = CharIn("b").map(_ => ())
 
 			val expected = Success[Nothing, String](
-				"aaa",
-				SinglePartInput("", 47),
-				SingleExpecting("CharIn(\"b\")", 47),
-				Cut.False
+				Success1(
+					"aaa",
+					SinglePartInput("", 47),
+					SingleExpecting("CharIn(\"b\")", 47),
+					Cut.False
+				),
+				List(
+					Success1(
+						"aa",
+						SinglePartInput("ba", 45),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"a",
+						SinglePartInput("baba", 43),
+						Set.empty,
+						Cut.False
+					),
+					Success1(
+						"",
+						SinglePartInput("ababa", 42),
+						Set.empty,
+						Cut.False
+					)
+				)
 			)
 			val parser = childParser.repeat(delimiter = delimParser)
 			assertResult(expected){parser.parse(initialInput)}
@@ -227,10 +350,14 @@ final class RepeatTest extends AnyFunSpec {
 				val initialInput = SinglePartInput("abcde", 42)
 
 				val expected = Success[Nothing, List[((Char, Char), Char)]](
-					List((('a','b'),'c')),
-					SinglePartInput("de", 45),
-					SingleExpecting("CharIn(\"a\")", 45),
-					Cut.True
+					Success1(
+						List((('a','b'),'c')),
+						SinglePartInput("de", 45),
+						SingleExpecting("CharIn(\"a\")", 45),
+						Cut.True
+					),
+					List(
+					)
 				)
 				assertResult(expected){parser.parse(initialInput)}
 			}

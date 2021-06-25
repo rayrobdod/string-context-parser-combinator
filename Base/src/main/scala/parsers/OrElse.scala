@@ -9,9 +9,9 @@ final class OrElse[Expr, A, B, Z](
 ) extends AbstractParser[Expr, Z] {
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
 		left.parse(input) match {
-			case result:Success[Expr, A] => result.map(combiner.left _)
+			case result:Success[Expr, A] => result.mapValues(combiner.left _)
 			case Failure(expectingLeft, Cut.False) => right.parse(input) match {
-				case result:Success[Expr, B] => result.map(combiner.right _)
+				case result:Success[Expr, B] => result.mapValues(combiner.right _)
 				case Failure(expectingRight, Cut.False) => {
 					Failure(expectingLeft ++ expectingRight, Cut.False)
 				}

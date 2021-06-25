@@ -56,9 +56,9 @@ package object stringContextParserCombinator {
 		val input = new Input(strings2, args2, x => Position(x))
 
 		parser.parse(input) match {
-			case Success(res, _, _, _) => {
+			case s:Success[_, _] => {
 				//System.out.println(res.show)
-				res
+				s.choicesHead.value
 			}
 			case f@Failure(_, _) => {
 				reportFailure(f)

@@ -112,7 +112,7 @@ package object stringContextParserCombinator {
 		parser.parse(input) match {
 			case s:Success[_, _] => {
 				//System.out.println(s.value)
-				s.value
+				s.choicesHead.value
 			}
 			case f:Failure => {
 				reportFailure(c)(f)

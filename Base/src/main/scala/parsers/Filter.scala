@@ -9,11 +9,14 @@ final class Filter[Expr, A](
 ) extends AbstractParser[Expr, A] {
 	def parse(input:Input[Expr]):Result[Expr, A] = {
 		backing.parse(input) match {
-			case success@Success(value, _, _, _) if predicate(value) => success
-			case Success(_, _, _, cut) => {
-				backing.parse(new Input[Nothing](List(("", input.position)), List.empty, x => x)) match {
-					case Success(_, _, _, _) => Failure(Set(Expecting(s"??? where ${predicateDescription.value}", input.position)), cut)
-					case Failure(t, _) => Failure(t.map(_.where(predicateDescription)), cut)
+			case Success(choicesHead, choicesTail) => {
+				val choices = choicesHead :: choicesTail
+				val filteredChoices = choices.filter(x => predicate(x.value))
+				filteredChoices match {
+					case head :: tail => Success(head, tail)
+					case Nil => {
+						choices.map(s => Failure(s.expecting.map(_.where(predicateDescription)), s.isCut)).reduce[Failure](_ or _)
+					}
 				}
 			}
 			case failure => failure

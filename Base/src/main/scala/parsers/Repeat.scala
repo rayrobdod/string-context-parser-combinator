@@ -14,63 +14,69 @@ final class Repeat[Expr, A, Z](
 	require(max >= min)
 
 	def parse(input:Input[Expr]):Result[Expr, Z] = {
-		var counter:Int = 0
-		val accumulator = ev.init()
-		var remaining:Input[Expr] = input
-		var continue:Boolean = true
-		var accumulatedExpecting:Set[Expecting] = Set.empty
-		var accumulatedCut:Cut = Cut.False
-		var lastCut:Cut = Cut.False
-		var failedInInner:Boolean = false
-
-		while (continue && counter < max) {
-			if (counter != 0) {
-				delimiter.parse(remaining) match {
-					case Success((), r, t, c) => {
-						accumulatedCut = accumulatedCut | c
-						remaining = r
-						accumulatedExpecting = (if (c.toBoolean) {Set.empty} else {accumulatedExpecting}) ++ t
-					}
-					case Failure(t, c) => {
-						lastCut = c
-						accumulatedCut = accumulatedCut | c
-						accumulatedExpecting = (if (c.toBoolean) {Set.empty} else {accumulatedExpecting}) ++ t
-						continue = false
-					}
-				}
-			}
-			if (continue) {
-				inner.parse(remaining) match {
-					case Success(a, r, t, c) => {
-						counter += 1
-						accumulatedCut = accumulatedCut | c
-						ev.append(accumulator, a)
-						continue = (remaining != r) // quit if inner seems to be making no progress
-						remaining = r
-						accumulatedExpecting = (if (c.toBoolean) {Set.empty} else {accumulatedExpecting}) ++ t
-					}
-					case Failure(t, c) => {
-						failedInInner = true
-						lastCut = c
-						accumulatedCut = accumulatedCut | c
-						accumulatedExpecting = (if (c.toBoolean) {Set.empty} else {accumulatedExpecting}) ++ t
-						continue = false
-					}
-				}
-			}
+		Repeat.parse0(input, inner, min, max, delimiter, true) match {
+			case f:Failure => f
+			case s:Success[Expr, List[A]] => s.mapValues({parts =>
+				val acc = ev.init()
+				parts.foreach(part => ev.append(acc, part))
+				ev.result(acc)
+			})
 		}
-		if (min <= counter && counter <= max && !(lastCut.toBoolean)) {
-			val oneMoreRoundExpecting = if (failedInInner) {
-				inner.parse(new Input[Nothing](List(("", remaining.position)), List.empty, x => x)) match {
-					case Success(_, _, _, _) => Set.empty
-					case Failure(t, _) => t
+	}
+}
+
+private[stringContextParserCombinator]
+object Repeat {
+	private def parse0[Expr, A](input:Input[Expr], inner:Parser[Expr, A], min:Int, max:Int, delimiter:Parser[Expr, Unit], isFirst:Boolean):Result[Expr, List[A]] = {
+		(if (isFirst) {Success((), input, Set.empty, Cut.False)} else {delimiter.parse(input)}) match {
+			case Failure(expectingDelimiter, cutDelimiter) => {
+				if (min != 0 || cutDelimiter.toBoolean) {
+					Failure(expectingDelimiter, cutDelimiter)
+				} else {
+					Success(Nil, input, expectingDelimiter, cutDelimiter)
 				}
-			} else {
-				Set.empty
 			}
-			Success(ev.result(accumulator), remaining, accumulatedExpecting ++ oneMoreRoundExpecting, accumulatedCut)
-		} else {
-			Failure(accumulatedExpecting, accumulatedCut)
+			case successDelimiter:Success[Expr, Unit] => successDelimiter.flatMap[Expr, List[A]]({case Success1((), restDelimiter, expectingDelimiter, cutDelimiter) =>
+				inner.parse(restDelimiter) match {
+					case Failure(expectingA, cutA) => {
+						if (min != 0 || cutDelimiter.toBoolean || cutA.toBoolean) {
+							Failure(expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+						} else {
+							Success(Nil, input, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+						}
+					}
+					case successA:Success[Expr, A] => successA.flatMap[Expr, List[A]]({case Success1(valueA, restA, expectingA, cutA) =>
+						if (max == 1 || restA == input) {
+							// `restA == input` means quit if inner seems to be making no progress
+							if (min != 0 || cutA.toBoolean) {
+								Success(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+							} else {
+								Success(
+									Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA),
+									List(
+										Success1(Nil, input, expectingDelimiter, cutDelimiter)
+									)
+								)
+							}
+						} else {
+							parse0(restA, inner, math.max(0, min - 1), max - 1, delimiter, false) match {
+								case Failure(expectingC, cutC) => Failure(expectingA ++ expectingDelimiter ++ expectingC, cutA | cutDelimiter | cutC)
+								case successC:Success[Expr, List[A]] => {
+									val successCWithValA = successC.map({case Success1(valueC, restC, expectingC, cutC) =>
+										Success1(valueA :: valueC, restC, expectingA ++ expectingDelimiter ++ expectingC, cutA | cutDelimiter | cutC)
+									})
+									if (min == 0 && !successCWithValA.choicesHead.isCut.toBoolean) {
+										successCWithValA :+
+											Success1(Nil, input, Set.empty, Cut.False)
+									} else {
+										successCWithValA
+									}
+								}
+							}
+						}
+					})
+				}
+			})
 		}
 	}
 }
