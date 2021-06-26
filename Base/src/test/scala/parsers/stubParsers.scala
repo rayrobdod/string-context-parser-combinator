@@ -13,6 +13,10 @@ final class ConstFailure(val expecting:Set[Expecting], val cut:Cut) extends Pars
 	}
 }
 
+final class ConstResult[Expr, A](val result:Result[Expr, A]) extends Parser[Expr, A] {
+	def parse(input:Input[Expr]):Result[Expr, A] = result
+}
+
 final class Sequence[A](val initialInput:Input[Nothing], val outputs:Seq[Sequence.Output[A]]) extends Parser[Nothing, A] {
 	val lookup = {
 		val inputs = initialInput +: outputs.map{_.rest}
