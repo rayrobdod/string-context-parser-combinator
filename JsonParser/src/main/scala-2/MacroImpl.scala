@@ -44,36 +44,8 @@ object MacroImpl {
 		}
 	}
 
-	trait CollectionAssembly[A, CC] {
-		type Builder
-		def builderType(c:Context):c.universe.TypeTag[Builder]
-		def newBuilder(c:Context):c.Expr[Builder]
-		def insertOne(c:Context)(builder:c.Expr[Builder], item:c.Expr[A]):c.Expr[_]
-		def insertMany(c:Context)(builder:c.Expr[Builder], items:c.Expr[TraversableOnce[A]]):c.Expr[_]
-		def result(c:Context)(builder:c.Expr[Builder]):c.Expr[CC]
-	}
-
-	object VectorCollectionAssembly extends CollectionAssembly[JValue, List[JValue]] {
-		type Builder = scala.collection.mutable.Builder[JValue, List[JValue]]
-		override def builderType(c:Context):c.universe.TypeTag[Builder] = c.universe.typeTag[scala.collection.mutable.Builder[JValue, List[JValue]]]
-		override def newBuilder(c:Context):c.Expr[Builder] = c.universe.reify(List.newBuilder)
-		override def insertOne(c:Context)(builder:c.Expr[Builder], item:c.Expr[JValue]):c.Expr[_] = c.universe.reify(builder.splice.+=(item.splice))
-		override def insertMany(c:Context)(builder:c.Expr[Builder], items:c.Expr[TraversableOnce[JValue]]):c.Expr[_] = c.universe.reify(builder.splice.++=(items.splice))
-		override def result(c:Context)(builder:c.Expr[Builder]):c.Expr[List[JValue]] = c.universe.reify(builder.splice.result())
-	}
-
-	object MapCollectionAssembly extends CollectionAssembly[(String, JValue), List[(String, JValue)]] {
-		type Builder = scala.collection.mutable.Builder[(String, JValue), List[(String, JValue)]]
-		override def builderType(c:Context):c.universe.TypeTag[Builder] = c.universe.typeTag[Builder]
-		override def newBuilder(c:Context):c.Expr[Builder] = c.universe.reify(List.newBuilder)
-		override def insertOne(c:Context)(builder:c.Expr[Builder], item:c.Expr[(String, JValue)]):c.Expr[_] = c.universe.reify(builder.splice.+=(item.splice))
-		override def insertMany(c:Context)(builder:c.Expr[Builder], items:c.Expr[TraversableOnce[(String, JValue)]]):c.Expr[_] = c.universe.reify(builder.splice.++=(items.splice))
-		override def result(c:Context)(builder:c.Expr[Builder]):c.Expr[List[(String, JValue)]] = c.universe.reify(builder.splice.result())
-	}
-
-	def assembleCollection[A, CC](c:Context)(assembly:CollectionAssembly[A, CC])(parts:List[Either[c.Expr[A], c.Expr[TraversableOnce[A]]]]):c.Expr[CC] = {
+	def assembleCollection[A](c:Context)(parts:List[Either[c.Expr[A], c.Expr[TraversableOnce[A]]]])(implicit builderType: c.universe.TypeTag[scala.collection.mutable.Builder[A, List[A]]]):c.Expr[List[A]] = {
 		val builderName = MacroCompat.freshName(c)(MacroCompat.newTermName(c)("builder"))
-		val builderType = assembly.builderType(c)
 		val builderTypeTree = c.universe.TypeTree(builderType.tpe)
 		val builderExpr = c.Expr(c.universe.Ident(builderName))(builderType)
 
@@ -81,17 +53,17 @@ object MacroImpl {
 			c.universe.NoMods,
 			builderName,
 			builderTypeTree,
-			assembly.newBuilder(c).tree
+			c.universe.reify(List.newBuilder).tree
 		)
 		val insertBuilder = parts.map(part => part match {
-			case Left(single) => assembly.insertOne(c)(builderExpr, single).tree
-			case Right(group) => assembly.insertMany(c)(builderExpr, group).tree
+			case Left(single) => c.universe.reify(builderExpr.splice.+=(single.splice)).tree
+			case Right(group) => c.universe.reify(builderExpr.splice.++=(group.splice)).tree
 		})
 
-		c.Expr[CC](
+		c.Expr[List[A]](
 			c.universe.Block(
 				createBuilder :: insertBuilder,
-				assembly.result(c)(builderExpr).tree
+				c.universe.reify(builderExpr.splice.result()).tree
 			)
 		)
 	}
@@ -245,7 +217,7 @@ object MacroImpl {
 				)
 				val Literal:Parser[c.Expr[JArray]] = (
 					LiteralPresplice
-						.map(xs => assembleCollection(c)(VectorCollectionAssembly)(xs))
+						.map(xs => assembleCollection(c)(xs))
 						.map(x => c.universe.reify(JArray.apply(x.splice)))
 				)
 
@@ -289,7 +261,7 @@ object MacroImpl {
 				)
 				val Literal:Parser[c.Expr[JObject]] = (
 					LiteralPresplice
-						.map(xs => assembleCollection(c)(MapCollectionAssembly)(xs))
+						.map(xs => assembleCollection(c)(xs))
 						.map(x => c.universe.reify(JObject.apply(x.splice)))
 				)
 

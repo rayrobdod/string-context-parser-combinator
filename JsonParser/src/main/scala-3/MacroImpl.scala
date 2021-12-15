@@ -19,47 +19,17 @@ object MacroImpl {
 		}
 	}
 
-	private trait CollectionAssembly[A, CC] {
-		type Builder
-		def builderType(using Quotes):Type[Builder]
-		def newBuilder(using Quotes):Expr[Builder]
-		def insertOne(builder:Expr[Builder], item:Expr[A])(using Quotes):Expr[Builder]
-		def insertMany(builder:Expr[Builder], items:Expr[TraversableOnce[A]])(using Quotes):Expr[Builder]
-		def result(builder:Expr[Builder])(using Quotes):Expr[CC]
-	}
-
-	private object VectorCollectionAssembly extends CollectionAssembly[JValue, List[JValue]] {
-		type Builder = scala.collection.mutable.Builder[JValue, List[JValue]]
-		override def builderType(using Quotes):Type[Builder] = implicitly[Type[Builder]]
-		override def newBuilder(using Quotes):Expr[Builder] = '{ List.newBuilder[JValue] }
-		override def insertOne(builder:Expr[Builder], item:Expr[JValue])(using Quotes):Expr[Builder] = '{ $builder.addOne($item) }
-		override def insertMany(builder:Expr[Builder], items:Expr[TraversableOnce[JValue]])(using Quotes):Expr[Builder] = '{ $builder.addAll($items) }
-		override def result(builder:Expr[Builder])(using Quotes):Expr[List[JValue]] = '{ $builder.result() }
-	}
-
-	private object MapCollectionAssembly extends CollectionAssembly[(String, JValue), List[(String, JValue)]] {
-		type Builder = scala.collection.mutable.Builder[(String, JValue), List[(String, JValue)]]
-		override def builderType(using Quotes):Type[Builder] = implicitly[Type[Builder]]
-		override def newBuilder(using Quotes):Expr[Builder] = '{ List.newBuilder[(String, JValue)] }
-		override def insertOne(builder:Expr[Builder], item:Expr[(String, JValue)])(using Quotes):Expr[Builder] = '{ $builder.addOne($item) }
-		override def insertMany(builder:Expr[Builder], items:Expr[TraversableOnce[(String, JValue)]])(using Quotes):Expr[Builder] = '{ $builder.addAll($items) }
-		override def result(builder:Expr[Builder])(using Quotes):Expr[List[(String, JValue)]] = '{ $builder.result() }
-	}
-
-	private def assembleCollection[A : Type, CC : Type]
-			(assembly:CollectionAssembly[A, CC])
+	private def assembleCollection[A : Type]
 			(parts:List[Either[Expr[A], Expr[TraversableOnce[A]]]])
 			(using Quotes)
-	:Expr[CC] = {
-		given scala.quoted.Type[assembly.Builder] = assembly.builderType
-		assembly.result(
-			parts.foldLeft(assembly.newBuilder)({(builder, part) =>
-				part match {
-					case Left(single) => assembly.insertOne(builder, single)
-					case Right(group) => assembly.insertMany(builder, group)
-				}
-			})
-		)
+	:Expr[List[A]] = {
+		val builder = parts.foldLeft('{ List.newBuilder[A] })({(builder, part) =>
+			part match {
+				case Left(single) => '{ $builder.addOne($single) }
+				case Right(group) => '{ $builder.addAll($group) }
+			}
+		})
+		'{ $builder.result() }
 	}
 
 	import scala.language.higherKinds
@@ -207,7 +177,7 @@ object MacroImpl {
 		)
 		val Literal:Parser[Expr[JArray]] = (
 			LiteralPresplice
-				.map(xs => assembleCollection(VectorCollectionAssembly)(xs))
+				.map(xs => assembleCollection(xs))
 				.map(x => '{ JArray.apply($x)})
 		)
 
@@ -249,7 +219,7 @@ object MacroImpl {
 		)
 		val Literal:Parser[Expr[JObject]] = (
 			LiteralPresplice
-				.map(xs => assembleCollection(MapCollectionAssembly)(xs))
+				.map(xs => assembleCollection(xs))
 				.map(x => '{ JObject.apply($x) })
 		)
 
