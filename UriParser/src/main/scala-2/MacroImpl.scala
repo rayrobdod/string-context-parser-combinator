@@ -1,8 +1,8 @@
 package com.rayrobdod.stringContextParserCombinatorExample.uri
 
 import java.net.URI
+import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinatorExample.uri.MacroCompat.Context
 
 object MacroImpl {
 	/**
@@ -13,7 +13,7 @@ object MacroImpl {
 			case Seq() => c.universe.reify("")
 			case Seq(x) => x
 			case _ => {
-				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorName = c.universe.TermName("accumulator$")
 				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
 				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
 				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
@@ -25,7 +25,7 @@ object MacroImpl {
 						c.universe.Apply(
 							c.universe.Select(
 								c.universe.New(accumulatorTypeTree),
-								MacroCompat.stdTermNames(c).CONSTRUCTOR
+								c.universe.termNames.CONSTRUCTOR
 							),
 							List()
 						)

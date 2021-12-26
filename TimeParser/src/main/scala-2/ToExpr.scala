@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
 private[datetime] trait ToExpr[A] {
 	def apply[C <: Context with Singleton](ctx:C)(expr:A):C#Expr[A]
@@ -32,12 +32,12 @@ private[datetime] object ToExpr {
 					ctx.universe.Select(
 						ctx.universe.Select(
 							ctx.universe.Select(
-								ctx.universe.Ident(MacroCompat.newTermName(ctx)("java")),
-								MacroCompat.newTermName(ctx)("time")
+								ctx.universe.Ident(ctx.universe.TermName("java")),
+								ctx.universe.TermName("time")
 							),
-							MacroCompat.newTermName(ctx)("Year")
+							ctx.universe.TermName("Year")
 						),
-						MacroCompat.newTermName(ctx)("of")
+						ctx.universe.TermName("of")
 					),
 					List(
 						ToExpr0(value.getValue()).tree
@@ -53,12 +53,12 @@ private[datetime] object ToExpr {
 				ctx.universe.Select(
 					ctx.universe.Select(
 						ctx.universe.Select(
-							ctx.universe.Ident(MacroCompat.newTermName(ctx)("java")),
-							MacroCompat.newTermName(ctx)("time")
+							ctx.universe.Ident(ctx.universe.TermName("java")),
+							ctx.universe.TermName("time")
 						),
-						MacroCompat.newTermName(ctx)("Month")
+						ctx.universe.TermName("Month")
 					),
-					MacroCompat.newTermName(ctx)(value.name())
+					ctx.universe.TermName(value.name())
 				)
 			)
 		}
@@ -72,12 +72,12 @@ private[datetime] object ToExpr {
 					ctx.universe.Select(
 						ctx.universe.Select(
 							ctx.universe.Select(
-								ctx.universe.Ident(MacroCompat.newTermName(ctx)("java")),
-								MacroCompat.newTermName(ctx)("time")
+								ctx.universe.Ident(ctx.universe.TermName("java")),
+								ctx.universe.TermName("time")
 							),
-							MacroCompat.newTermName(ctx)("YearMonth")
+							ctx.universe.TermName("YearMonth")
 						),
-						MacroCompat.newTermName(ctx)("of")
+						ctx.universe.TermName("of")
 					),
 					List(
 						ToExpr0(value.getYear()).tree,
@@ -96,12 +96,12 @@ private[datetime] object ToExpr {
 					ctx.universe.Select(
 						ctx.universe.Select(
 							ctx.universe.Select(
-								ctx.universe.Ident(MacroCompat.newTermName(ctx)("java")),
-								MacroCompat.newTermName(ctx)("time")
+								ctx.universe.Ident(ctx.universe.TermName("java")),
+								ctx.universe.TermName("time")
 							),
-							MacroCompat.newTermName(ctx)("LocalDate")
+							ctx.universe.TermName("LocalDate")
 						),
-						MacroCompat.newTermName(ctx)("of")
+						ctx.universe.TermName("of")
 					),
 					List(
 						ToExpr0(value.getYear()).tree,

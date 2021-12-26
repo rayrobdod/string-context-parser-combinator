@@ -1,7 +1,6 @@
 ThisBuild / version := "-SNAPSHOT"
 ThisBuild / organization := "com.rayrobdod"
 
-val scala210Ver = "2.10.7"
 val scala211Ver = "2.11.12"
 val scala212Ver = "2.12.14"
 val scala213Ver = "2.13.6"
@@ -13,23 +12,17 @@ lazy val sharedSettings = Seq(
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.10" | "2.11" => Seq("-target:jvm-1.7")
+		case "2.11" => Seq("-target:jvm-1.7")
 		case "2.12" | "2.13" => Seq("-target:jvm-1.8")
 		case _ => if (scala.util.Properties.isJavaAtLeast("9")) {Seq("-release", "8")} else {Seq.empty}
 	}),
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.10" => Seq.empty
 		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit")
 		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
 		case _ => Seq.empty
 	}),
-	Compile / unmanagedSourceDirectories += (scalaBinaryVersion.value match {
-		case "2.10" => (Compile / sourceDirectory).value / "scala-2.10-macros"
-		case "2.11" | "2.12" | "2.13" => (Compile / sourceDirectory).value / "scala-2.11-macros"
-		case _ => (Compile / sourceDirectory).value / "scala-3-macros"
-	}),
 	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
+		case "2.11" | "2.12" | "2.13" => Seq(
 			"-doc-title", name.value,
 			"-doc-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.txt").toString,
@@ -56,7 +49,7 @@ lazy val base = (projectMatrix in file("Base"))
 	.settings(
 		name := "string-context-parser-combinator",
 		libraryDependencies ++= (scalaBinaryVersion.value match {
-			case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
+			case "2.11" | "2.12" | "2.13" => Seq(
 				"org.scala-lang" % "scala-reflect" % scalaVersion.value,
 			)
 			case _ => Seq()
@@ -69,7 +62,6 @@ lazy val base = (projectMatrix in file("Base"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala210Ver,
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
@@ -83,7 +75,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		name := "json",
 		publish / skip := true,
 		libraryDependencies ++= (scalaBinaryVersion.value match {
-			case "2.10" | "2.11" | "2.12" | "2.13" => Seq(
+			case "2.11" | "2.12" | "2.13" => Seq(
 				"org.json4s" %% "json4s-ast" % "3.6.11",
 			)
 			case _ => Seq(
@@ -96,7 +88,6 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala210Ver,
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
@@ -115,7 +106,6 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala210Ver,
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
@@ -134,7 +124,6 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala210Ver,
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,

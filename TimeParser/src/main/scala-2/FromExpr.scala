@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.MacroCompat.Context
+import scala.reflect.macros.blackbox.Context
 
 private[datetime] trait FromExpr[A] {
 	def unapply[C <: Context with Singleton](ctx:C)(expr:C#Expr[A]):Option[A]

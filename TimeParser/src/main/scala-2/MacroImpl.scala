@@ -2,8 +2,8 @@ package com.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
 import scala.Predef.charWrapper
+import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator.{Parsers => scpcParsers, _}
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.MacroCompat.Context
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
 
@@ -40,7 +40,7 @@ object MacroImpl {
 				(left, right) match {
 					case (FromExpr0(year), FromExpr0(month)) => ToExpr0(year.atMonth(month))
 					case (year, month) => {
-						ctx.Expr[YearMonth](Apply(Select(year.tree, MacroCompat.newTermName(ctx)("atMonth")), List(month.tree)))
+						ctx.Expr[YearMonth](Apply(Select(year.tree, ctx.universe.TermName("atMonth")), List(month.tree)))
 					}
 				}
 			}
@@ -49,7 +49,7 @@ object MacroImpl {
 		implicit object sequenced_LocalDateTime extends typelevel.Sequenced[ctx.Expr[LocalDate], ctx.Expr[LocalTime], ctx.Expr[LocalDateTime]]{
 			def aggregate(date:ctx.Expr[LocalDate], time:ctx.Expr[LocalTime]):ctx.Expr[LocalDateTime] = {
 				import ctx.universe._
-				ctx.Expr[LocalDateTime](Apply(Select(date.tree, MacroCompat.newTermName(ctx)("atTime")), List(time.tree)))
+				ctx.Expr[LocalDateTime](Apply(Select(date.tree, ctx.universe.TermName("atTime")), List(time.tree)))
 			}
 		}
 
@@ -100,13 +100,13 @@ object MacroImpl {
 							case FromExpr0(monthRaw) => {
 								Int2Digits(1, monthRaw.maxLength).map({day =>
 									val dayExpr = ToExpr0(day)
-									ctx.Expr(Apply(Select(ymExpr.tree, MacroCompat.newTermName(ctx)("atDay")), List(dayExpr.tree)))
+									ctx.Expr(Apply(Select(ymExpr.tree, ctx.universe.TermName("atDay")), List(dayExpr.tree)))
 								})
 							}
 							case _ => {
 								Int2Digits(1, 31).map({day =>
 									val dayExpr = ToExpr0(day)
-									ctx.Expr(Apply(Select(ymExpr.tree, MacroCompat.newTermName(ctx)("atDay")), List(dayExpr.tree)))
+									ctx.Expr(Apply(Select(ymExpr.tree, ctx.universe.TermName("atDay")), List(dayExpr.tree)))
 								})
 							}
 						}
@@ -114,7 +114,7 @@ object MacroImpl {
 					case ymExpr => {
 						Int2Digits(1, 31).map({day =>
 							val dayExpr = ToExpr0(day)
-							ctx.Expr(Apply(Select(ymExpr.tree, MacroCompat.newTermName(ctx)("atDay")), List(dayExpr.tree)))
+							ctx.Expr(Apply(Select(ymExpr.tree, ctx.universe.TermName("atDay")), List(dayExpr.tree)))
 						})
 					}
 				}
