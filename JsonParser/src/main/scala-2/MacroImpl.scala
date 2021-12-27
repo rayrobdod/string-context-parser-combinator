@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.{Map, Seq, Vector}
 import scala.reflect.macros.blackbox.Context
-import org.json4s.JsonAST._
+import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
 import com.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {

@@ -74,16 +74,11 @@ lazy val json = (projectMatrix in file("JsonParser"))
 	.settings(
 		name := "json",
 		publish / skip := true,
-		libraryDependencies ++= (scalaBinaryVersion.value match {
-			case "2.11" | "2.12" | "2.13" => Seq(
-				"org.json4s" %% "json4s-ast" % "3.6.11",
-			)
-			case _ => Seq(
-				"org.json4s" % "json4s-ast_2.13" % "3.6.11",
-			)
-		}),
+		libraryDependencies ++= Seq(
+			"org.json4s" %% "json4s-ast" % "4.0.3",
+		),
 		console / initialCommands := """
-			import org.json4s.JsonAST._
+			import org.json4s._
 			import com.rayrobdod.stringContextParserCombinatorExample.json._
 		""",
 	)
