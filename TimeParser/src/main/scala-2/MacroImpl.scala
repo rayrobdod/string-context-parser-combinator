@@ -31,25 +31,25 @@ object MacroImpl {
 		def unapply(input:scala.reflect.api.Universe#Name):Option[String] = Option(input.decodedName.toString)
 	}
 
-	private[this] trait Parsers extends scpcParsers with ParsersImplictly {
+	private[this] trait Parsers extends scpcParsers with ParsersImplictly with TimeLiftables with TimeUnliftables {
 		implicit object sequenced_YearMonth extends typelevel.Sequenced[ctx.Expr[Year], ctx.Expr[Month], ctx.Expr[YearMonth]] {
 			def aggregate(left:ctx.Expr[Year], right:ctx.Expr[Month]):ctx.Expr[YearMonth] = {
-				val FromExpr0 = FromExpr.WithContext(ctx)
-				val ToExpr0 = ToExpr.WithContext(ctx)
 				import ctx.universe._
 				(left, right) match {
-					case (FromExpr0(year), FromExpr0(month)) => ToExpr0(year.atMonth(month))
-					case (year, month) => {
-						ctx.Expr[YearMonth](Apply(Select(year.tree, ctx.universe.TermName("atMonth")), List(month.tree)))
-					}
+					case (Expr(`unliftYear`(year)), Expr(`unliftMonth`(month))) => ctx.Expr[YearMonth](liftYearMonth(year.atMonth(month)))
+					case (year, month) => ctx.Expr[YearMonth](q"$year.atMonth($month)")
 				}
 			}
 		}
 
 		implicit object sequenced_LocalDateTime extends typelevel.Sequenced[ctx.Expr[LocalDate], ctx.Expr[LocalTime], ctx.Expr[LocalDateTime]]{
-			def aggregate(date:ctx.Expr[LocalDate], time:ctx.Expr[LocalTime]):ctx.Expr[LocalDateTime] = {
+			def aggregate(left:ctx.Expr[LocalDate], right:ctx.Expr[LocalTime]):ctx.Expr[LocalDateTime] = {
 				import ctx.universe._
-				ctx.Expr[LocalDateTime](Apply(Select(date.tree, ctx.universe.TermName("atTime")), List(time.tree)))
+				(left, right) match {
+					case (Expr(`unliftLocalDate`(date)), Expr(`unliftLocalTime`(time))) => ctx.Expr[LocalDateTime](liftLocalDateTime(date.atTime(time)))
+					case (date, Expr(`unliftLocalTimeParts`(h, m, s, n))) => ctx.Expr[LocalDateTime](q"$date.atTime($h, $m, $s, $n)")
+					case (date, time) => ctx.Expr[LocalDateTime](q"$date.atTime($time)")
+				}
 			}
 		}
 
@@ -64,7 +64,7 @@ object MacroImpl {
 			val LiteralP:Parser[ctx.Expr[Year]] = {
 				(sign ~ digit.rep(1, 9))
 					.opaque("\"-999999999\"-\"999999999\"")
-					.map({x => ToExpr.WithContext(ctx)(Year.of(x))})
+					.map({x => ctx.Expr[Year](liftYear(Year.of(x)))})
 			}
 			val VariableP:Parser[ctx.Expr[Year]] = OfType(ctx.typeTag[Year])
 			VariableP | LiteralP
@@ -74,7 +74,7 @@ object MacroImpl {
 			val LiteralP:Parser[ctx.Expr[Month]] = {
 				Int2Digits(1, 12)
 					.map(Month.of _)
-					.map({x => ToExpr.WithContext(ctx)(x)})
+					.map({x => ctx.Expr[Month](liftMonth(x))})
 			}
 			val VariableP:Parser[ctx.Expr[Month]] = OfType(ctx.typeTag[Month])
 			VariableP | LiteralP
@@ -88,33 +88,19 @@ object MacroImpl {
 
 		def LocalDateP:Parser[ctx.Expr[LocalDate]] = {
 			val YearMonthVariantP:Parser[ctx.Expr[LocalDate]] = (YearMonthP ~ "-").flatMap({ymExpr =>
-				val FromExpr0 = FromExpr.WithContext(ctx)
-				val ToExpr0 = ToExpr.WithContext(ctx)
 				import ctx.universe._
 				ymExpr match {
-					case FromExpr0(ym) => {
-						Int2Digits(1, ym.lengthOfMonth).map(day => ToExpr0(ym.atDay(day)))
+					case Expr(`unliftYearMonth`(ym)) => {
+						Int2Digits(1, ym.lengthOfMonth).map(day => ctx.Expr[LocalDate](liftLocalDate(ym.atDay(day))))
 					}
-					case ymExpr@ctx.Expr(Apply(Select(_, Name("atMonth")), List(month))) => {
-						ctx.Expr[Month](month) match {
-							case FromExpr0(monthRaw) => {
-								Int2Digits(1, monthRaw.maxLength).map({day =>
-									val dayExpr = ToExpr0(day)
-									ctx.Expr(Apply(Select(ymExpr.tree, ctx.universe.TermName("atDay")), List(dayExpr.tree)))
-								})
-							}
-							case _ => {
-								Int2Digits(1, 31).map({day =>
-									val dayExpr = ToExpr0(day)
-									ctx.Expr(Apply(Select(ymExpr.tree, ctx.universe.TermName("atDay")), List(dayExpr.tree)))
-								})
-							}
-						}
+					case ctx.Expr(Apply(Select(_, Name("atMonth")), List(`unliftMonth`(month)))) => {
+						Int2Digits(1, month.maxLength).map({day =>
+							ctx.Expr[LocalDate](q"$ymExpr.atDay($day)")
+						})
 					}
 					case ymExpr => {
 						Int2Digits(1, 31).map({day =>
-							val dayExpr = ToExpr0(day)
-							ctx.Expr(Apply(Select(ymExpr.tree, ctx.universe.TermName("atDay")), List(dayExpr.tree)))
+							ctx.Expr[LocalDate](q"$ymExpr.atDay($day)")
 						})
 					}
 				}
@@ -151,6 +137,7 @@ object MacroImpl {
 		}
 
 		def LocalTimeP:Parser[ctx.Expr[LocalTime]] = {
+			import ctx.universe.Quasiquote
 			val LiteralP:Parser[ctx.Expr[LocalTime]] = (HourP ~ ":" ~/ MinuteP ~ (":" ~/ SecondP ~ ("." ~/ NanoP).opt).opt)
 				.map({hmsn =>
 					val constZero = ctx.Expr(ctx.universe.Literal(ctx.universe.Constant(0)))
@@ -159,7 +146,7 @@ object MacroImpl {
 					val (second, n) = sn.getOrElse((constZero, None))
 					val nano = n.getOrElse(constZero)
 
-					ctx.universe.reify(java.time.LocalTime.of(hour.splice, minute.splice, second.splice, nano.splice))
+					ctx.Expr[LocalTime](q"java.time.LocalTime.of($hour, $minute, $second, $nano)")
 				})
 			val VariableP:Parser[ctx.Expr[LocalTime]] = OfType(ctx.typeTag[LocalTime])
 			VariableP | LiteralP
