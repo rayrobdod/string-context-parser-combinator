@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample.json
 
-import org.json4s.JsonAST._
+import org.json4s.{JValue, JBool, JNumber, JLong, JInt, JDecimal, JString, JArray, JObject}
 
 /**
  * A conversion from `A` to `Z` that, if found via implicit search, is treated as automatic by the

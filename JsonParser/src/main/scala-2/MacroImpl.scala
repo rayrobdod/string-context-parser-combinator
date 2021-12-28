@@ -1,9 +1,9 @@
 package com.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.{Map, Seq, Vector}
-import org.json4s.JsonAST._
+import scala.reflect.macros.blackbox.Context
+import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinatorExample.json.MacroCompat.Context
 
 object MacroImpl {
 	/**
@@ -14,7 +14,7 @@ object MacroImpl {
 			case Seq() => c.universe.reify("")
 			case Seq(x) => x
 			case _ => {
-				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorName = c.universe.TermName("accumulator$")
 				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
 				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
 				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
@@ -26,7 +26,7 @@ object MacroImpl {
 						c.universe.Apply(
 							c.universe.Select(
 								c.universe.New(accumulatorTypeTree),
-								MacroCompat.stdTermNames(c).CONSTRUCTOR
+								c.universe.termNames.CONSTRUCTOR
 							),
 							List()
 						)
@@ -45,7 +45,7 @@ object MacroImpl {
 	}
 
 	def assembleCollection[A](c:Context)(parts:List[Either[c.Expr[A], c.Expr[TraversableOnce[A]]]])(implicit builderType: c.universe.TypeTag[scala.collection.mutable.Builder[A, List[A]]]):c.Expr[List[A]] = {
-		val builderName = MacroCompat.freshName(c)(MacroCompat.newTermName(c)("builder"))
+		val builderName = c.freshName(c.universe.TermName("builder"))
 		val builderTypeTree = c.universe.TypeTree(builderType.tpe)
 		val builderExpr = c.Expr(c.universe.Ident(builderName))(builderType)
 
@@ -76,7 +76,7 @@ object MacroImpl {
 					c.universe.Apply(
 						c.universe.Select(
 							lifter.tree,
-							MacroCompat.newTermName(c)("apply")
+							c.universe.TermName("apply")
 						),
 						List(a.tree)
 					)
@@ -202,7 +202,7 @@ object MacroImpl {
 					myLiftFunction[JArray, Lift.Array](c),
 					"A for Lift[A, JArray]"
 				)
-				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("arr"))))
+				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, c.universe.TermName("arr"))))
 
 				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = {
 					val value = ValueP
@@ -235,7 +235,7 @@ object MacroImpl {
 					myLiftFunction[JObject, Lift.Object](c),
 					"A for Lift[A, JObject]"
 				)
-				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, MacroCompat.newTermName(c)("obj"))))
+				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
 
 				val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
 					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
