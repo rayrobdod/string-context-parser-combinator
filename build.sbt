@@ -3,13 +3,13 @@ ThisBuild / organization := "com.rayrobdod"
 
 val scala210Ver = "2.10.7"
 val scala211Ver = "2.11.12"
-val scala212Ver = "2.12.14"
-val scala213Ver = "2.13.6"
-val scala30Ver = "3.0.0"
+val scala212Ver = "2.12.15"
+val scala213Ver = "2.13.7"
+val scala30Ver = "3.1.0"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %% "scalatest" % "3.2.9" % "test",
+		"org.scalatest" %% "scalatest" % "3.2.10" % "test",
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
