@@ -8,7 +8,7 @@ val scala30Ver = "3.1.0"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %% "scalatest" % "3.2.10" % "test",
+		"org.scalatest" %%% "scalatest" % "3.2.10" % "test",
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
@@ -67,6 +67,11 @@ lazy val base = (projectMatrix in file("Base"))
 		scala213Ver,
 		scala30Ver,
 	))
+	.jsPlatform(scalaVersions = Seq(
+		scala212Ver,
+		scala213Ver,
+		scala30Ver,
+	))
 
 lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)
@@ -75,7 +80,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		name := "json",
 		publish / skip := true,
 		libraryDependencies ++= Seq(
-			"org.json4s" %% "json4s-ast" % "4.0.3",
+			"org.json4s" %%% "json4s-ast" % "4.0.3",
 		),
 		console / initialCommands := """
 			import org.json4s._
@@ -84,6 +89,11 @@ lazy val json = (projectMatrix in file("JsonParser"))
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala211Ver,
+		scala212Ver,
+		scala213Ver,
+		scala30Ver,
+	))
+	.jsPlatform(scalaVersions = Seq(
 		scala212Ver,
 		scala213Ver,
 		scala30Ver,
@@ -106,6 +116,15 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		scala213Ver,
 		scala30Ver,
 	))
+	.jsPlatform(scalaVersions = Seq(
+			scala212Ver,
+			scala213Ver,
+			scala30Ver,
+		),
+		libraryDependencies ++= Seq(
+			"io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
+		),
+	)
 
 lazy val uri = (projectMatrix in file("UriParser"))
 	.dependsOn(base)
