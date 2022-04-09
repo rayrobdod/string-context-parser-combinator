@@ -30,7 +30,7 @@ private[stringContextParserCombinator]
 final case class LeafTrace[+Expr](parser:ExpectingDescription, remaining:Input[Expr]) extends Trace[Expr] {
 	def removeRequiredThens:Trace[Expr] = this
 	def removeEmptyTraces:Trace[Expr] = this
-	def expectingDescription:String = parser.value
+	def expectingDescription:String = s"${parser}"
 	def leftMostRemaining:Input[Expr] = remaining
 }
 
@@ -91,7 +91,7 @@ final case class FilterTrace[+Expr](filter:ExpectingDescription, backing:Trace[E
 			case _:OrTrace[_] | _:ThenTrace[_] => s"(${x.expectingDescription})"
 			case _ => x.expectingDescription
 		}
-		s"${impl(backing)} where ${filter.value}"
+		s"${impl(backing)} where ${filter}"
 	}
 	def leftMostRemaining:Input[Expr] = backing.leftMostRemaining
 }
