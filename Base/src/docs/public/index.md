@@ -1,7 +1,7 @@
 ---
 ---
 
-StringContextParserCombinators is a library for writing String Context extension implementations.
+StringContextParserCombinators is a library for writing String Context extension method implementations.
 
 # Example
 
@@ -46,5 +46,6 @@ scala> math"1+A"
 
 # Entry Points
 
-As for API, leaf parsers are avaliable from [the Parsers object](api/com/rayrobdod/stringContextParserCombinator/Parsers$.html)
-and the created extension method implementation should ends up calling [the macroimpl method](api/com/rayrobdod/stringContextParserCombinator.html#macroimpl)
+As for API, leaf parsers are avaliable from [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]]
+and the created extension method implementation should ends up calling [[the macroimpl
+method|com.rayrobdod.stringContextParserCombinator.macroimpl]]

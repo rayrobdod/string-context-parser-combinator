@@ -3,6 +3,10 @@ package typelevel
 
 /**
  * Describes how to combine two adjacent values into one value
+ *
+ * @tparam A the first input
+ * @tparam B the second input
+ * @tparam Z the result container
  */
 trait Sequenced[-A, -B, +Z] {
 	def aggregate(left:A, right:B):Z

@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinator
 
 /**
- * The input to a {@link Parser}
+ * The input to a [[Parser]]
  *
  * @group Input/Result
  */

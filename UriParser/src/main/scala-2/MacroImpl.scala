@@ -1,19 +1,23 @@
 package com.rayrobdod.stringContextParserCombinatorExample.uri
 
+// the compiler creates smaller typecreator classes for `java.lang.String` than `scala.Predef.String`
+import java.lang.String
+
 import java.net.URI
+import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinatorExample.uri.MacroCompat.Context
 
 object MacroImpl {
 	/**
 	 * Creates an Expr that represents the concatenation of the component Exprs
 	 */
 	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
+		import c.universe.Quasiquote
 		strings match {
-			case Seq() => c.universe.reify("")
+			case Seq() => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
 			case Seq(x) => x
 			case _ => {
-				val accumulatorName = MacroCompat.newTermName(c)("accumulator$")
+				val accumulatorName = c.universe.TermName("accumulator$")
 				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
 				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
 				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
@@ -25,18 +29,18 @@ object MacroImpl {
 						c.universe.Apply(
 							c.universe.Select(
 								c.universe.New(accumulatorTypeTree),
-								MacroCompat.stdTermNames(c).CONSTRUCTOR
+								c.universe.termNames.CONSTRUCTOR
 							),
 							List()
 						)
 					)
 				)
-				strings.foreach(x => stats += c.universe.reify(accumulatorExpr.splice.append(x.splice)).tree)
+				strings.foreach(x => stats += q"$accumulatorExpr.append($x)")
 
 				c.Expr[String](
 					c.universe.Block(
 						stats.toList,
-						c.universe.reify(accumulatorExpr.splice.toString).tree
+						q"$accumulatorExpr.toString"
 					)
 				)
 			}
@@ -46,6 +50,7 @@ object MacroImpl {
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
 		object ParserPieces extends Parsers{
 			val ctx:c.type = c
+			import c.universe.Quasiquote
 
 			val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr(c.universe.Literal(c.universe.Constant(x)))}
 			val constNullExpr:c.Expr[Null] = c.Expr(c.universe.Literal(c.universe.Constant(null)))
@@ -157,7 +162,7 @@ object MacroImpl {
 				}
 				/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 				val VariableInetAddress:Parser[c.Expr[String]] = OfType(c.typeTag[java.net.InetAddress])
-					.map(x => c.universe.reify(x.splice.getHostName()))
+					.map(x => c.Expr(q"$x.getHostName()"))
 				VariableInetAddress orElse LiteralIpv4 orElse LiteralIpv6 orElse LiteralName
 			}
 
@@ -172,11 +177,11 @@ object MacroImpl {
 
 			val HostPortP:Parser[(c.Expr[String], c.Expr[Int])] = {
 				val Literal = HostP andThen (IsString(":") andThen PortP)
-					.optionally.map(_.getOrElse(c.universe.reify(-1)))
+					.optionally.map(_.getOrElse(c.Expr(q"-1")))
 				val SockAddr = OfType(c.typeTag[java.net.InetSocketAddress])
 					.map(x => (
-						c.universe.reify(x.splice.getHostString()),
-						c.universe.reify(x.splice.getPort())
+						c.Expr(q"$x.getHostString()"),
+						c.Expr(q"$x.getPort()")
 					))
 				SockAddr orElse Literal
 			}
@@ -218,20 +223,20 @@ object MacroImpl {
 					val EqualsChar = CodePointIn("=").map(x => constExpr(x.toString))
 					val AndChar = CodePointIn("&").map(x => constExpr(x.toString))
 
-					val tupleConcatFun = c.universe.reify( {ab:Tuple2[String, String] => ab._1 + "=" + ab._2} )
+					val tupleConcatFun = q""" {ab:(String, String) => ab._1 + "=" + ab._2} """
 					val lit:Parser[c.Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().map(constExpr)
 					val str:Parser[c.Expr[String]] = OfType[String]
 					val str2:Parser[c.Expr[String]] = str orElse lit
 					val pair:Parser[List[c.Expr[String]]] = OfType(c.typeTag[scala.Tuple2[String, String]])
 						.map(x => List(
-							c.universe.reify(x.splice._1),
+							c.Expr[String](q"$x._1"),
 							constExpr("="),
-							c.universe.reify(x.splice._2)
+							c.Expr[String](q"$x._2")
 						))
 					val pair2:Parser[List[c.Expr[String]]] = pair orElse (str2 andThen EqualsChar andThen str2)
 					val map:Parser[List[c.Expr[String]]] = OfType(c.typeTag[scala.collection.Map[String, String]])
-						.map(x => c.universe.reify(x.splice.map(tupleConcatFun.splice)))
-						.map(x => List(c.universe.reify(x.splice.mkString("&"))))
+						.map(x => c.Expr[List[String]](q"$x.map($tupleConcatFun)"))
+						.map(x => List(c.Expr[String](q""" $x.mkString("&") """)))
 					val mapOrPair:Parser[List[c.Expr[String]]] = map orElse pair2
 
 					(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
@@ -263,26 +268,26 @@ object MacroImpl {
 						QueryP andThen
 						FragmentP
 					).map({case ((((user, (host, port)), path), query), fragment) =>
-						c.universe.reify(
+						c.Expr(q"""
 							new java.net.URI(
-								scheme.splice,
-								user.splice,
-								host.splice,
-								port.splice,
-								path.splice,
-								query.splice,
-								fragment.splice
+								$scheme,
+								$user,
+								$host,
+								$port,
+								$path,
+								$query,
+								$fragment
 							)
-						)
+						""")
 					}) orElse
 					(OpaquePartP andThen FragmentP).map({case (ssp, frag) =>
-						c.universe.reify(
+						c.Expr(q"""
 							new java.net.URI(
-								scheme.splice,
-								ssp.splice,
-								frag.splice
+								$scheme,
+								$ssp,
+								$frag
 							)
-						)
+						""")
 					})
 				}) andThen
 				End
@@ -295,17 +300,17 @@ object MacroImpl {
 					andThen QueryP
 					andThen FragmentP
 					).map({case ((((user, (host, port)), path), query), fragment) =>
-						c.universe.reify(
+						c.Expr(q"""
 							new java.net.URI(
-								constNullExpr.splice,
-								user.splice,
-								host.splice,
-								port.splice,
-								path.splice,
-								query.splice,
-								fragment.splice
+								$constNullExpr,
+								$user,
+								$host,
+								$port,
+								$path,
+								$query,
+								$fragment
 							)
-						)
+						""")
 					})
 				)
 			}
@@ -313,7 +318,7 @@ object MacroImpl {
 			val ResolvedUriP:Parser[c.Expr[URI]] = {
 				(OfType[URI] andThen RelativeUriP).map({params =>
 					val (base, resolvant) = params
-					c.universe.reify(base.splice.resolve(resolvant.splice))
+					c.Expr(q"$base.resolve($resolvant)")
 				})
 			}
 

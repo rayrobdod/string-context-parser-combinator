@@ -6,7 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
 	val positionOfNothing:Nothing => Position = x => x
 	def SinglePartInput(str:String, pos:Int) = new Input[Nothing](((str, Position(pos))) :: Nil, Nil, positionOfNothing)
-	def SimpleExpecting(msg:String) = Set(Expecting(msg, Position(0)))
+	def SimpleExpecting(msg:String) = Set(Expecting(ExpectingDescription(msg), Position(0)))
 
 	describe("OrElse / AndThenWithCut") {
 		it ("all failures reports the first part of each andThen chain, having not reached the cut yet") {

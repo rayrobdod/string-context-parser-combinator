@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinatorExample.jsonTest
 
 import scala.collection.immutable.{Map, Vector}
-import org.json4s.JsonAST._
+import org.json4s.{JValue, JNull, JBool, JNumber, JLong, JInt, JDecimal, JString, JArray, JObject}
 import org.scalatest.funspec.AnyFunSpec
 import com.rayrobdod.stringContextParserCombinatorExample.json._
 

@@ -6,7 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 final class OrElseTest extends AnyFunSpec {
 	val positionOfNothing:Nothing => Position = x => x
 	def SinglePartInput(str:String, pos:Int) = new Input[Nothing](((str, Position(pos))) :: Nil, Nil, positionOfNothing)
-	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(msg, Position(pos)))
+	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(ExpectingDescription(msg), Position(pos)))
 
 	describe("OrElse") {
 		it("`Success | Whatever` returns that success") {

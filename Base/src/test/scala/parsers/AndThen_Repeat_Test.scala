@@ -8,7 +8,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 	def InputPart(str:String, pos:Int) = ((str, Position(pos)))
 	val positionOfNothing:Nothing => Position = x => x
 	def InputNoArgs(str:String, pos:Int) = new Input[Nothing](InputPart(str, pos) :: Nil, Nil, positionOfNothing)
-	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(msg, Position(pos)))
+	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(ExpectingDescription(msg), Position(pos)))
 
 	implicit object RepeatedNothing extends typelevel.Repeated[Nothing, Unit] {
 		type Acc = Unit
