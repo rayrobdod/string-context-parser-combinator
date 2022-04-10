@@ -60,8 +60,8 @@ package object stringContextParserCombinator {
 	}
 
 	private[this] def reportFailure(c:Context)(failure:Failure):Nothing = {
-		val remainingPosition = failure.expecting.head.position
-		val expectingDescription = failure.expecting.map(_.description).mkString(" or ")
+		val remainingPosition = failure.expecting.map(_.position).max
+		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 
 		remainingPosition.throwError(c)(s"Expected ${expectingDescription}")
 	}
@@ -140,5 +140,6 @@ package stringContextParserCombinator {
 	private[stringContextParserCombinator]
 	object Position {
 		def apply(x:scala.reflect.api.Position):Position = new Position(x.point)
+		implicit val PositionOrdering:Ordering[Position] = Ordering.by(_.value)
 	}
 }

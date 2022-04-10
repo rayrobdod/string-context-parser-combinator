@@ -17,8 +17,8 @@ import scala.quoted.Varargs
  */
 package object stringContextParserCombinator {
 	private[this] def reportFailure(failure:Failure)(using Quotes):Nothing = {
-		val remainingPosition = failure.expecting.head.position
-		val expectingDescription = "???"
+		val remainingPosition = failure.expecting.map(_.position).max
+		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 		remainingPosition.throwError(s"Expected ${expectingDescription}")
 	}
 
@@ -80,7 +80,7 @@ package stringContextParserCombinator {
 	}
 	private[stringContextParserCombinator]
 	object Position {
-		private final class Impl(q:Quotes)(file:q.reflect.SourceFile, start:Int, end:Int) extends Position {
+		private final class Impl(q:Quotes)(file:q.reflect.SourceFile, private[Position] val start:Int, end:Int) extends Position {
 			def +(rhs:Int):Position = new Impl(q)(file, start + rhs, end)
 			def throwError(msg:String):Nothing = {
 				q.reflect.report.throwError(msg, q.reflect.Position(file, start, end))
@@ -92,6 +92,11 @@ package stringContextParserCombinator {
 			val pos = expr.asTerm.pos
 			new Impl(q)(pos.sourceFile, pos.start, pos.end)
 		}
+
+		// Probably can assume that any positions compared will have the same sourceFile
+		given PositionOrdering:Ordering[Position] = Ordering.by({
+			case x:Impl => x.start
+		})
 
 		private[stringContextParserCombinator] def apply(point:Int):Position = {
 			final case class Impl2(point:Int) extends Position {
