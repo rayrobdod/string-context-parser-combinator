@@ -58,7 +58,8 @@ object MacroImpl {
 
 		def Int2Digits(min:Int, max:Int) = (digit.rep(2, 2))
 			.map(_.value)
-			.filter(x => min <= x && x <= max, String.format("""%02d <= $value <= %02d""", Integer.valueOf(min), Integer.valueOf(max)))
+			.filter(x => min <= x && x <= max, f"${min}%02d <= $$value <= ${max}%02d")
+			.opaque(f"${min}%02d <= $$value <= ${max}%02d")
 
 		def YearP:Parser[ctx.Expr[Year]] = {
 			val LiteralP:Parser[ctx.Expr[Year]] = {
