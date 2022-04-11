@@ -2,13 +2,12 @@ package com.rayrobdod.stringContextParserCombinator
 package parsers
 
 import org.scalatest.funspec.AnyFunSpec
+import TestUtilities._
 
 final class AndThen_Repeat_Test extends AnyFunSpec {
-	final case class SuccessValue(x:Int)
 	def InputPart(str:String, pos:Int) = ((str, Position(pos)))
 	val positionOfNothing:Nothing => Position = x => x
 	def InputNoArgs(str:String, pos:Int) = new Input[Nothing](InputPart(str, pos) :: Nil, Nil, positionOfNothing)
-	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(ExpectingDescription(msg), Position(pos)))
 
 	implicit object RepeatedNothing extends typelevel.Repeated[Nothing, Unit] {
 		type Acc = Unit
@@ -70,11 +69,10 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("a", 42)
 			val leftParser = CharIn("a").repeat()
 			val rightParser = CharIn("b")
-			val leftExpecting = SingleExpecting("CharIn(\"a\")", 43)
-			val rightExpecting = SingleExpecting("CharIn(\"b\")", 43)
 
 			val expected = Failure(
-				leftExpecting ++ rightExpecting ++ SingleExpecting("CharIn(\"b\")", 42),
+				RepeatedExpecting("CharIn(\"a\")", 42 to 43) ++
+					RepeatedExpecting("CharIn(\"b\")", 42 to 43),
 				Cut.False
 			)
 
@@ -85,11 +83,10 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("ac", 42)
 			val leftParser = CharIn("a").repeat()
 			val rightParser = CharIn("b")
-			val leftExpecting = SingleExpecting("CharIn(\"a\")", 43)
-			val rightExpecting = SingleExpecting("CharIn(\"b\")", 43)
 
 			val expected = Failure(
-				leftExpecting ++ rightExpecting ++ SingleExpecting("CharIn(\"b\")", 42),
+				RepeatedExpecting("CharIn(\"a\")", 42 to 43) ++
+					RepeatedExpecting("CharIn(\"b\")", 42 to 43),
 				Cut.False
 			)
 
@@ -100,10 +97,9 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val initialInput = InputNoArgs("a", 42)
 			val leftParser = CharIn("a").repeat(3,5)
 			val rightParser = CharIn("b")
-			val leftExpecting = SingleExpecting("CharIn(\"a\")", 43)
 
 			val expected = Failure(
-				leftExpecting,
+				RepeatedExpecting("CharIn(\"a\")", 42 to 43),
 				Cut.False
 			)
 
@@ -117,7 +113,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val rightExpecting = SingleExpecting("CharIn(\"b\")", 47)
 
 			val expected = Failure(
-				rightExpecting ++ SingleExpecting("CharIn(\"b\")", 46) ++ SingleExpecting("CharIn(\"b\")", 45),
+				RepeatedExpecting("CharIn(\"a\")", 42 to 46) ++
+					RepeatedExpecting("CharIn(\"b\")", 45 to 47),
 				Cut.False
 			)
 
@@ -135,14 +132,15 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 				Success1(
 					("a", 'a'),
 					InputNoArgs("", 44),
-					Set.empty,
+					SingleExpecting("CharIn(\"ab\")", 42) ++
+						SingleExpecting("CharIn(\"a\")", 43),
 					Cut.False
 				),
 				List(
 					Success1(
 						("", 'a'),
 						InputNoArgs("a", 43),
-						Set.empty,
+						SingleExpecting("CharIn(\"a\")", 42),
 						Cut.False
 					)
 				)
@@ -162,20 +160,23 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 				Success1(
 					("aa", 'a'),
 					InputNoArgs("", 45),
-					Set.empty,
+					SingleExpecting("CharIn(\"ab\")", 42) ++
+						SingleExpecting("CharIn(\"ab\")", 43) ++
+						SingleExpecting("CharIn(\"a\")", 44),
 					Cut.False
 				),
 				List(
 					Success1(
 						("a", 'a'),
 						InputNoArgs("a", 44),
-						Set.empty,
+						SingleExpecting("CharIn(\"ab\")", 42) ++
+							SingleExpecting("CharIn(\"a\")", 43),
 						Cut.False
 					),
 					Success1(
 						("", 'a'),
 						InputNoArgs("aa", 43),
-						Set.empty,
+						SingleExpecting("CharIn(\"a\")", 42),
 						Cut.False
 					)
 				)
@@ -205,7 +206,10 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val rightParser = CharIn("c").opaque("right")
 
 			val expected = Failure(
-				SingleExpecting("delim", 43) ++ SingleExpecting("right", 43) ++ SingleExpecting("right", 42),
+				SingleExpecting("rep", 42) ++
+					SingleExpecting("right", 42) ++
+					SingleExpecting("delim", 43) ++
+					SingleExpecting("right", 43),
 				Cut.False
 			)
 
@@ -220,7 +224,11 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val expected = Success(
 				("aa", 'c'),
 				InputNoArgs("", 46),
-				SingleExpecting("delim", 45),
+				SingleExpecting("rep", 42) ++
+					SingleExpecting("delim", 43) ++
+					SingleExpecting("rep", 44) ++
+					SingleExpecting("right", 45) ++
+					SingleExpecting("delim", 45),
 				Cut.False
 			)
 
