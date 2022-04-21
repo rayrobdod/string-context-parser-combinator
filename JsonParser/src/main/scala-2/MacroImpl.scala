@@ -91,9 +91,6 @@ object MacroImpl {
 		object ParserPieces extends Parsers {
 			val ctx:c.type = c
 
-			// not just so that the type is only computed once; around JArray, it suddenly looses its Lift TypeTag
-			val liftTypeConstructor = c.typeOf[Lift[_,_]].typeConstructor
-
 			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").opaque("Whitespace").repeat().map(_ => ())
 
 			val NullP:Parser[c.Expr[JNull.type]] = IsString("null").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JNull))
@@ -102,7 +99,6 @@ object MacroImpl {
 				val TrueI = IsString("true").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.True))
 				val FalseI = IsString("false").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.False))
 				val LiftedV = Lifted[Lift.Boolean, c.Expr[JBool]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JBool])),
 					myLiftFunction[JBool, Lift.Boolean](c),
 					"A for Lift[A, JBool]"
 				)
@@ -139,7 +135,6 @@ object MacroImpl {
 					})
 				}.opaque("Number Literal")
 				val LiftedV = Lifted[Lift.Number, c.Expr[JValue with JNumber]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JValue with JNumber])),
 					myLiftFunction[JValue with JNumber, Lift.Number](c),
 					"A for Lift[A, JNumber]"
 				)
@@ -163,7 +158,6 @@ object MacroImpl {
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
 					"A for Lift[A, JString]"
 				).map(x => c.universe.reify(x.splice.values))
@@ -174,7 +168,6 @@ object MacroImpl {
 
 			val StringP:Parser[c.Expr[String]] = {
 				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
 					"A for Lift[A, JString]"
 				).map(x => c.universe.reify(x.splice.values))
@@ -184,7 +177,6 @@ object MacroImpl {
 
 			val JStringP:Parser[c.Expr[JString]] = {
 				val LiftedV:Parser[c.Expr[JString]] = Lifted[Lift.String, c.Expr[JString]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JString])),
 					myLiftFunction[JString, Lift.String](c),
 					"A for Lift[A, JString]"
 				)
@@ -198,7 +190,6 @@ object MacroImpl {
 				val Suffix:Parser[Unit] = IsString("]")
 
 				val LiftedArrayV = Lifted[Lift.Array, c.Expr[JArray]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JArray])),
 					myLiftFunction[JArray, Lift.Array](c),
 					"A for Lift[A, JArray]"
 				)
@@ -231,14 +222,12 @@ object MacroImpl {
 				val Suffix:Parser[Unit] = IsString("}")
 
 				val ObjectV = Lifted[Lift.Object, c.Expr[JObject]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[JObject])),
 					myLiftFunction[JObject, Lift.Object](c),
 					"A for Lift[A, JObject]"
 				)
 				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
 
 				val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
-					inType => c.universe.appliedType(liftTypeConstructor, List(inType, c.typeOf[(java.lang.String, JValue)])),
 					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
 					"A for Lift[A, (String, JValue)]"
 				)
