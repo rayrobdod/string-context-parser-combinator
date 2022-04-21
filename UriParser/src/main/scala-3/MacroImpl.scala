@@ -3,6 +3,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.uri
 import java.net.URI
 import scala.quoted._
 import com.rayrobdod.stringContextParserCombinator._
+import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatinateStringImplicits.{given}
 
 object MacroImpl {
 	/**
@@ -21,29 +22,6 @@ object MacroImpl {
 
 
 	private def nullExpr(using Quotes):Expr[Null] = '{ null }
-	private implicit val AndThenCodepointString:typelevel.Sequenced[CodePoint, String, String] = {
-		(a:CodePoint, b:String) => s"${a}${b}"
-	}
-	private implicit val AndThenStringCodepoint:typelevel.Sequenced[String, CodePoint, String] = {
-		(a:String, b:CodePoint) => s"${a}${b}"
-	}
-	private implicit val AndThenStringString:typelevel.Sequenced[String, String, String] = {
-		(a:String, b:String) => s"${a}${b}"
-	}
-	private implicit object EmptyStringOptionallyTypes extends typelevel.Optionally[String, String] {
-		def none:String = ""
-		def some(elem:String):String = elem
-	}
-	private implicit object CodePointOptionallyTypes extends typelevel.Optionally[CodePoint, String] {
-		def none:String = ""
-		def some(elem:CodePoint):String = elem.toString
-	}
-	private implicit object StringRepeatTypes extends typelevel.Repeated[String, String] {
-		type Acc = StringBuilder
-		def init():Acc = new StringBuilder
-		def append(acc:Acc, elem:String):Unit = {acc ++= elem}
-		def result(acc:Acc):String = acc.toString
-	}
 
 	private val HexChar:Parser[Char] = CharWhere(c => '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F', "HexChar")
 

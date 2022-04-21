@@ -6,6 +6,7 @@ import java.lang.String
 import java.net.URI
 import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator._
+import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatinateStringImplicits._
 
 object MacroImpl {
 	/**
@@ -56,31 +57,6 @@ object MacroImpl {
 			val constNullExpr:c.Expr[Null] = c.Expr(c.universe.Literal(c.universe.Constant(null)))
 			val constNegOneExpr:c.Expr[Int] = c.Expr(c.universe.Literal(c.universe.Constant(-1)))
 			def parseByteHex(x:(Char, Char)):Int = java.lang.Integer.parseInt(s"${x._1}${x._2}", 16)
-
-
-			implicit object AndThenCodepointString extends typelevel.Sequenced[CodePoint, String, String] {
-				def aggregate(a:CodePoint, b:String):String = s"${a}${b}"
-			}
-			implicit object AndThenStringCodepoint extends typelevel.Sequenced[String, CodePoint, String] {
-				def aggregate(a:String, b:CodePoint):String = s"${a}${b}"
-			}
-			implicit object AndThenStringString extends typelevel.Sequenced[String, String, String] {
-				def aggregate(a:String, b:String):String = s"${a}${b}"
-			}
-			implicit object EmptyStringOptionallyTypes extends typelevel.Optionally[String, String] {
-				def none:String = ""
-				def some(elem:String):String = elem
-			}
-			implicit object CodePointOptionallyTypes extends typelevel.Optionally[CodePoint, String] {
-				def none:String = ""
-				def some(elem:CodePoint):String = elem.toString
-			}
-			implicit object StringRepeatTypes extends typelevel.Repeated[String, String] {
-				type Acc = StringBuilder
-				def init():Acc = new StringBuilder
-				def append(acc:Acc, elem:String):Unit = {acc ++= elem}
-				def result(acc:Acc):String = acc.toString
-			}
 
 			val HexChar:Parser[Char] = CharWhere(c => '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F', "HexChar")
 
