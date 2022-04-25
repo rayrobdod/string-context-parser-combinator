@@ -5,17 +5,13 @@ import org.json4s.{JValue, JBool, JNumber, JLong, JInt, JDecimal, JString, JArra
 /**
  * A conversion from `A` to `Z` that, if found via implicit search, is treated as automatic by the
  * json interpolation.
- *
- * Is a parameterized Lift class instead of one lift per `Z` mostly as an optimization:
- * * so that all Lifts can all share the 'JValue' converter
- * * and to reduce class count
  */
 trait Lift[-A, +Z]{
 	def apply(value:A):Z
 }
 
 /**
- * Predefined given `Lift` values
+ * Predefined given `Lift` values, and type aliases for Lift that specify the `Z` type
  */
 object Lift {
 	def apply[A, Z](fn:Function1[A, Z]):Lift[A, Z] = new Lift[A, Z] {def apply(value:A) = fn(value)}
@@ -59,4 +55,6 @@ object Lift {
 		Lift[scala.collection.immutable.Map[java.lang.String, A], JObject](
 			xs => JObject(xs.mapValues(child.apply _).toList)
 		)
+
+	type Value[A] = Lift[A, JValue]
 }

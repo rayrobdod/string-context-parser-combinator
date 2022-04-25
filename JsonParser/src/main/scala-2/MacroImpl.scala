@@ -98,47 +98,38 @@ object MacroImpl {
 			val BooleanP:Parser[c.Expr[JBool]] = {
 				val TrueI = IsString("true").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.True))
 				val FalseI = IsString("false").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.False))
-				val LiftedV = Lifted[Lift.Boolean, c.Expr[JBool]](
-					myLiftFunction[JBool, Lift.Boolean](c),
-					"A for Lift[A, JBool]"
-				)
-				LiftedV orElse TrueI orElse FalseI
+				TrueI orElse FalseI
 			}
 
 			val NumberP:Parser[c.Expr[JValue with JNumber]] = {
 				import scala.Predef.charWrapper
 
-				val NumberI:Parser[c.Expr[JValue with JNumber]] = {
-					def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
+				def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
 
-					/* Concatenate every capture in the following parser and combine into one long string */
-					implicit object StringStringAndThenTypes extends typelevel.Sequenced[String, String, String] {
-						def aggregate(a:String, b:String):String = a + b
-					}
-					implicit object CharStringOptionallyTypes extends typelevel.Optionally[Char, String] {
-						def none:String = ""
-						def some(elem:Char):String = elem.toString
-					}
-					implicit object StringStringOptionallyTypes extends typelevel.Optionally[String, String] {
-						def none:String = ""
-						def some(elem:String):String = elem
-					}
+				/* Concatenate every capture in the following parser and combine into one long string */
+				implicit object StringStringAndThenTypes extends typelevel.Sequenced[String, String, String] {
+					def aggregate(a:String, b:String):String = a + b
+				}
+				implicit object CharStringOptionallyTypes extends typelevel.Optionally[Char, String] {
+					def none:String = ""
+					def some(elem:Char):String = elem.toString
+				}
+				implicit object StringStringOptionallyTypes extends typelevel.Optionally[String, String] {
+					def none:String = ""
+					def some(elem:String):String = elem
+				}
 
-					(
-						CharIn("-").optionally
-						andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
-						andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
-						andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
-					).map({x =>
+				(
+					CharIn("-").optionally
+					andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
+					andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
+					andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
+				)
+					.map({x =>
 						val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
 						c.universe.reify(_root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply(xExpr.splice)))
 					})
-				}.opaque("Number Literal")
-				val LiftedV = Lifted[Lift.Number, c.Expr[JValue with JNumber]](
-					myLiftFunction[JValue with JNumber, Lift.Number](c),
-					"A for Lift[A, JNumber]"
-				)
-				LiftedV orElse NumberI
+					.opaque("Number Literal")
 			}
 
 			val StringBase:Parser[c.Expr[String]] = {
@@ -166,22 +157,8 @@ object MacroImpl {
 				(DelimiterP andThenWithCut Content andThen DelimiterP)
 			}
 
-			val StringP:Parser[c.Expr[String]] = {
-				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
-					myLiftFunction[JString, Lift.String](c),
-					"A for Lift[A, JString]"
-				).map(x => c.universe.reify(x.splice.values))
-				val Immediate:Parser[c.Expr[String]] = StringBase
-				LiftedV orElse Immediate
-			}
-
 			val JStringP:Parser[c.Expr[JString]] = {
-				val LiftedV:Parser[c.Expr[JString]] = Lifted[Lift.String, c.Expr[JString]](
-					myLiftFunction[JString, Lift.String](c),
-					"A for Lift[A, JString]"
-				)
-				val Immediate:Parser[c.Expr[JString]] = StringBase.map(x => c.universe.reify(_root_.org.json4s.JsonAST.JString.apply(x.splice)))
-				LiftedV orElse Immediate
+				StringBase.map(x => c.universe.reify(_root_.org.json4s.JsonAST.JString.apply(x.splice)))
 			}
 
 			val ArrayP:Parser[c.Expr[JArray]] = DelayedConstruction(() => {
@@ -193,11 +170,11 @@ object MacroImpl {
 					myLiftFunction[JArray, Lift.Array](c),
 					"A for Lift[A, JArray]"
 				)
-				val LiftedArrayV2 = LiftedArrayV.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, c.universe.TermName("arr"))))
+					.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, c.universe.TermName("arr"))))
 
 				val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = {
 					val value = ValueP
-					val array = (WhitespaceP andThen IsString("..") andThenWithCut LiftedArrayV2
+					val array = (WhitespaceP andThen IsString("..") andThenWithCut LiftedArrayV
 						andThen WhitespaceP)
 					value.orElse(array)(typelevel.Eithered.discriminatedUnion)
 				}
@@ -206,13 +183,10 @@ object MacroImpl {
 						andThenWithCut SplicableValue.repeat(delimiter = Delim)
 						andThen Suffix
 				)
-				val Literal:Parser[c.Expr[JArray]] = (
-					LiteralPresplice
-						.map(xs => assembleCollection(c)(xs))
-						.map(x => c.universe.reify(JArray.apply(x.splice)))
-				)
 
-				LiftedArrayV orElse Literal
+				LiteralPresplice
+					.map(xs => assembleCollection(c)(xs))
+					.map(x => c.universe.reify(JArray.apply(x.splice)))
 			})
 
 			val ObjectP:Parser[c.Expr[JObject]] = DelayedConstruction(() => {
@@ -224,22 +198,27 @@ object MacroImpl {
 				val ObjectV = Lifted[Lift.Object, c.Expr[JObject]](
 					myLiftFunction[JObject, Lift.Object](c),
 					"A for Lift[A, JObject]"
-				)
-				val ObjectV2 = ObjectV.map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
+				).map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
 
 				val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
 					myLiftFunction[(java.lang.String, JValue), Lift.KeyValue](c),
 					"A for Lift[A, (String, JValue)]"
 				)
 
-				val KeyV = WhitespaceP andThen StringP andThen WhitespaceP
-
+				val KeyV = {
+					val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
+						myLiftFunction[JString, Lift.String](c),
+						"A for Lift[A, JString]"
+					).map(x => c.universe.reify(x.splice.values))
+					val Immediate:Parser[c.Expr[String]] = StringBase
+					WhitespaceP andThen (LiftedV orElse Immediate) andThen WhitespaceP
+				}
 
 				val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = {
 					val keyValue = (WhitespaceP andThen KeyValueV andThen WhitespaceP)
 					val keyThenValue = (KeyV andThen Separator andThenWithCut ValueP)
 						.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
-					val mapping = (WhitespaceP andThen IsString("..") andThenWithCut ObjectV2
+					val mapping = (WhitespaceP andThen IsString("..") andThenWithCut ObjectV
 						andThen WhitespaceP)
 					keyValue.orElse(keyThenValue).orElse(mapping)(typelevel.Eithered.discriminatedUnion)
 				}
@@ -248,18 +227,22 @@ object MacroImpl {
 						andThenWithCut SplicableValue.repeat(delimiter = Delim)
 						andThen Suffix
 				)
-				val Literal:Parser[c.Expr[JObject]] = (
-					LiteralPresplice
-						.map(xs => assembleCollection(c)(xs))
-						.map(x => c.universe.reify(JObject.apply(x.splice)))
-				)
 
-				ObjectV orElse Literal
+				LiteralPresplice
+					.map(xs => assembleCollection(c)(xs))
+					.map(x => c.universe.reify(JObject.apply(x.splice)))
 			})
+
+			val LiftedP:Parser[c.Expr[JValue]] = {
+				Lifted[Lift.Value, c.Expr[JValue]](
+					myLiftFunction[JValue, Lift.Value](c),
+					"Liftable Value"
+				)
+			}
 
 			val ValueP:Parser[c.Expr[JValue]] = {
 				(WhitespaceP andThen (
-					NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP
+					NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP orElse LiftedP
 				) andThen WhitespaceP)
 			}
 

@@ -70,46 +70,37 @@ object MacroImpl {
 	private def BooleanP(using Quotes):Parser[Expr[JBool]] = {
 		val TrueI = IsString("true").map(_ => '{ _root_.org.json4s.JsonAST.JBool.True })
 		val FalseI = IsString("false").map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
-		val LiftedV = Lifted[Lift.Boolean, Expr[JBool]](
-			myLiftFunction[JBool, Lift.Boolean],
-			"A for Lift[A, JBool]"
-		).map(unwrapIdentityLift _)
-		LiftedV orElse TrueI orElse FalseI
+		TrueI orElse FalseI
 	}
 
 	private def NumberP(using Quotes):Parser[Expr[JValue with JNumber]] = {
 		import scala.Predef.charWrapper
 
-		val NumberI:Parser[Expr[JValue with JNumber]] = {
-			def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
+		def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
 
-			/* Concatenate every capture in the following parser and combine into one long string */
-			implicit object StringStringSequentially extends typelevel.Sequenced[String, String, String] {
-				def aggregate(a:String, b:String):String = a + b
-			}
-			implicit object CharStringOptionally extends typelevel.Optionally[Char, String] {
-				def none:String = ""
-				def some(elem:Char):String = elem.toString
-			}
-			implicit object StringStringOptionally extends typelevel.Optionally[String, String] {
-				def none:String = ""
-				def some(elem:String):String = elem
-			}
+		/* Concatenate every capture in the following parser and combine into one long string */
+		implicit object StringStringSequentially extends typelevel.Sequenced[String, String, String] {
+			def aggregate(a:String, b:String):String = a + b
+		}
+		implicit object CharStringOptionally extends typelevel.Optionally[Char, String] {
+			def none:String = ""
+			def some(elem:Char):String = elem.toString
+		}
+		implicit object StringStringOptionally extends typelevel.Optionally[String, String] {
+			def none:String = ""
+			def some(elem:String):String = elem
+		}
 
-			(
-				CharIn("-").optionally
-				andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
-				andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
-				andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
-			).map({x =>
+		(
+			CharIn("-").optionally
+			andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
+			andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
+			andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
+		)
+			.map({x =>
 				'{ _root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply( ${Expr[String](x)} )) }
 			})
-		}.opaque("Number Literal")
-		val LiftedV = Lifted[Lift.Number, Expr[JValue with JNumber]](
-			myLiftFunction[JValue with JNumber, Lift.Number],
-			"A for Lift[A, JNumber]"
-		).map(unwrapIdentityLift _)
-		LiftedV orElse NumberI
+			.opaque("Number Literal")
 	}
 
 	private def StringBase(using Quotes):Parser[Expr[String]] = {
@@ -137,22 +128,8 @@ object MacroImpl {
 		(DelimiterP andThenWithCut Content andThen DelimiterP)
 	}
 
-	private def StringP(using Quotes):Parser[Expr[String]] = {
-		val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, Expr[JString]](
-			myLiftFunction[JString, Lift.String],
-			"A for Lift[A, JString]"
-		).map(jstringExprToStringExpr _)
-		val Immediate:Parser[Expr[String]] = StringBase
-		LiftedV orElse Immediate
-	}
-
 	private def JStringP(using Quotes):Parser[Expr[JString]] = {
-		val LiftedV:Parser[Expr[JString]] = Lifted[Lift.String, Expr[JString]](
-			myLiftFunction[JString, Lift.String],
-			"A for Lift[A, JString]"
-		).map(unwrapIdentityLift _)
-		val Immediate:Parser[Expr[JString]] = StringBase.map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x)})
-		LiftedV orElse Immediate
+		StringBase.map(x => '{ _root_.org.json4s.JsonAST.JString.apply($x)})
 	}
 
 	private def ArrayP(using Quotes):Parser[Expr[JArray]] = DelayedConstruction(() => {
@@ -175,13 +152,10 @@ object MacroImpl {
 			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
 			Prefix andThenWithCut (SplicableValue.repeat(delimiter = Delim) andThen Suffix)
 		)
-		val Literal:Parser[Expr[JArray]] = (
-			LiteralPresplice
-				.map(xs => assembleCollection(xs))
-				.map(x => '{ JArray.apply($x)})
-		)
 
-		LiftedArrayV orElse Literal
+		LiteralPresplice
+			.map(xs => assembleCollection(xs))
+			.map(x => '{ JArray.apply($x)})
 	})
 
 	private def ObjectP(using Quotes):Parser[Expr[JObject]] = DelayedConstruction(() => {
@@ -201,7 +175,15 @@ object MacroImpl {
 			"A for Lift[A, (String, JValue)]"
 		)
 
-		val KeyV = WhitespaceP andThen StringP andThen WhitespaceP
+		val KeyV = {
+			val LiftedV:Parser[Expr[String]] = Lifted[Lift.String, Expr[JString]](
+				myLiftFunction[JString, Lift.String],
+				"A for Lift[A, JString]"
+			).map(jstringExprToStringExpr _)
+			val Immediate:Parser[Expr[String]] = StringBase
+
+			WhitespaceP andThen (LiftedV orElse Immediate) andThen WhitespaceP
+		}
 
 
 		val SplicableValue:Parser[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]] = (
@@ -217,18 +199,20 @@ object MacroImpl {
 			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
 			Prefix andThenWithCut (SplicableValue.repeat(delimiter = Delim) andThen Suffix)
 		)
-		val Literal:Parser[Expr[JObject]] = (
-			LiteralPresplice
-				.map(xs => assembleCollection(xs))
-				.map(x => '{ JObject.apply($x) })
-		)
 
-		ObjectV orElse Literal
+		LiteralPresplice
+			.map(xs => assembleCollection(xs))
+			.map(x => '{ JObject.apply($x) })
 	})
+
+	private def LiftedP(using Quotes) = Lifted[Lift.Value, Expr[JValue]](
+		myLiftFunction[JValue, Lift.Value],
+		"Lifted Value"
+	).map(unwrapIdentityLift _)
 
 	private def ValueP(using Quotes):Parser[Expr[JValue]] = {
 		(WhitespaceP andThen (
-			NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP
+			NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP orElse LiftedP
 		) andThen WhitespaceP)
 	}
 
