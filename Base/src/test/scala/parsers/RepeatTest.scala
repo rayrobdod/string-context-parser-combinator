@@ -5,9 +5,6 @@ import org.scalatest.funspec.AnyFunSpec
 import TestUtilities._
 
 final class RepeatTest extends AnyFunSpec {
-	val positionOfNothing:Nothing => Position = x => x
-	def SinglePartInput(str:String, pos:Int) = new Input[Nothing](((str, Position(pos))) :: Nil, Nil, positionOfNothing)
-
 	describe ("Repeat") {
 		it ("`a*` matches ``") {
 			val initialInput = SinglePartInput("", 42)

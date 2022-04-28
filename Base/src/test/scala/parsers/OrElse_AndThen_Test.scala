@@ -2,11 +2,10 @@ package com.rayrobdod.stringContextParserCombinator
 package parsers
 
 import org.scalatest.funspec.AnyFunSpec
+import TestUtilities._
 
 final class OrElse_AndThen_Test extends AnyFunSpec {
-	val positionOfNothing:Nothing => Position = x => x
-	def SinglePartInput(str:String, pos:Int) = new Input[Nothing](((str, Position(pos))) :: Nil, Nil, positionOfNothing)
-	def SimpleExpecting(msg:String) = Set(Expecting(ExpectingDescription(msg), Position(0)))
+	def SimpleExpecting(msg:String) = SingleExpecting(msg, 0)
 
 	describe("OrElse / AndThen") {
 		it ("all failures reports only the first part of each andThen chain") {

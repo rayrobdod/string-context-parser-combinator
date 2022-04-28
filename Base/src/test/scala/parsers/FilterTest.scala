@@ -3,12 +3,9 @@ package parsers
 
 import scala.collection.immutable.Set
 import org.scalatest.funspec.AnyFunSpec
+import TestUtilities._
 
 final class FilterTest extends AnyFunSpec {
-	val positionOfNothing:Nothing => Position = x => x
-	def SinglePartInput(str:String, pos:Int) = new Input[Nothing](((str, Position(pos))) :: Nil, Nil, positionOfNothing)
-	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(ExpectingDescription(msg), Position(pos)))
-
 	describe ("Filter") {
 		it ("if base parser fails, parser passes through the failure") {
 			val initialInput = SinglePartInput("expect", 42)
