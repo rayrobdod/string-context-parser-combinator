@@ -94,9 +94,3 @@ final case class Failure(
 	private[stringContextParserCombinator]
 	def or(other:Failure):Failure = new Failure(this.expecting ++ other.expecting, this.isCut | other.isCut)
 }
-
-private[stringContextParserCombinator]
-object Failure {
-	private[stringContextParserCombinator]
-	def apply(expecting:Expecting, isCut:Cut):Failure = Failure(Set(expecting), isCut)
-}

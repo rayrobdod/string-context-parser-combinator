@@ -27,7 +27,7 @@ final class Sequence[A](val initialInput:Input[Nothing], val outputs:Seq[Sequenc
 		lookup
 			.get(input)
 			.map(_.toResult(input))
-			.getOrElse(Failure(Expecting(ExpectingDescription("Known Input"), initialInput.position), Cut.False))
+			.getOrElse(Failure(Set(Expecting(ExpectingDescription("Known Input"), initialInput.position)), Cut.False))
 	}
 }
 

@@ -25,7 +25,7 @@ final class CodepointInTest extends AnyFunSpec {
 
 	def expectFailure(parserSet:Set[CodePoint], input:Input[Expr]) = {
 		val expected = Failure(
-			Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position),
+			Set(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position)),
 			Cut.False
 		)
 		val parser = CodePointIn[Expr](parserSet)
