@@ -10,7 +10,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				"",
 				SinglePartInput("", 42),
 				SingleExpecting("CharIn(\"a\")", 42),
@@ -24,7 +24,7 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"a",
 					SinglePartInput("", 43),
@@ -35,7 +35,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						"",
 						SinglePartInput("a", 42),
-						Set.empty,
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -47,7 +47,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("aaaa", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"aaaa",
 					SinglePartInput("", 46),
@@ -76,7 +76,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						"",
 						SinglePartInput("aaaa", 42),
-						Set.empty,
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -100,7 +100,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("a", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				"a",
 				SinglePartInput("", 43),
 				RepeatedExpecting("CharIn(\"a\")", 42 to 43),
@@ -113,7 +113,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("aaaa", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"aaaa",
 					SinglePartInput("", 46),
@@ -149,7 +149,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				"",
 				SinglePartInput("", 42),
 				SingleExpecting("CharIn(\"a\")", 42),
@@ -162,7 +162,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("a", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"a",
 					SinglePartInput("", 43),
@@ -173,7 +173,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						"",
 						SinglePartInput("a", 42),
-						Set.empty[Expecting],
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -185,7 +185,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("aaaa", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"a",
 					SinglePartInput("aaa", 43),
@@ -196,7 +196,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						"",
 						SinglePartInput("aaaa", 42),
-						Set.empty[Expecting],
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -209,7 +209,7 @@ final class RepeatTest extends AnyFunSpec {
 			val initialInput = SinglePartInput("", 42)
 			val childParser = CharIn("a")
 
-			val expected = Success[Nothing, Seq[String]](
+			val expected = Success[Nothing, StubPosition, Seq[String]](
 				Success1(
 					Seq(""),
 					SinglePartInput("", 42),
@@ -220,7 +220,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						Seq(),
 						SinglePartInput("", 42),
-						Set.empty,
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -235,7 +235,7 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 			val delimParser = CharIn("b").map(_ => ())
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				"",
 				SinglePartInput("", 42),
 				SingleExpecting("CharIn(\"a\")", 42),
@@ -249,7 +249,7 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 			val delimParser = CharIn("b").map(_ => ())
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"a",
 					SinglePartInput("", 43),
@@ -261,7 +261,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						"",
 						SinglePartInput("a", 42),
-						Set.empty,
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -274,7 +274,7 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = CharIn("a")
 			val delimParser = CharIn("b").map(_ => ())
 
-			val expected = Success[Nothing, String](
+			val expected = Success[Nothing, StubPosition, String](
 				Success1(
 					"aaa",
 					SinglePartInput("", 47),
@@ -299,7 +299,7 @@ final class RepeatTest extends AnyFunSpec {
 					Success1(
 						"",
 						SinglePartInput("ababa", 42),
-						Set.empty,
+						EmptyExpecting,
 						Cut.False
 					)
 				)
@@ -330,7 +330,7 @@ final class RepeatTest extends AnyFunSpec {
 			it ("matches ``; no cut") {
 				val initialInput = SinglePartInput("zzz", 42)
 
-				val expected = Success[Nothing, List[Nothing]](
+				val expected = Success[Nothing, StubPosition, List[Nothing]](
 					List(),
 					SinglePartInput("zzz", 42),
 					SingleExpecting("CharIn(\"a\")", 42),
@@ -350,7 +350,7 @@ final class RepeatTest extends AnyFunSpec {
 			it ("matches `abcde`; has cut") {
 				val initialInput = SinglePartInput("abcde", 42)
 
-				val expected = Success[Nothing, List[((Char, Char), Char)]](
+				val expected = Success[Nothing, StubPosition, List[((Char, Char), Char)]](
 					Success1(
 						List((('a','b'),'c')),
 						SinglePartInput("de", 45),

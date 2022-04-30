@@ -12,6 +12,6 @@ extension (description:ExpectingDescription)
 	def where(condition:ExpectingDescription):ExpectingDescription = s"$description where $condition"
 
 private[stringContextParserCombinator]
-final case class Expecting(val description:ExpectingDescription, val position:Position) {
+final case class Expecting[Pos](val description:ExpectingDescription, val position:Pos) {
 	def where(condition:ExpectingDescription) = new Expecting(description.where(condition), position)
 }

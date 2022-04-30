@@ -59,11 +59,16 @@ package object stringContextParserCombinator {
 		}
 	}
 
-	private[this] def reportFailure(c:Context)(failure:Failure):Nothing = {
+	private[stringContextParserCombinator]
+	implicit class PositionSyntax[Pos](pos:Pos)(implicit ev:Position[Pos]) {
+		def +(offset:Int):Pos = ev.offset(pos, offset)
+	}
+
+	private[this] def reportFailure(c:Context)(failure:Failure[Position.Impl]):Nothing = {
 		val remainingPosition = failure.expecting.map(_.position).max
 		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 
-		remainingPosition.throwError(c)(s"Expected ${expectingDescription}")
+		remainingPosition.errorAndAbort(c)(s"Expected ${expectingDescription}")
 	}
 
 	/**
@@ -107,14 +112,14 @@ package object stringContextParserCombinator {
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[c.Expr[Any]](strings, args.toList, x => Position(x.tree.pos))
+		val input = new Input[c.Expr[Any], Position.Impl](strings, args.toList, x => Position(x.tree.pos))
 
 		parser.parse(input) match {
-			case s:Success[_, _] => {
+			case s:Success[_, _, _] => {
 				//System.out.println(s.value)
 				s.choicesHead.value
 			}
-			case f:Failure => {
+			case f:Failure[Position.Impl] => {
 				reportFailure(c)(f)
 			}
 		}
@@ -131,15 +136,29 @@ package stringContextParserCombinator {
 
 
 
-	/** A position in a source file */
+	/*
+	 * All this complexity with Position is so that the unit tests don't have to find a
+	 * scala.quoted.Quotes or blackbox.Context in order to execute parsers
+	 */
+	/** Represents a position in a source file. Indicates where to point to in compile error messages */
 	private[stringContextParserCombinator]
-	final case class Position(value:Int) extends AnyVal {
-		def +(x:Int):Position = new Position(this.value + x)
-		def throwError(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(value), msg)
+	trait Position[Pos] {
+		def offset(pos:Pos, offset:Int):Pos
 	}
 	private[stringContextParserCombinator]
 	object Position {
-		def apply(x:scala.reflect.api.Position):Position = new Position(x.point)
-		implicit val PositionOrdering:Ordering[Position] = Ordering.by(_.value)
+		def apply(x:scala.reflect.api.Position):Position.Impl = new Position.Impl(x.point)
+
+		/** The canonical production-use Position type */
+		final class Impl(private[Position] val point:Int) {
+			def errorAndAbort(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(point), msg)
+		}
+
+		object Impl {
+			implicit val given_PositionImpl_Ordering:Ordering[Impl] = Ordering.by(_.point)
+			implicit val given_PositionImpl_Position:Position[Impl] = new Position[Impl] {
+				def offset(pos:Impl, offset:Int):Impl = new Impl(pos.point + offset)
+			}
+		}
 	}
 }

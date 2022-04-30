@@ -6,12 +6,12 @@ package com.rayrobdod.stringContextParserCombinator
  * @group Input/Result
  */
 private[stringContextParserCombinator]
-final class Input[+Expr](
-	val parts:List[(String, Position)],
+final class Input[+Expr, Pos : Position](
+	val parts:List[(String, Pos)],
 	val args:List[Expr],
-	argToPosition:Expr => Position
+	argToPosition:Expr => Pos
 ) {
-	private[stringContextParserCombinator] def position:Position = {
+	private[stringContextParserCombinator] def position:Pos = {
 		if (this.parts(0)._1.length != 0) {
 			this.parts(0)._2
 		} else if (this.args.nonEmpty) {
@@ -33,21 +33,21 @@ final class Input[+Expr](
 		partsFn:String => Option[(A, Int)],
 		argsFn:Expr => Option[A],
 		expecting: => ExpectingDescription
-	):Result[Expr, A] = {
+	):Result[Expr, Pos, A] = {
 		val expectingPosition = Expecting(expecting, this.position)
 		val expectingPositionSet = Set(expectingPosition)
 		def failure = Failure(expectingPositionSet, Cut.False)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
 				def success(x:A) = Success(x, new Input(parts.tail, args.tail, argToPosition), expectingPositionSet, Cut.False)
-				argsFn(args.head).fold[Result[Expr, A]](failure)(success _)
+				argsFn(args.head).fold[Result[Expr, Pos, A]](failure)(success _)
 			} else {
 				failure
 			}
 		} else {
 			val (headStr, headPos) = parts.head
 			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args, argToPosition), expectingPositionSet, Cut.False)
-			partsFn(headStr).fold[Result[Expr, A]](failure)(success _)
+			partsFn(headStr).fold[Result[Expr, Pos, A]](failure)(success _)
 		}
 	}
 
@@ -60,7 +60,7 @@ final class Input[+Expr](
 	override def toString:String = s"Input(${parts}, ${args})"
 	override def hashCode:Int = java.util.Objects.hash(parts, args)
 	override def equals(rhs:Any):Boolean = rhs match {
-		case other:Input[_] => this.parts == other.parts && this.args == other.args
+		case other:Input[_, _] => this.parts == other.parts && this.args == other.args
 		case _ => false
 	}
 }

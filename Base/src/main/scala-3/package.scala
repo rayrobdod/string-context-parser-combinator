@@ -16,7 +16,7 @@ import scala.quoted.Varargs
  * @groupprio Input/Result 300
  */
 package object stringContextParserCombinator {
-	private[this] def reportFailure(failure:Failure)(using Quotes):Nothing = {
+	private[this] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
 		val remainingPosition = failure.expecting.map(_.position).max
 		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 		remainingPosition.throwError(s"Expected ${expectingDescription}")
@@ -53,10 +53,10 @@ package object stringContextParserCombinator {
 		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
 		val args2 = Varargs.unapply(args).get.toList
 
-		val input = new Input(strings2, args2, x => Position(x))
+		val input = new Input[Expr[Any], Position.Impl](strings2, args2, x => Position(x))
 
 		parser.parse(input) match {
-			case s:Success[_, _] => {
+			case s@Success(_, _) => {
 				//System.out.println(res.show)
 				s.choicesHead.value
 			}
@@ -72,40 +72,37 @@ package stringContextParserCombinator {
 	trait LiftFunction[CC[A], Z] {def apply[A : Type](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes):Z}
 
 
-	/** A position in a source file */
+	/*
+	 * All this complexity with Position is so that the unit tests don't have to find a
+	 * scala.quoted.Quotes or blackbox.Context in order to check how the position has
+	 * advanced after a parser has run
+	 */
+	/** Represents a position in a source file. Indicates where to point to in compile error messages */
 	private[stringContextParserCombinator]
-	trait Position {
-		def +(rhs:Int):Position
-		def throwError(msg:String):Nothing
+	trait Position[Pos] {
+		extension (pos:Pos) def +(offset:Int):Pos = this.offset(pos, offset)
+		def offset(pos:Pos, offset:Int):Pos
 	}
+
 	private[stringContextParserCombinator]
 	object Position {
-		private final class Impl(q:Quotes)(file:q.reflect.SourceFile, private[Position] val start:Int, end:Int) extends Position {
-			def +(rhs:Int):Position = new Impl(q)(file, start + rhs, end)
+		/** The canonical production-use Position type */
+		final class Impl(private[Position] val q:Quotes)(private[Position] val file:q.reflect.SourceFile, private[Position] val start:Int, private[Position] val end:Int) {
 			def throwError(msg:String):Nothing = {
 				q.reflect.report.throwError(msg, q.reflect.Position(file, start, end))
 			}
 		}
 
-		def apply(expr:Expr[_])(using q:Quotes):Position = {
+		object Impl {
+			// Probably can assume that any positions compared will have the same sourceFile
+			given Ordering[Impl] = Ordering.by(_.start)
+			given Position[Impl] = (pos:Impl, offset:Int) => new Impl(pos.q)(pos.file, pos.start + offset, pos.end)
+		}
+
+		def apply(expr:Expr[_])(using q:Quotes):Impl = {
 			import q.reflect._
 			val pos = expr.asTerm.pos
 			new Impl(q)(pos.sourceFile, pos.start, pos.end)
-		}
-
-		// Probably can assume that any positions compared will have the same sourceFile
-		given PositionOrdering:Ordering[Position] = Ordering.by({
-			case x:Impl => x.start
-		})
-
-		private[stringContextParserCombinator] def apply(point:Int):Position = {
-			final case class Impl2(point:Int) extends Position {
-				def +(rhs:Int):Position = new Impl2(point + rhs)
-				def throwError(msg:String):Nothing = {
-					throw new NotImplementedError
-				}
-			}
-			new Impl2(point)
 		}
 	}
 }

@@ -7,7 +7,7 @@ final class Filter[Expr, A](
 	predicate:Function1[A, Boolean],
 	predicateDescription:ExpectingDescription
 ) extends AbstractParser[Expr, A] {
-	def parse(input:Input[Expr]):Result[Expr, A] = {
+	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A] = {
 		backing.parse(input) match {
 			case Success(choicesHead, choicesTail) => {
 				val choices = choicesHead :: choicesTail
@@ -15,7 +15,7 @@ final class Filter[Expr, A](
 				filteredChoices match {
 					case head :: tail => Success(head, tail)
 					case Nil => {
-						choices.map(s => Failure(s.expecting.map(_.where(predicateDescription)), s.isCut)).reduce[Failure](_ or _)
+						choices.map(s => Failure(s.expecting.map(_.where(predicateDescription)), s.isCut)).reduce[Failure[Pos]](_ or _)
 					}
 				}
 			}

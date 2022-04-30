@@ -23,7 +23,7 @@ object Lifted {
 		Quotes,
 	):AbstractParser[Expr[_], Z] = {
 		new AbstractParser[Expr[_], Z] {
-			def parse(input:Input[Expr[_]]):Result[Expr[_], Z] = {
+			def parse[Pos](input:Input[Expr[_], Pos]):Result[Expr[_], Pos, Z] = {
 				input.consume(
 					_ => None,
 					arg => (Some(arg)

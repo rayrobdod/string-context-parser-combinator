@@ -11,7 +11,7 @@ package parsers {
 		partsFn:String => Option[(A, Int)],
 		expecting: => ExpectingDescription
 	) extends AbstractParser[Expr, A] {
-		def parse(input:Input[Expr]):Result[Expr, A] = {
+		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A] = {
 			input.consume(
 				partsFn,
 				_ => None,
@@ -141,7 +141,7 @@ package object parsers {
 	/** A parser that consumes no input and always succeeds */
 	private[stringContextParserCombinator]
 	def NilParser[Expr]:Parser[Expr, Unit] = new Parser[Expr, Unit] {
-		def parse(input:Input[Expr]):Result[Expr, Unit] = Success((), input, Set.empty, Cut.False)
+		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Unit] = Success((), input, Set.empty, Cut.False)
 	}
 
 	private[stringContextParserCombinator]

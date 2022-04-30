@@ -7,7 +7,7 @@ import scala.collection.immutable.Set
  * @group Input/Result
  */
 private[stringContextParserCombinator]
-sealed trait Result[+Expr, +A] {
+sealed trait Result[+Expr, Pos, +A] {
 }
 
 /**
@@ -20,14 +20,14 @@ sealed trait Result[+Expr, +A] {
  * @param isCut true if other OrElse branches should be ignored
  */
 private[stringContextParserCombinator]
-final case class Success1[+Expr, +A](
+final case class Success1[+Expr, Pos, +A](
 	val value:A,
-	val remaining:Input[Expr],
-	val expecting:Set[Expecting],
+	val remaining:Input[Expr, Pos],
+	val expecting:Set[Expecting[Pos]],
 	val isCut:Cut
 ) {
 	private[stringContextParserCombinator]
-	def map[Z](fn:A => Z):Success1[Expr, Z] = Success1(fn(value), remaining, expecting, isCut)
+	def map[Z](fn:A => Z):Success1[Expr, Pos, Z] = Success1(fn(value), remaining, expecting, isCut)
 }
 
 /**
@@ -35,24 +35,24 @@ final case class Success1[+Expr, +A](
  * @group Input/Result
  */
 private[stringContextParserCombinator]
-final case class Success[+Expr, +A](
-	choicesHead:Success1[Expr, A],
-	choicesTail:List[Success1[Expr, A]] = Nil
-) extends Result[Expr, A] {
+final case class Success[+Expr, Pos, +A](
+	choicesHead:Success1[Expr, Pos, A],
+	choicesTail:List[Success1[Expr, Pos, A]] = Nil
+) extends Result[Expr, Pos, A] {
 	private[stringContextParserCombinator]
-	def mapValues[Z](fn:A => Z):Success[Expr, Z] = this.map({(x:Success1[Expr, A]) => x.map(fn)})
+	def mapValues[Z](fn:A => Z):Success[Expr, Pos, Z] = this.map({(x:Success1[Expr, Pos, A]) => x.map(fn)})
 
 	private[stringContextParserCombinator]
-	def map[ExprZ >: Expr, Z](fn:Success1[Expr, A] => Success1[ExprZ, Z]):Success[ExprZ, Z] = {
+	def map[ExprZ >: Expr, Z](fn:Success1[Expr, Pos, A] => Success1[ExprZ, Pos, Z]):Success[ExprZ, Pos, Z] = {
 		Success(fn(choicesHead), choicesTail.map(fn))
 	}
 	private[stringContextParserCombinator]
-	def flatMap[ExprZ >: Expr, Z](fn:Success1[Expr, A] => Result[ExprZ, Z]):Result[ExprZ, Z] = {
+	def flatMap[ExprZ >: Expr, Z](fn:Success1[Expr, Pos, A] => Result[ExprZ, Pos, Z]):Result[ExprZ, Pos, Z] = {
 		val (successes, failures) = (choicesHead :: choicesTail)
 			.map(fn)
-			.foldLeft[(List[Success1[ExprZ, Z]], List[Failure])]((Nil, Nil))({(folding, elem) => elem match {
+			.foldLeft[(List[Success1[ExprZ, Pos, Z]], List[Failure[Pos]])]((Nil, Nil))({(folding, elem) => elem match {
 				case Success(h, t) => ((folding._1 ::: h :: t, folding._2))
-				case f:Failure => ((folding._1, f :: folding._2))
+				case f:Failure[Pos] => ((folding._1, f :: folding._2))
 			}})
 		if (successes.nonEmpty) {
 			Success(successes.head, successes.tail)
@@ -61,20 +61,20 @@ final case class Success[+Expr, +A](
 		}
 	}
 
-	def +:[ExprZ >: Expr, Z >: A](newHead:Success1[ExprZ, Z]) = Success(newHead, this.choicesHead :: this.choicesTail)
-	def :+[ExprZ >: Expr, Z >: A](newLast:Success1[ExprZ, Z]) = Success(this.choicesHead, this.choicesTail ::: newLast :: Nil)
-	def ++[ExprZ >: Expr, Z >: A](rhs:Success[ExprZ, Z]) = Success(this.choicesHead, this.choicesTail ::: rhs.choicesHead :: rhs.choicesTail)
+	def +:[ExprZ >: Expr, Z >: A](newHead:Success1[ExprZ, Pos, Z]) = Success(newHead, this.choicesHead :: this.choicesTail)
+	def :+[ExprZ >: Expr, Z >: A](newLast:Success1[ExprZ, Pos, Z]) = Success(this.choicesHead, this.choicesTail ::: newLast :: Nil)
+	def ++[ExprZ >: Expr, Z >: A](rhs:Success[ExprZ, Pos, Z]) = Success(this.choicesHead, this.choicesTail ::: rhs.choicesHead :: rhs.choicesTail)
 }
 
 private[stringContextParserCombinator]
 object Success {
 	private[stringContextParserCombinator]
-	def apply[Expr, A](
+	def apply[Expr, Pos, A](
 		value:A,
-		remaining:Input[Expr],
-		expecting:Set[Expecting],
+		remaining:Input[Expr, Pos],
+		expecting:Set[Expecting[Pos]],
 		isCut:Cut
-	):Success[Expr, A] = Success(Success1(value, remaining, expecting, isCut))
+	):Success[Expr, Pos, A] = Success(Success1(value, remaining, expecting, isCut))
 }
 
 /**
@@ -87,10 +87,10 @@ object Success {
  * @param isCut true if other OrElse branches should be ignored
  */
 private[stringContextParserCombinator]
-final case class Failure(
-	val expecting:Set[Expecting],
+final case class Failure[Pos](
+	val expecting:Set[Expecting[Pos]],
 	val isCut:Cut
-) extends Result[Nothing, Nothing] {
+) extends Result[Nothing, Pos, Nothing] {
 	private[stringContextParserCombinator]
-	def or(other:Failure):Failure = new Failure(this.expecting ++ other.expecting, this.isCut | other.isCut)
+	def or(other:Failure[Pos]):Failure[Pos] = new Failure(this.expecting ++ other.expecting, this.isCut | other.isCut)
 }

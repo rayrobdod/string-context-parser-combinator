@@ -9,7 +9,7 @@ package com.rayrobdod.stringContextParserCombinator
  */
 trait Parser[Expr, +A] {
 	private[stringContextParserCombinator]
-	def parse(input:Input[Expr]):Result[Expr, A]
+	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A]
 
 	/** Returns a parser which invokes this parser, then modifies a successful result according to fn */
 	def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
