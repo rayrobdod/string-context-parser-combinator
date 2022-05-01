@@ -6,4 +6,5 @@
 *.yml	text	diff=yaml
 /.gitattributes	text	filter=sort
 /.gitignore	text	filter=sort
+/.sbtopts	text	filter=sort
 /project/plugins.sbt	filter=sort

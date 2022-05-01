@@ -13,7 +13,7 @@ object Lifted {
 		)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]
 	):AbstractParser[c.Expr[_], Z] = {
 		new AbstractParser[c.Expr[_], Z] {
-			override def parse(input:Input[c.Expr[_]]):Result[c.Expr[_], Z] = {
+			override def parse[Pos](input:Input[c.Expr[_], Pos]):Result[c.Expr[_], Pos, Z] = {
 				input.consume(
 					_ => None,
 					liftee => {

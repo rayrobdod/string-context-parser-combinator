@@ -3,7 +3,6 @@ package com.rayrobdod
 import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
 import scala.language.higherKinds
-import scala.reflect.api.Exprs
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 
@@ -60,39 +59,16 @@ package object stringContextParserCombinator {
 		}
 	}
 
-	/**
-	 * Returns a string representation of this input, suitable for printing to a users
-	 */
-	private[this] def inputDescription(input:Input[Exprs#Expr[_]]):String = {
-		if (input.isEmpty) {
-			"end of input"
-		} else {
-			scala.collection.immutable.Range(0, input.args.size)
-				.map(i => s"${input.parts(i)._1}$${${input.args(i).tree}}")
-				.mkString("\"", "", input.parts(input.args.size)._1 + "\"")
-		}
+	private[stringContextParserCombinator]
+	implicit class PositionSyntax[Pos](pos:Pos)(implicit ev:Position[Pos]) {
+		def +(offset:Int):Pos = ev.offset(pos, offset)
 	}
 
-	/**
-	 * Returns the position of this input
-	 */
-	private[this] def inputPosition(input:Input[Exprs#Expr[_]]):Position = {
-		if (input.parts(0)._1.length != 0) {
-			input.parts(0)._2
-		} else if (input.args.nonEmpty) {
-			Position(input.args(0).tree.pos)
-		} else {
-			input.parts(0)._2
-		}
-	}
+	private[this] def reportFailure(c:Context)(failure:Failure[Position.Impl]):Nothing = {
+		val remainingPosition = failure.expecting.map(_.position).max
+		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 
-	private[this] def reportFailure(c:Context)(failure:Failure[c.Expr[_]]):Nothing = {
-		val trimmedTrace = failure.trace.removeRequiredThens.removeEmptyTraces
-		val remainingDescription = inputDescription(trimmedTrace.leftMostRemaining)
-		val remainingPosition = inputPosition(trimmedTrace.leftMostRemaining)
-		val expectingDescription = trimmedTrace.expectingDescription
-
-		remainingPosition.throwError(c)(s"Found ${remainingDescription} ; Expected ${expectingDescription}")
+		remainingPosition.errorAndAbort(c)(s"Expected ${expectingDescription}")
 	}
 
 	/**
@@ -136,14 +112,14 @@ package object stringContextParserCombinator {
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[c.Expr[Any]](strings, args.toList)
+		val input = new Input[c.Expr[Any], Position.Impl](strings, args.toList, x => Position(x.tree.pos))
 
 		parser.parse(input) match {
-			case s:Success[_, _] => {
+			case s:Success[_, _, _] => {
 				//System.out.println(s.value)
-				s.value
+				s.choicesHead.value
 			}
-			case f:Failure[_] => {
+			case f:Failure[Position.Impl] => {
 				reportFailure(c)(f)
 			}
 		}
@@ -160,12 +136,29 @@ package stringContextParserCombinator {
 
 
 
-	/** A position in a source file */
-	final case class Position(value:Int) extends AnyVal {
-		def +(x:Int):Position = new Position(this.value + x)
-		def throwError(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(value), msg)
+	/*
+	 * All this complexity with Position is so that the unit tests don't have to find a
+	 * scala.quoted.Quotes or blackbox.Context in order to execute parsers
+	 */
+	/** Represents a position in a source file. Indicates where to point to in compile error messages */
+	private[stringContextParserCombinator]
+	trait Position[Pos] {
+		def offset(pos:Pos, offset:Int):Pos
 	}
+	private[stringContextParserCombinator]
 	object Position {
-		def apply(x:scala.reflect.api.Position):Position = new Position(x.point)
+		def apply(x:scala.reflect.api.Position):Position.Impl = new Position.Impl(x.point)
+
+		/** The canonical production-use Position type */
+		final class Impl(private[Position] val point:Int) {
+			def errorAndAbort(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(point), msg)
+		}
+
+		object Impl {
+			implicit val given_PositionImpl_Ordering:Ordering[Impl] = Ordering.by(_.point)
+			implicit val given_PositionImpl_Position:Position[Impl] = new Position[Impl] {
+				def offset(pos:Impl, offset:Int):Impl = new Impl(pos.point + offset)
+			}
+		}
 	}
 }

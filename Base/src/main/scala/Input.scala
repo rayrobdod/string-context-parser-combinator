@@ -5,28 +5,49 @@ package com.rayrobdod.stringContextParserCombinator
  *
  * @group Input/Result
  */
-final class Input[+Expr](
-	private[stringContextParserCombinator] val parts:List[(String, Position)],
-	private[stringContextParserCombinator] val args:List[Expr]
+private[stringContextParserCombinator]
+final class Input[+Expr, Pos : Position](
+	val parts:List[(String, Pos)],
+	val args:List[Expr],
+	argToPosition:Expr => Pos
 ) {
+	private[stringContextParserCombinator] def position:Pos = {
+		if (this.parts(0)._1.length != 0) {
+			this.parts(0)._2
+		} else if (this.args.nonEmpty) {
+			argToPosition(this.args(0))
+		} else {
+			this.parts(0)._2
+		}
+	}
+
+	/**
+	 *
+	 *
+	 * @param partsFn called if the next value in the input is a `part`. A `Some` indicates a successful parse.
+	 *		The `Int` in the return value is the number of characters in the string that the parser consumes.
+	 * @param argsFn called if the next value in the input is an `arg`. A `Some` indicates a successful parse.
+	 * @param expecting A textual description of what input the parser will parse successfully
+	 */
 	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],
 		argsFn:Expr => Option[A],
 		expecting: => ExpectingDescription
-	):Result[Expr, A] = {
-		val trace = LeafTrace(expecting, this)
-		def failure = Failure(trace, Cut.False)
+	):Result[Expr, Pos, A] = {
+		val expectingPosition = Expecting(expecting, this.position)
+		val expectingPositionSet = Set(expectingPosition)
+		def failure = Failure(expectingPositionSet, Cut.False)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
-				def success(x:A) = Success(x, new Input(parts.tail, args.tail), trace, Cut.False)
-				argsFn(args.head).fold[Result[Expr, A]](failure)(success _)
+				def success(x:A) = Success(x, new Input(parts.tail, args.tail, argToPosition), expectingPositionSet, Cut.False)
+				argsFn(args.head).fold[Result[Expr, Pos, A]](failure)(success _)
 			} else {
 				failure
 			}
 		} else {
 			val (headStr, headPos) = parts.head
-			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args), trace, Cut.False)
-			partsFn(headStr).fold[Result[Expr, A]](failure)(success _)
+			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args, argToPosition), expectingPositionSet, Cut.False)
+			partsFn(headStr).fold[Result[Expr, Pos, A]](failure)(success _)
 		}
 	}
 
@@ -39,7 +60,7 @@ final class Input[+Expr](
 	override def toString:String = s"Input(${parts}, ${args})"
 	override def hashCode:Int = java.util.Objects.hash(parts, args)
 	override def equals(rhs:Any):Boolean = rhs match {
-		case other:Input[_] => this.parts == other.parts && this.args == other.args
+		case other:Input[_, _] => this.parts == other.parts && this.args == other.args
 		case _ => false
 	}
 }

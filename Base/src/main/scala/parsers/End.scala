@@ -3,13 +3,14 @@ package parsers
 
 private[stringContextParserCombinator]
 final class End[Expr] extends AbstractParser[Expr, Unit] {
-	override def parse(input:Input[Expr]):Result[Expr, Unit] = {
-		val trace = LeafTrace(this.expecting, input)
+	override def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Unit] = {
+		val expecting = Expecting(description, input.position)
 		if (input.isEmpty) {
-			Success((), input, trace, Cut.False)
+			Success((), input, Set(expecting), Cut.False)
 		} else {
-			Failure(trace, Cut.False)
+			Failure(Set(expecting), Cut.False)
 		}
 	}
-	private def expecting:ExpectingDescription = ExpectingDescription("EOF")
+
+	private def description:ExpectingDescription = ExpectingDescription("EOF")
 }
