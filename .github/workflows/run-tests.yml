@@ -6,7 +6,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest]
-        java: [ 1.8, 11, 15 ]
+        java: [ 1.8, 11, 17 ]
     runs-on: ${{ matrix.os }}
     name:  ${{ matrix.os }}-${{ matrix.java }}
     steps:

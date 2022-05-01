@@ -27,7 +27,7 @@ object Lifted {
 				input.consume(
 					_ => None,
 					arg => (Some(arg)
-						.collect({case '{ $x: t } => new MyTupleOpt(x, Expr.summon[Lifter[t]])})
+						.collect({case '{ $x: t } => new MyTupleOpt[t, Lifter](x, Expr.summon[Lifter[t]])})
 						.flatMap(_.transpose)
 						.map(_.liftApply[Z](lift))
 					),

@@ -3,12 +3,12 @@ ThisBuild / organization := "com.rayrobdod"
 
 val scala211Ver = "2.11.12"
 val scala212Ver = "2.12.15"
-val scala213Ver = "2.13.7"
-val scala30Ver = "3.1.0"
+val scala213Ver = "2.13.8"
+val scala30Ver = "3.1.2"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %%% "scalatest" % "3.2.10" % "test",
+		"org.scalatest" %%% "scalatest" % "3.2.12" % "test",
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
@@ -80,7 +80,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		name := "json",
 		publish / skip := true,
 		libraryDependencies ++= Seq(
-			"org.json4s" %%% "json4s-ast" % "4.0.3",
+			"org.json4s" %%% "json4s-ast" % "4.0.5",
 		),
 		console / initialCommands := """
 			import org.json4s._
