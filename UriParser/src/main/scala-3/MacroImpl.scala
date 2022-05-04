@@ -231,7 +231,7 @@ object MacroImpl {
 				newUriExprTransparent(scheme, user, host, port, path, query, fragment)}) orElse
 			(OpaquePartP andThen FragmentP).map({case (ssp, frag) => newUriExprOpaque(scheme, ssp, frag)})
 		}) andThen
-		End()
+		End
 	}
 
 	private def RelativeUriP(using Quotes):Parser[Expr[URI]] = {
@@ -253,7 +253,7 @@ object MacroImpl {
 		})
 	}
 
-	private def Aggregate(using Quotes):Parser[Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End()
+	private def Aggregate(using Quotes):Parser[Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End
 
 	def stringContext_uri(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[URI] = {
 		macroimpl[URI](Aggregate)(sc, args)

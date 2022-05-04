@@ -49,7 +49,7 @@ object Parsers {
 		parsers.Lifted(lift, ExpectingDescription(description))
 
 	/** A parser that succeeds iff the input is empty */
-	def End():Parser[Unit] =
+	def End:Parser[Unit] =
 		new parsers.End()
 
 	/** Indirectly refers to a parser, to allow for mutual-recursion */

@@ -11,7 +11,7 @@ object MacroImpl {
 	 */
 	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
 		strings match {
-			case Seq() => c.universe.reify("")
+			case Seq() => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
 			case Seq(x) => x
 			case _ => {
 				val accumulatorName = c.universe.TermName("accumulator$")
@@ -68,7 +68,6 @@ object MacroImpl {
 		)
 	}
 
-	import scala.language.higherKinds
 	def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]](c:Context):LiftFunction[c.type, Lifter, c.Expr[Z]] = {
 		new LiftFunction[c.type, Lifter, c.Expr[Z]] {
 			def apply[A](lifter:c.Expr[Lifter[A]], a:c.Expr[A]):c.Expr[Z] = {

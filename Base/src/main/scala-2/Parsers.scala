@@ -1,7 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.{Seq, Set}
-import scala.language.higherKinds
 import scala.reflect.macros.blackbox.Context
 
 /**
@@ -68,7 +67,7 @@ trait Parsers {
 		parsers.Lifted(ctx)(lift, ExpectingDescription(description))
 
 	/** A parser that succeeds iff the input is empty */
-	def End():Parser[Unit] =
+	def End:Parser[Unit] =
 		new parsers.End()
 
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
@@ -129,7 +128,7 @@ object Parsers {
 		parsers.Lifted(c)(lift, ExpectingDescription(description))
 
 	/** A parser that succeeds iff the input is empty */
-	def End():Parser[Nothing, Unit] =
+	def End:Parser[Nothing, Unit] =
 		new parsers.End()
 
 	/** Indirectly refers to a parser, to allow for mutual-recursion */

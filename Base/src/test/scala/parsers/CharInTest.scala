@@ -5,8 +5,12 @@ import scala.collection.immutable.Set
 import org.scalatest.funspec.AnyFunSpec
 import TestUtilities._
 
-final class CharInTest extends AnyFunSpec {
+object CharInTest {
 	final case class Expr(value:String, pos:Int)
+}
+
+final class CharInTest extends AnyFunSpec {
+	import CharInTest._
 	def InputPart(str:String, pos:Int) = ((str, StubPosition(pos)))
 	val exprToPosition:Expr => StubPosition = (expr:Expr) => StubPosition(expr.pos)
 

@@ -2,7 +2,6 @@ package com.rayrobdod
 
 import scala.Predef.refArrayOps
 import scala.collection.immutable.Seq
-import scala.language.higherKinds
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 

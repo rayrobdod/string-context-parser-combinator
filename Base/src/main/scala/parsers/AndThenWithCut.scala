@@ -9,14 +9,14 @@ final class AndThenWithCut[Expr, A, B, Z](
 ) extends Parser[Expr, Z] {
 	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Z] = {
 		left.parse(input) match {
-			case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, Z]({case Success1(valA, restA, expectingA, cutA) => right.parse(restA) match {
-				case successB:Success[Expr, Pos, B] => successB.map[Expr, Z]({case Success1(valB, restB, expectingB, cutB) => Success1(
+			case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, Z]({case Success1(valA, restA, expectingA@_, cutA@_) => right.parse(restA) match {
+				case successB:Success[Expr, Pos, B] => successB.map[Expr, Z]({case Success1(valB, restB, expectingB, cutB@_) => Success1(
 					ev.aggregate(valA, valB),
 					restB,
 					expectingB,
 					Cut.True
 				)})
-				case Failure(expectingB, cutB) => Failure(
+				case Failure(expectingB, cutB@_) => Failure(
 					expectingB,
 					Cut.True
 				)
