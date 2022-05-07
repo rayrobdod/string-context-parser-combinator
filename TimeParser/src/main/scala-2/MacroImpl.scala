@@ -158,32 +158,30 @@ object MacroImpl {
 		}
 	}
 
+	private[this] def Parsers(c:scala.reflect.macros.blackbox.Context):Parsers {
+		type Context = c.type
+	} = new Parsers {
+		type Context = c.type
+		override val ctx:Context = c
+	}
+
 	private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
 
 	def stringContext_localdate(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDate] = {
-		object parsers extends Parsers {
-			val ctx:c.type = c
-			def Aggregate = (this.LocalDateP ~ this.End)
-		}
-
-		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
+		val parsers = Parsers(c)
+		import parsers._
+		macroimpl(c)(extensionClassName, LocalDateP ~ End)(args.toList)
 	}
 
 	def stringContext_localtime(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalTime] = {
-		object parsers extends Parsers {
-			val ctx:c.type = c
-			def Aggregate = (this.LocalTimeP ~ this.End)
-		}
-
-		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
+		val parsers = Parsers(c)
+		import parsers._
+		macroimpl(c)(extensionClassName, LocalTimeP ~ End)(args.toList)
 	}
 
 	def stringContext_localdatetime(c:Context {type PrefixType = DateTimeStringContext})(args:c.Expr[Any]*):c.Expr[LocalDateTime] = {
-		object parsers extends Parsers {
-			val ctx:c.type = c
-			def Aggregate = (this.LocalDateTimeP ~ this.End)
-		}
-
-		macroimpl(c)(extensionClassName, parsers.Aggregate)(args.toList)
+		val parsers = Parsers(c)
+		import parsers._
+		macroimpl(c)(extensionClassName, LocalDateTimeP ~ End)(args.toList)
 	}
 }

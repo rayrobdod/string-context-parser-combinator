@@ -1,9 +1,9 @@
 package com.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
-import scala.reflect.macros.blackbox.Context
 
 private[datetime] trait TimeLiftables {
+	type Context <: scala.reflect.macros.blackbox.Context
 	val ctx:Context
 	import ctx.universe.Quasiquote
 
