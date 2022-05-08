@@ -8,16 +8,9 @@ environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
 build_script:
   - cmd: 'ECHO Global / publishTo := Some(Resolver.file("artifact", file("""C:\projects\string-context-parser-combinator\publish"""))) >publish-location.sbt'
-  - cmd: 'ECHO Global / testOptions += Tests.Argument("-u", """C:\projects\string-context-parser-combinator\testresults""") >testresults-location.sbt'
   - cmd: 'sbt compile publish'
 test_script:
   - cmd: 'sbt test'
-  - ps: |
-      $wc = New-Object 'System.Net.WebClient'
-      $files = get-childitem .\testresults
-      foreach ($file in $files) {
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\testresults\$file))
-      }
 artifacts:
   - path: publish
     name: sbt_publish_directory
