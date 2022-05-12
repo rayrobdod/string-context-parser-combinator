@@ -17,11 +17,13 @@ trait Eithered[-A, -B, +Z] {
 object Eithered extends LowPrioEithered {
 	given unitUnit:Eithered[Unit, Unit, Unit] = generic[Unit, Unit]
 
-	given unitAny[B, Z](using ev:Optionally[B, Z]):Eithered[Unit, B, Z] with {
+	given unitAny[B, Z](using ev:Optionally[B, Z]):Eithered[Unit, B, Z] = new UnitAny[B, Z]
+	private[this] final class UnitAny[B, Z](using ev:Optionally[B, Z]) extends Eithered[Unit, B, Z] {
 		def left(elem:Unit):Z = ev.none
 		def right(elem:B):Z = ev.some(elem)
 	}
-	given anyUnit[A, Z](using ev:Optionally[A, Z]):Eithered[A, Unit, Z] with {
+	given anyUnit[A, Z](using ev:Optionally[A, Z]):Eithered[A, Unit, Z] = new AnyUnit[A, Z]
+	private[this] final class AnyUnit[A, Z](using ev:Optionally[A, Z]) extends Eithered[A, Unit, Z] {
 		def left(elem:A):Z = ev.some(elem)
 		def right(elem:Unit):Z = ev.none
 	}
@@ -34,7 +36,8 @@ object Eithered extends LowPrioEithered {
 }
 
 private[typelevel] trait LowPrioEithered {
-	given generic[A, B]:Eithered[A, B, A | B] with {
+	given generic[A, B]:Eithered[A, B, A | B] = new Generic[A, B]
+	private[this] final class Generic[A, B] extends Eithered[A, B, A | B] {
 		def left(elem:A):A | B = elem
 		def right(elem:B):A | B = elem
 	}
