@@ -80,6 +80,20 @@ trait Parsers {
 	def Lifted[Lifter[A], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Parser[Z] =
 		parsers.Lifted(ctx)(lift, ExpectingDescription(description))
 
+	/**
+	 * A parser that consumes no input and always succeeds
+	 * @group Constant
+	 */
+	def Pass:Parser[Unit] =
+		parsers.Pass
+
+	/**
+	 * A parser that always reports a failure
+	 * @group Constant
+	 */
+	def Fail(message:String):Parser[Nothing] =
+		parsers.Fail(ExpectingDescription(message))
+
 	/** A parser that succeeds iff the input is empty */
 	def End:Parser[Unit] =
 		new parsers.End()

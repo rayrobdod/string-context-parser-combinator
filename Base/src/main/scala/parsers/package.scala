@@ -140,15 +140,21 @@ package object parsers {
 
 	/** A parser that consumes no input and always succeeds */
 	private[stringContextParserCombinator]
-	def NilParser[Expr]:Parser[Expr, Unit] = new Parser[Expr, Unit] {
+	def Pass[Expr]:Parser[Expr, Unit] = new AbstractParser[Expr, Unit] {
 		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Unit] = Success((), input, Set.empty, Cut.False)
+	}
+
+	/** A parser that consumes no input and always fails */
+	private[stringContextParserCombinator]
+	def Fail[Expr](desc:ExpectingDescription):Parser[Expr, Nothing] = new AbstractParser[Expr, Nothing] {
+		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Nothing] = Failure(Set(Expecting(desc, input.position)), Cut.False)
 	}
 
 	private[stringContextParserCombinator]
 	def Optionally[Expr, A, Z](
 		backing:Parser[Expr, A], ev:typelevel.Optionally[A, Z]
 	):Parser[Expr, Z] = {
-		new Repeat(backing, 0, 1, NilParser, new typelevel.Repeated[A, Z] {
+		new Repeat(backing, 0, 1, Pass, new typelevel.Repeated[A, Z] {
 			final class Box[BoxType](var value:BoxType)
 			type Acc = Box[Z]
 			def init():Acc = new Box(ev.none)
