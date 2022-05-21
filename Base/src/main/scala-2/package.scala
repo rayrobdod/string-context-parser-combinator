@@ -146,7 +146,14 @@ package stringContextParserCombinator {
 	}
 	private[stringContextParserCombinator]
 	object Position {
-		def apply(x:scala.reflect.api.Position):Position.Impl = new Position.Impl(x.point)
+		private[this] val interned = scala.collection.mutable.Map.empty[Int, Position.Impl]
+
+		def apply(x:scala.reflect.api.Position):Position.Impl = {
+			if (! interned.contains(x.point)) {
+				interned(x.point) = new Position.Impl(x.point)
+			}
+			interned(x.point)
+		}
 
 		/** The canonical production-use Position type */
 		final class Impl(private[Position] val point:Int) {
@@ -162,7 +169,13 @@ package stringContextParserCombinator {
 		object Impl {
 			implicit val given_PositionImpl_Ordering:Ordering[Impl] = Ordering.by(_.point)
 			implicit val given_PositionImpl_Position:Position[Impl] = new Position[Impl] {
-				def offset(pos:Impl, offset:Int):Impl = new Impl(pos.point + offset)
+				def offset(pos:Impl, offset:Int):Impl = {
+					val newPoint = pos.point + offset
+					if (! interned.contains(newPoint)) {
+						interned(newPoint) = new Position.Impl(newPoint)
+					}
+					interned(newPoint)
+				}
 			}
 		}
 	}

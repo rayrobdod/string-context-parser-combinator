@@ -9,7 +9,7 @@ package parsers {
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
 	private[parsers] final class PartsParser[Expr, +A](
 		partsFn:String => Option[(A, Int)],
-		expecting: => ExpectingDescription
+		expecting: ExpectingDescription
 	) extends AbstractParser[Expr, A] {
 		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A] = {
 			input.consume(
@@ -71,7 +71,7 @@ package object parsers {
 	private[stringContextParserCombinator]
 	def CharWhere[Expr](
 		predicate:Function1[Char, Boolean],
-		description: => ExpectingDescription
+		description: ExpectingDescription
 	):Parser[Expr, Char] = new PartsParser(
 		pt => Option((pt.charAt(0), 1)).filter(x => predicate(x._1)),
 		description

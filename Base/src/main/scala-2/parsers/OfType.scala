@@ -8,11 +8,13 @@ private[stringContextParserCombinator]
 final class OfType[Ctx <: Context with Singleton, A](
 	tpetag:Ctx#TypeTag[A]
 ) extends AbstractParser[Ctx#Expr[_], Ctx#Expr[A]] {
+	private val expecting = ExpectingDescription(s"OfType(${tpetag.tpe})")
+
 	def parse[Pos](input:Input[Ctx#Expr[_], Pos]):Result[Ctx#Expr[_], Pos, Ctx#Expr[A]] = {
 		input.consume(
 			_ => None,
 			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[Ctx#Expr[A]]),
-			ExpectingDescription(s"OfType(${tpetag.tpe})")
+			this.expecting
 		)
 	}
 }

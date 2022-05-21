@@ -32,7 +32,7 @@ final class Input[+Expr, Pos : Position](
 	private[stringContextParserCombinator] def consume[A](
 		partsFn:String => Option[(A, Int)],
 		argsFn:Expr => Option[A],
-		expecting: => ExpectingDescription
+		expecting: ExpectingDescription
 	):Result[Expr, Pos, A] = {
 		val expectingPosition = Expecting(expecting, this.position)
 		val expectingPositionSet = Set(expectingPosition)
