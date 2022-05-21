@@ -151,6 +151,12 @@ package stringContextParserCombinator {
 		/** The canonical production-use Position type */
 		final class Impl(private[Position] val point:Int) {
 			def errorAndAbort(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(point), msg)
+			override def toString:String = s"Position.Impl($point)"
+			override def hashCode:Int = point
+			override def equals(other:Any):Boolean = other match {
+				case x:Impl => this.point == x.point
+				case _ => false
+			}
 		}
 
 		object Impl {

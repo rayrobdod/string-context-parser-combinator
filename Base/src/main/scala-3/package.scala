@@ -91,6 +91,13 @@ package stringContextParserCombinator {
 			def throwError(msg:String):Nothing = {
 				q.reflect.report.throwError(msg, q.reflect.Position(file, start, end))
 			}
+			override def toString:String = s"Position.Impl($file, $start, $end)"
+			override def hashCode:Int = this.start * 31 + this.end
+			override def equals(other:Any):Boolean = other match {
+				case x:Impl => this.file == x.file && this.start == x.start && this.end == x.end
+				case _ => false
+			}
+
 		}
 
 		object Impl {
