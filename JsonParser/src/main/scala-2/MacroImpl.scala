@@ -91,7 +91,7 @@ object MacroImpl {
 			type Context = c.type
 			val ctx:c.type = c
 
-			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").opaque("Whitespace").repeat().map(_ => ())
+			val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat(strategy = RepeatStrategy.Possessive).map(_ => ()).opaque("Whitespace")
 
 			val NullP:Parser[c.Expr[JNull.type]] = IsString("null").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JNull))
 
@@ -104,7 +104,7 @@ object MacroImpl {
 			val NumberP:Parser[c.Expr[JValue with JNumber]] = {
 				import scala.Predef.charWrapper
 
-				def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min)
+				def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min, strategy = RepeatStrategy.Possessive)
 
 				/* Concatenate every capture in the following parser and combine into one long string */
 				implicit object StringStringAndThenTypes extends typelevel.Sequenced[String, String, String] {
@@ -120,10 +120,10 @@ object MacroImpl {
 				}
 
 				(
-					CharIn("-").optionally
+					CharIn("-").optionally()
 					andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
-					andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally
-					andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally andThen RepeatedDigits(1)).optionally
+					andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally()
+					andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally() andThen RepeatedDigits(1)).optionally()
 				)
 					.map({x =>
 						val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
@@ -147,12 +147,13 @@ object MacroImpl {
 					))
 				)
 				val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
-				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1).map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
+				val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1, strategy = RepeatStrategy.Possessive)
+					.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 				val LiftedV:Parser[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
 					myLiftFunction[JString, Lift.String](c),
 					"A for Lift[A, JString]"
 				).map(x => c.universe.reify(x.splice.values))
-				val Content:Parser[c.Expr[String]] = (LiftedV orElse JCharsI).repeat()
+				val Content:Parser[c.Expr[String]] = (LiftedV orElse JCharsI).repeat(strategy = RepeatStrategy.Possessive)
 					.map(strs => concatenateStrings(c)(strs))
 				(DelimiterP andThenWithCut Content andThen DelimiterP)
 			}
@@ -180,7 +181,7 @@ object MacroImpl {
 				}
 				val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
 					Prefix
-						andThenWithCut SplicableValue.repeat(delimiter = Delim)
+						andThenWithCut SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
 						andThen Suffix
 				)
 
@@ -224,7 +225,7 @@ object MacroImpl {
 				}
 				val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
 					Prefix
-						andThenWithCut SplicableValue.repeat(delimiter = Delim)
+						andThenWithCut SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
 						andThen Suffix
 				)
 

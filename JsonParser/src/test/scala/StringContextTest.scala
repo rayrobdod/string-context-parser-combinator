@@ -132,6 +132,10 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JString("\u1234")
 			assertResult(exp)(json""" "\u1234" """)
 		}
+		it ("Does not take an excessively long time to match a longish string") {
+			val exp = JString("12345678901234567890")
+			assertResult(exp)(json""" "12345678901234567890" """)
+		}
 
 		it ("Accepts a provided Vector") {
 			val arg = List(JBool.True, JBool.False)

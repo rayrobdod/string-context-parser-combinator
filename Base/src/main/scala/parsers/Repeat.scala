@@ -7,6 +7,7 @@ final class Repeat[Expr, A, Z](
 	min:Int,
 	max:Int,
 	delimiter:Parser[Expr, Unit],
+	strategy:RepeatStrategy,
 	ev:typelevel.Repeated[A, Z]
 ) extends AbstractParser[Expr, Z] {
 	require(min >= 0)
@@ -14,7 +15,7 @@ final class Repeat[Expr, A, Z](
 	require(max >= min)
 
 	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Z] = {
-		Repeat.parse0(input, inner, min, max, delimiter, true) match {
+		Repeat.parse0(input, inner, min, max, delimiter, strategy, true) match {
 			case f:Failure[Pos] => f
 			case s:Success[Expr, Pos, List[A]] => s.mapValues({parts =>
 				val acc = ev.init()
@@ -27,7 +28,15 @@ final class Repeat[Expr, A, Z](
 
 private[stringContextParserCombinator]
 object Repeat {
-	private def parse0[Expr, Pos, A](input:Input[Expr, Pos], inner:Parser[Expr, A], min:Int, max:Int, delimiter:Parser[Expr, Unit], isFirst:Boolean):Result[Expr, Pos, List[A]] = {
+	private def parse0[Expr, Pos, A](
+		input:Input[Expr, Pos],
+		inner:Parser[Expr, A],
+		min:Int,
+		max:Int,
+		delimiter:Parser[Expr, Unit],
+		strategy:RepeatStrategy,
+		isFirst:Boolean
+	):Result[Expr, Pos, List[A]] = {
 		(if (isFirst) {Success((), input, Set.empty[Expecting[Pos]], Cut.False)} else {delimiter.parse(input)}) match {
 			case Failure(expectingDelimiter, cutDelimiter) => {
 				if (min != 0 || cutDelimiter.toBoolean) {
@@ -47,27 +56,40 @@ object Repeat {
 					}
 					case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, List[A]]({case Success1(valueA, restA, expectingA, cutA) =>
 						if (max == 1 || restA == input) {
-							// `restA == input` means quit if inner seems to be making no progress
-							if (min != 0 || cutA.toBoolean) {
+							// `restA == input` means quit if inner did not consume any input
+							if (min != 0 || cutA.toBoolean || strategy == RepeatStrategy.Possessive) {
 								Success(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
 							} else {
-								Success(
-									Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA),
-									List(
-										Success1(Nil, input, expectingDelimiter, cutDelimiter)
+								if (strategy == RepeatStrategy.Greedy) {
+									Success(
+										Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA),
+										List(
+											Success1(Nil, input, expectingDelimiter, cutDelimiter)
+										)
 									)
-								)
+								} else {
+									Success(
+										Success1(Nil, input, expectingDelimiter, cutDelimiter),
+										List(
+											Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+										)
+									)
+								}
 							}
 						} else {
-							parse0(restA, inner, math.max(0, min - 1), max - 1, delimiter, false) match {
+							parse0(restA, inner, math.max(0, min - 1), max - 1, delimiter, strategy, false) match {
 								case Failure(expectingC, cutC) => Failure(expectingA ++ expectingDelimiter ++ expectingC, cutA | cutDelimiter | cutC)
 								case successC:Success[Expr, Pos, List[A]] => {
 									val successCWithValA = successC.map({case Success1(valueC, restC, expectingC, cutC) =>
 										Success1(valueA :: valueC, restC, expectingA ++ expectingDelimiter ++ expectingC, cutA | cutDelimiter | cutC)
 									})
-									if (min == 0 && !successCWithValA.choicesHead.isCut.toBoolean) {
-										successCWithValA :+
-											Success1(Nil, input, Set.empty, Cut.False)
+									if (min == 0 && !successCWithValA.choicesHead.isCut.toBoolean && strategy != RepeatStrategy.Possessive) {
+										if (strategy == RepeatStrategy.Greedy) {
+											successCWithValA :+
+												Success1(Nil, input, Set.empty, Cut.False)
+										} else {
+											Success1(Nil, input, Set.empty[Expecting[Pos]], Cut.False) +: successCWithValA
+										}
 									} else {
 										successCWithValA
 									}

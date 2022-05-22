@@ -64,16 +64,27 @@ trait Parser[Expr, +A] {
 	 * @param min the minimum number of repeats to be considered successful
 	 * @param max the maximum number of repeats to consume
 	 * @param delimiter a parser describing separators between each repeat. Defaults to a parser that always succeeds and consumes no input.
+	 * @param strategy whether the repeat will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to combine the repeated values into one value
 	 */
-	def repeat[Z](min:Int = 0, max:Int = Integer.MAX_VALUE, delimiter:Parser[Expr, Unit] = parsers.Pass)(implicit ev:typelevel.Repeated[A, Z]):Parser[Expr, Z] =
-		new parsers.Repeat(this, min, max, delimiter, ev)
+	def repeat[Z](
+		min:Int = 0,
+		max:Int = Integer.MAX_VALUE,
+		delimiter:Parser[Expr, Unit] = parsers.Pass,
+		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
+		implicit ev:typelevel.Repeated[A, Z]
+	):Parser[Expr, Z] =
+		new parsers.Repeat(this, min, max, delimiter, strategy, ev)
 
 	/** Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed
 	 *
 	 * @tparam Z the result parser's parsed value type
+	 * @param strategy whether the optionally will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to mark present or absent values
 	 */
-	def optionally[Z](implicit ev:typelevel.Optionally[A, Z]):Parser[Expr, Z] =
-		parsers.Optionally(this, ev)
+	def optionally[Z](
+		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
+		implicit ev:typelevel.Optionally[A, Z]
+	):Parser[Expr, Z] =
+		parsers.Optionally(this, strategy, ev)
 }

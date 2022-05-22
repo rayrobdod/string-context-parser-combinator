@@ -2,6 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 package parsers
 
 import org.scalatest.funspec.AnyFunSpec
+import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 import TestUtilities._
 
 final class RepeatTest extends AnyFunSpec {
@@ -16,7 +17,7 @@ final class RepeatTest extends AnyFunSpec {
 				SingleExpecting("CharIn(\"a\")", 42),
 				Cut.False
 			)
-			val parser = childParser.repeat()
+			val parser = childParser.repeat(strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a*` matches `a`") {
@@ -40,7 +41,7 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat()
+			val parser = childParser.repeat(strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a*` matches `aaaa`") {
@@ -81,7 +82,135 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat()
+			val parser = childParser.repeat(strategy = Greedy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		it ("`a*+` matches ``, does not backtrack") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				"",
+				SinglePartInput("", 42),
+				SingleExpecting("CharIn(\"a\")", 42),
+				Cut.False
+			)
+			val parser = childParser.repeat(strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a*+` matches `a`, does not backtrack") {
+			val initialInput = SinglePartInput("a", 42)
+			val childParser = CharIn("a")
+			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"a",
+					SinglePartInput("", 43),
+					SingleExpecting("CharIn(\"a\")", 42) ++ SingleExpecting("CharIn(\"a\")", 43),
+					Cut.False
+				),
+				List(
+				)
+			)
+			val parser = childParser.repeat(strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a*+` matches `aaaa`, does not backtrack") {
+			val initialInput = SinglePartInput("aaaa", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"aaaa",
+					SinglePartInput("", 46),
+					RepeatedExpecting("CharIn(\"a\")", 42 to 46),
+					Cut.False
+				),
+				List(
+				)
+			)
+			val parser = childParser.repeat(strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		it ("`a*?` matches ``, reverse priority") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				"",
+				SinglePartInput("", 42),
+				SingleExpecting("CharIn(\"a\")", 42),
+				Cut.False
+			)
+			val parser = childParser.repeat(strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a*?` matches `a`, reverse priority") {
+			val initialInput = SinglePartInput("a", 42)
+			val childParser = CharIn("a")
+			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"",
+					SinglePartInput("a", 42),
+					EmptyExpecting,
+					Cut.False
+				),
+				List(
+					Success1(
+						"a",
+						SinglePartInput("", 43),
+						SingleExpecting("CharIn(\"a\")", 42) ++ SingleExpecting("CharIn(\"a\")", 43),
+						Cut.False
+					)
+				)
+			)
+			val parser = childParser.repeat(strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a*?` matches `aaaa`, reverse priorty") {
+			val initialInput = SinglePartInput("aaaa", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"",
+					SinglePartInput("aaaa", 42),
+					EmptyExpecting,
+					Cut.False
+				),
+				List(
+					Success1(
+						"a",
+						SinglePartInput("aaa", 43),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 42),
+						Cut.False
+					),
+					Success1(
+						"aa",
+						SinglePartInput("aa", 44),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 43),
+						Cut.False
+					),
+					Success1(
+						"aaa",
+						SinglePartInput("a", 45),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 44),
+						Cut.False
+					),
+					Success1(
+						"aaaa",
+						SinglePartInput("", 46),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 46),
+						Cut.False
+					)
+				)
+			)
+			val parser = childParser.repeat(strategy = Lazy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
@@ -93,7 +222,7 @@ final class RepeatTest extends AnyFunSpec {
 				SingleExpecting("CharIn(\"a\")", 42),
 				Cut.False
 			)
-			val parser = childParser.repeat(1)
+			val parser = childParser.repeat(1, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a+` matches `a`") {
@@ -106,7 +235,7 @@ final class RepeatTest extends AnyFunSpec {
 				RepeatedExpecting("CharIn(\"a\")", 42 to 43),
 				Cut.False
 			)
-			val parser = childParser.repeat(1)
+			val parser = childParser.repeat(1, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a+` matches `aaaa`") {
@@ -141,7 +270,109 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat(1)
+			val parser = childParser.repeat(1, strategy = Greedy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		it ("`a++` does not match ``, does not backtrack") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = CharIn("a")
+
+			val expected = Failure(
+				SingleExpecting("CharIn(\"a\")", 42),
+				Cut.False
+			)
+			val parser = childParser.repeat(1, strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a++` matches `a`, does not backtrack") {
+			val initialInput = SinglePartInput("a", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				"a",
+				SinglePartInput("", 43),
+				RepeatedExpecting("CharIn(\"a\")", 42 to 43),
+				Cut.False
+			)
+			val parser = childParser.repeat(1, strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a++` matches `aaaa`, does not backtrack") {
+			val initialInput = SinglePartInput("aaaa", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"aaaa",
+					SinglePartInput("", 46),
+					RepeatedExpecting("CharIn(\"a\")", 42 to 46),
+					Cut.False
+				),
+				List(
+				)
+			)
+			val parser = childParser.repeat(1, strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		it ("`a+?` does not match ``") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = CharIn("a")
+
+			val expected = Failure(
+				SingleExpecting("CharIn(\"a\")", 42),
+				Cut.False
+			)
+			val parser = childParser.repeat(1, strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a+?` matches `a`, reverse priorty") {
+			val initialInput = SinglePartInput("a", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				"a",
+				SinglePartInput("", 43),
+				RepeatedExpecting("CharIn(\"a\")", 42 to 43),
+				Cut.False
+			)
+			val parser = childParser.repeat(1, strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a+?` matches `aaaa`, reverse priorty") {
+			val initialInput = SinglePartInput("aaaa", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"a",
+					SinglePartInput("aaa", 43),
+					RepeatedExpecting("CharIn(\"a\")", 42 to 42),
+					Cut.False
+				),
+				List(
+					Success1(
+						"aa",
+						SinglePartInput("aa", 44),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 43),
+						Cut.False
+					),
+					Success1(
+						"aaa",
+						SinglePartInput("a", 45),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 44),
+						Cut.False
+					),
+					Success1(
+						"aaaa",
+						SinglePartInput("", 46),
+						RepeatedExpecting("CharIn(\"a\")", 42 to 46),
+						Cut.False
+					)
+				)
+			)
+			val parser = childParser.repeat(1, strategy = Lazy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
@@ -155,7 +386,7 @@ final class RepeatTest extends AnyFunSpec {
 				SingleExpecting("CharIn(\"a\")", 42),
 				Cut.False
 			)
-			val parser = childParser.repeat(0, 1)
+			val parser = childParser.repeat(0, 1, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a?` matches `a`") {
@@ -178,7 +409,7 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat(0, 1)
+			val parser = childParser.repeat(0, 1, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a?` does not match all of `aaaa`") {
@@ -201,11 +432,143 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat(0, 1)
+			val parser = childParser.repeat(0, 1, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
-		it ("`a**` does not hang indefinitely") {
+		it ("`a?+` matches ``") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				"",
+				SinglePartInput("", 42),
+				SingleExpecting("CharIn(\"a\")", 42),
+				Cut.False
+			)
+			val parser = childParser.repeat(0, 1, strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a?+` matches `a`") {
+			val initialInput = SinglePartInput("a", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"a",
+					SinglePartInput("", 43),
+					SingleExpecting("CharIn(\"a\")", 42),
+					Cut.False
+				),
+				List(
+				)
+			)
+			val parser = childParser.repeat(0, 1, strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a?+` does not match all of `aaaa`") {
+			val initialInput = SinglePartInput("aaaa", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"a",
+					SinglePartInput("aaa", 43),
+					SingleExpecting("CharIn(\"a\")", 42),
+					Cut.False
+				),
+				List(
+				)
+			)
+			val parser = childParser.repeat(0, 1, strategy = Possessive)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		it ("`a??` matches ``") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				"",
+				SinglePartInput("", 42),
+				SingleExpecting("CharIn(\"a\")", 42),
+				Cut.False
+			)
+			val parser = childParser.repeat(0, 1, strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a??` matches `a`") {
+			val initialInput = SinglePartInput("a", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"",
+					SinglePartInput("a", 42),
+					EmptyExpecting,
+					Cut.False
+				),
+				List(
+					Success1(
+						"a",
+						SinglePartInput("", 43),
+						SingleExpecting("CharIn(\"a\")", 42),
+						Cut.False
+					)
+				)
+			)
+			val parser = childParser.repeat(0, 1, strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`a??` does not match all of `aaaa`") {
+			val initialInput = SinglePartInput("aaaa", 42)
+			val childParser = CharIn("a")
+
+			val expected = Success[Nothing, StubPosition, String](
+				Success1(
+					"",
+					SinglePartInput("aaaa", 42),
+					EmptyExpecting,
+					Cut.False
+				),
+				List(
+					Success1(
+						"a",
+						SinglePartInput("aaa", 43),
+						SingleExpecting("CharIn(\"a\")", 42),
+						Cut.False
+					)
+				)
+			)
+			val parser = childParser.repeat(0, 1, strategy = Lazy)
+			assertResult(expected){parser.parse(initialInput)}
+		}
+
+		it ("`<pass>*` does not hang indefinitely") {
+			val initialInput = SinglePartInput("", 42)
+			val childParser = Pass
+
+			val expected = Success[Nothing, StubPosition, Unit](
+				Success1(
+					(),
+					SinglePartInput("", 42),
+					EmptyExpecting,
+					Cut.False
+				),
+				List(
+					Success1(
+						(),
+						SinglePartInput("", 42),
+						EmptyExpecting,
+						Cut.False
+					)
+				)
+			)
+			val parser = childParser.repeat(strategy = Greedy)
+
+			assertResult(expected){parser.parse(initialInput)}
+		}
+		it ("`(a*)*` does not hang indefinitely") {
 			val initialInput = SinglePartInput("", 42)
 			val childParser = CharIn("a")
 
@@ -225,7 +588,7 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat().repeat()
+			val parser = childParser.repeat(strategy = Greedy).repeat(strategy = Greedy)
 
 			assertResult(expected){parser.parse(initialInput)}
 		}
@@ -241,7 +604,7 @@ final class RepeatTest extends AnyFunSpec {
 				SingleExpecting("CharIn(\"a\")", 42),
 				Cut.False
 			)
-			val parser = childParser.repeat(delimiter = delimParser)
+			val parser = childParser.repeat(delimiter = delimParser, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a*` with delim `b` matches `a`") {
@@ -266,7 +629,7 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat(delimiter = delimParser)
+			val parser = childParser.repeat(delimiter = delimParser, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a*` with delim `b` matches `ababa`") {
@@ -304,7 +667,7 @@ final class RepeatTest extends AnyFunSpec {
 					)
 				)
 			)
-			val parser = childParser.repeat(delimiter = delimParser)
+			val parser = childParser.repeat(delimiter = delimParser, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("`a{2,}` with delim `b` does not match `a` and report expecting 'b'") {
@@ -317,7 +680,7 @@ final class RepeatTest extends AnyFunSpec {
 					SingleExpecting("CharIn(\"b\")", 43),
 				Cut.False
 			)
-			val parser = childParser.repeat(min = 2, delimiter = delimParser)
+			val parser = childParser.repeat(min = 2, delimiter = delimParser, strategy = Greedy)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
@@ -325,7 +688,7 @@ final class RepeatTest extends AnyFunSpec {
 			val childParser = (CharIn[Nothing]("a")
 				andThenWithCut CharIn[Nothing]("b")
 				andThen CharIn[Nothing]("c"))
-			val parser = childParser.repeat()
+			val parser = childParser.repeat(strategy = Greedy)
 
 			it ("matches ``; no cut") {
 				val initialInput = SinglePartInput("zzz", 42)

@@ -54,7 +54,7 @@ object MacroImpl {
 	/** Adds symbolic methods to Parsers */
 	extension [U, A, Z] (backing:Parser[U, A])
 		def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
-		def opt(implicit ev:typelevel.Optionally[A, Z]) = backing.optionally(ev)
+		def opt(implicit ev:typelevel.Optionally[A, Z]) = backing.optionally()(ev)
 
 
 

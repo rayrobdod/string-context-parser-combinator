@@ -23,7 +23,7 @@ private[datetime] class ParserWithSymbolic[U, A](val backing:Parser[U, A]) exten
 	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
 	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
 	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
-	def opt[Z](implicit ev:typelevel.Optionally[A, Z]) = backing.optionally(ev)
+	def opt[Z](implicit ev:typelevel.Optionally[A, Z]) = backing.optionally()(ev)
 }
 
 object MacroImpl {

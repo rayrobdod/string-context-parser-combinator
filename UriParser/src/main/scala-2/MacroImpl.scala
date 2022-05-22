@@ -6,6 +6,7 @@ import java.lang.String
 import java.net.URI
 import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator._
+import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatinateStringImplicits._
 
 object MacroImpl {
@@ -91,19 +92,19 @@ object MacroImpl {
 		}
 
 		val HostP:Parser[c.Expr[String]] = {
-			val label:Parser[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat() andThen AlphaNumChar).optionally
-			val topLabel:Parser[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat() andThen AlphaNumChar).optionally
+			val label:Parser[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
+			val topLabel:Parser[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
 			val LiteralName:Parser[c.Expr[String]] = ((label andThen CodePointIn(".")).repeat() andThen topLabel).map(constExpr)
 			val LiteralIpv4:Parser[c.Expr[String]] = {
 				val Segment:Parser[String] = (
 					IsString("0").map(_ => "0") orElse
 						(CodePointIn("1") andThen DigitChar.repeat(0,2)) orElse
 						(CodePointIn("2") andThen (
-							(CodePointIn("01234") andThen DigitChar.optionally) orElse
-							(CodePointIn("5") andThen CodePointIn("012345").optionally) orElse
+							(CodePointIn("01234") andThen DigitChar.optionally()) orElse
+							(CodePointIn("5") andThen CodePointIn("012345").optionally()) orElse
 							(CodePointIn("6789").map(_.toString))
-						).optionally) orElse
-						(CodePointIn("3456789") andThen DigitChar.optionally)
+						).optionally()) orElse
+						(CodePointIn("3456789") andThen DigitChar.optionally())
 				)
 				(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).map(constExpr).opaque("IPv4 Address")
 			}
@@ -153,7 +154,7 @@ object MacroImpl {
 
 		val HostPortP:Parser[(c.Expr[String], c.Expr[Int])] = {
 			val Literal = HostP andThen (IsString(":") andThen PortP)
-				.optionally.map(_.getOrElse(c.Expr(q"-1")))
+				.optionally().map(_.getOrElse(c.Expr(q"-1")))
 			val SockAddr = OfType(c.typeTag[java.net.InetSocketAddress])
 				.map(x => (
 					c.Expr(q"$x.getHostString()"),
@@ -162,7 +163,7 @@ object MacroImpl {
 			SockAddr orElse Literal
 		}
 		val ServerP:Parser[(c.Expr[String], (c.Expr[String], c.Expr[Int]))] =
-			(UserInfoP andThen IsString("@")).optionally.map(_.getOrElse(constNullExpr)) andThen HostPortP
+			(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(constNullExpr)) andThen HostPortP
 
 		val OpaquePartP:Parser[c.Expr[String]] = {
 			val Variable:Parser[c.Expr[String]] = OfType[String]
@@ -220,12 +221,12 @@ object MacroImpl {
 			}
 			Mapping orElse Arbitrary
 		}
-		val QueryP:Parser[c.Expr[String]] = (IsString("?") andThen FragmentOrQueryString).optionally.map(_.getOrElse(constNullExpr))
-		val FragmentP:Parser[c.Expr[String]] = (IsString("#") andThen FragmentOrQueryString).optionally.map(_.getOrElse(constNullExpr))
+		val QueryP:Parser[c.Expr[String]] = (IsString("?") andThen FragmentOrQueryString).optionally().map(_.getOrElse(constNullExpr))
+		val FragmentP:Parser[c.Expr[String]] = (IsString("#") andThen FragmentOrQueryString).optionally().map(_.getOrElse(constNullExpr))
 
 
 		val RelPathP:Parser[String] =
-			(EscapedChar orElse UnreservedChar orElse CodePointIn(";@&=+$,")).repeat(1) andThen AbsPathP.optionally
+			(EscapedChar orElse UnreservedChar orElse CodePointIn(";@&=+$,")).repeat(1) andThen AbsPathP.optionally()
 		val NetPathP:Parser[((c.Expr[String], (c.Expr[String], c.Expr[Int])), c.Expr[String])] = IsString("//") andThen ServerP andThen AbsPathExprP
 		val noServer:(c.Expr[String], (c.Expr[String], c.Expr[Int])) = (constNullExpr, (constNullExpr, constNegOneExpr))
 
@@ -238,9 +239,9 @@ object MacroImpl {
 			IsString(":") flatMap
 			({scheme:c.Expr[String] =>
 				(IsString("//") andThen
-					(UserInfoP andThen IsString("@")).optionally.map(_.getOrElse(constNullExpr)) andThen
+					(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(constNullExpr)) andThen
 					HostPortP andThen
-					AbsPathExprP.optionally.map(_.getOrElse(constNullExpr)) andThen
+					AbsPathExprP.optionally().map(_.getOrElse(constNullExpr)) andThen
 					QueryP andThen
 					FragmentP
 				).map({case ((((user, (host, port)), path), query), fragment) =>
