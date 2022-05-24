@@ -7,7 +7,7 @@ final class Filter[Expr, A](
 	predicate:Function1[A, Boolean],
 	predicateDescription:ExpectingDescription
 ) extends AbstractParser[Expr, A] {
-	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A] = {
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
 		backing.parse(input) match {
 			case Success(choicesHead, choicesTail) => {
 				val choices = choicesHead :: choicesTail

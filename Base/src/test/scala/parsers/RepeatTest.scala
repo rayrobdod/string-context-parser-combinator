@@ -685,9 +685,9 @@ final class RepeatTest extends AnyFunSpec {
 		}
 
 		describe("`(a ~/ b ~ c)*`") {
-			val childParser = (CharIn[Nothing]("a")
-				andThenWithCut CharIn[Nothing]("b")
-				andThen CharIn[Nothing]("c"))
+			val childParser = (CharIn("a")
+				andThenWithCut CharIn("b")
+				andThen CharIn("c"))
 			val parser = childParser.repeat(strategy = Greedy)
 
 			it ("matches ``; no cut") {

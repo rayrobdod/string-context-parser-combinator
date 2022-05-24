@@ -7,10 +7,10 @@ final class AndThenWithCut[Expr, A, B, Z](
 	right:Parser[Expr, B],
 	ev:typelevel.Sequenced[A, B, Z]
 ) extends Parser[Expr, Z] {
-	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Z] = {
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
 		left.parse(input) match {
-			case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, Z]({case Success1(valA, restA, expectingA@_, cutA@_) => right.parse(restA) match {
-				case successB:Success[Expr, Pos, B] => successB.map[Expr, Z]({case Success1(valB, restB, expectingB, cutB@_) => Success1(
+			case successA:Success[ExprZ, Pos, A] => successA.flatMap[ExprZ, Z]({case Success1(valA, restA, expectingA@_, cutA@_) => right.parse(restA) match {
+				case successB:Success[ExprZ, Pos, B] => successB.map[ExprZ, Z]({case Success1(valB, restB, expectingB, cutB@_) => Success1(
 					ev.aggregate(valA, valB),
 					restB,
 					expectingB,

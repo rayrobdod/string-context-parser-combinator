@@ -69,7 +69,7 @@ package object stringContextParserCombinator {
 
 package stringContextParserCombinator {
 	/** Support for Parsers.Lifted; represents a macro-level function that combines a CC[A] and an A. */
-	trait LiftFunction[CC[A], Z] {def apply[A : Type](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes):Z}
+	trait LiftFunction[-CC[_], +Z] {def apply[A : Type](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes):Z}
 
 
 	/*

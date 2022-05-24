@@ -3,20 +3,20 @@ package parsers
 
 import scala.collection.immutable.Set
 
-final class ConstSuccess[A](val a:A, val rest:Input[Nothing, StubPosition], val expecting:Set[Expecting[StubPosition]], val cut:Cut) extends Parser[Nothing, A] {
-	def parse[Pos](input:Input[Nothing, Pos]):Result[Nothing, Pos, A] = {
-		Success[Nothing, StubPosition, A](a, rest, expecting, cut).asInstanceOf[Result[Nothing, Pos, A]]
+final class ConstSuccess[A](val a:A, val rest:Input[Nothing, StubPosition], val expecting:Set[Expecting[StubPosition]], val cut:Cut) extends Parser[Any, A] {
+	def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
+		Success[ExprZ, StubPosition, A](a, rest, expecting, cut).asInstanceOf[Result[ExprZ, Pos, A]]
 	}
 }
 
-final class ConstFailure(val expecting:Set[Expecting[StubPosition]], val cut:Cut) extends Parser[Nothing, Nothing] {
-	def parse[Pos](input:Input[Nothing, Pos]):Result[Nothing, Pos, Nothing] = {
-		Failure(expecting, cut).asInstanceOf[Result[Nothing, Pos, Nothing]]
+final class ConstFailure(val expecting:Set[Expecting[StubPosition]], val cut:Cut) extends Parser[Any, Nothing] {
+	def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Nothing] = {
+		Failure(expecting, cut).asInstanceOf[Result[ExprZ, Pos, Nothing]]
 	}
 }
 
 final class ConstResult[Expr, A](val result:Result[Expr, StubPosition, A]) extends Parser[Expr, A] {
-	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A] = result.asInstanceOf[Result[Expr, Pos, A]]
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = result.asInstanceOf[Result[ExprZ, Pos, A]]
 }
 
 final class Sequence[A](val initialInput:Input[Nothing, StubPosition], val outputs:Seq[Sequence.Output[A]]) extends Parser[Nothing, A] {
@@ -25,10 +25,10 @@ final class Sequence[A](val initialInput:Input[Nothing, StubPosition], val outpu
 		inputs.zip(outputs).toMap
 	}
 
-	def parse[Pos](input:Input[Nothing, Pos]):Result[Nothing, Pos, A] = {
+	def parse[ExprZ <: Nothing, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
 		lookup
 			.get(input.asInstanceOf[Input[Nothing, StubPosition]])
-			.map(_.toResult(input.asInstanceOf[Input[Nothing, StubPosition]]).asInstanceOf[Result[Nothing, Pos, A]])
+			.map(_.toResult(input.asInstanceOf[Input[Nothing, StubPosition]]).asInstanceOf[Result[ExprZ, Pos, A]])
 			.getOrElse(Failure(Set(Expecting(ExpectingDescription("Known Input"), initialInput.position.asInstanceOf[Pos])), Cut.False))
 	}
 }

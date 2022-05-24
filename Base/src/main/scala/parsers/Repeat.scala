@@ -14,10 +14,10 @@ final class Repeat[Expr, A, Z](
 	require(max >= 1)
 	require(max >= min)
 
-	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Z] = {
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
 		Repeat.parse0(input, inner, min, max, delimiter, strategy, true) match {
 			case f:Failure[Pos] => f
-			case s:Success[Expr, Pos, List[A]] => s.mapValues({parts =>
+			case s:Success[ExprZ, Pos, List[A]] => s.mapValues({parts =>
 				val acc = ev.init()
 				parts.foreach(part => ev.append(acc, part))
 				ev.result(acc)

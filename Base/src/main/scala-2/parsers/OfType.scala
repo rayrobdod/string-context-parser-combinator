@@ -10,7 +10,7 @@ final class OfType[Ctx <: Context with Singleton, A](
 ) extends AbstractParser[Ctx#Expr[_], Ctx#Expr[A]] {
 	private val expecting = ExpectingDescription(s"OfType(${tpetag.tpe})")
 
-	def parse[Pos](input:Input[Ctx#Expr[_], Pos]):Result[Ctx#Expr[_], Pos, Ctx#Expr[A]] = {
+	def parse[ExprZ <: Ctx#Expr[_], Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Ctx#Expr[A]] = {
 		input.consume(
 			_ => None,
 			arg => Some(arg).filter(x => x.actualType <:< tpetag.tpe).map(_.asInstanceOf[Ctx#Expr[A]]),

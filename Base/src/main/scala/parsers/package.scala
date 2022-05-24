@@ -4,14 +4,14 @@ import scala.collection.immutable.{Seq, Set}
 
 package parsers {
 	/** An intermediary class to lessen the weight of implementing Parser repeatedly, Parser being a trait with several concrete methods */
-	private[parsers] abstract class AbstractParser[Expr, +A] extends Parser[Expr,A]
+	private[parsers] abstract class AbstractParser[-Expr, +A] extends Parser[Expr,A]
 
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
-	private[parsers] final class PartsParser[Expr, +A](
+	private[parsers] final class PartsParser[+A](
 		partsFn:String => Option[(A, Int)],
 		expecting: ExpectingDescription
-	) extends AbstractParser[Expr, A] {
-		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A] = {
+	) extends AbstractParser[Any, A] {
+		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
 			input.consume(
 				partsFn,
 				_ => None,
@@ -51,37 +51,37 @@ package object parsers {
 
 	/** Succeeds if the next character is a member of the given Set; captures that character */
 	private[stringContextParserCombinator]
-	def CharIn[Expr](
+	def CharIn(
 		chooseFrom:Set[Char]
-	):Parser[Expr, Char] = CharWhere(
+	):Parser[Any, Char] = CharWhere(
 		chooseFrom.contains _,
 		ExpectingDescription(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
 	private[stringContextParserCombinator]
-	def CharIn[Expr](
+	def CharIn(
 		chooseFrom:Seq[Char]
-	):Parser[Expr, Char] = CharWhere(
+	):Parser[Any, Char] = CharWhere(
 		chooseFrom.contains _,
 		ExpectingDescription(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
-	def CharWhere[Expr](
+	def CharWhere(
 		predicate:Function1[Char, Boolean],
 		description: ExpectingDescription
-	):Parser[Expr, Char] = new PartsParser(
+	):Parser[Any, Char] = new PartsParser(
 		pt => Option((pt.charAt(0), 1)).filter(x => predicate(x._1)),
 		description
 	)
 
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn[Expr](
+	def CodePointIn(
 		chooseFrom:String
-	):Parser[Expr, CodePoint] = {
+	):Parser[Any, CodePoint] = {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
 		this.CodePointWhere(
 			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
@@ -91,9 +91,9 @@ package object parsers {
 
 	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn[Expr](
+	def CodePointIn(
 		chooseFrom:Set[CodePoint]
-	):Parser[Expr, CodePoint] = {
+	):Parser[Any, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
 			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
@@ -102,9 +102,9 @@ package object parsers {
 
 	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn[Expr](
+	def CodePointIn(
 		chooseFrom:Seq[CodePoint]
-	):Parser[Expr, CodePoint] = {
+	):Parser[Any, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
 			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
@@ -113,41 +113,41 @@ package object parsers {
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointWhere[Expr](
+	def CodePointWhere(
 		predicate:Function1[CodePoint, Boolean], description:ExpectingDescription
-	):Parser[Expr, CodePoint] = new PartsParser(
+	):Parser[Any, CodePoint] = new PartsParser(
 		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
 		description
 	)
 
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	private[stringContextParserCombinator]
-	def IsString[Expr](
+	def IsString(
 		value:String
-	):Parser[Expr, Unit] = new PartsParser(
+	):Parser[Any, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
 		ExpectingDescription(value.map(unescape _).mkString("\"", "", "\""))
 	)
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
 	private[stringContextParserCombinator]
-	def Regex[Expr](
+	def Regex(
 		reg:scala.util.matching.Regex
-	):Parser[Expr, String] = new PartsParser(
+	):Parser[Any, String] = new PartsParser(
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
 		ExpectingDescription("s/" + reg.toString + "/")
 	)
 
 	/** A parser that consumes no input and always succeeds */
 	private[stringContextParserCombinator]
-	def Pass[Expr]:Parser[Expr, Unit] = new AbstractParser[Expr, Unit] {
-		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Unit] = Success((), input, Set.empty, Cut.False)
+	def Pass:Parser[Any, Unit] = new AbstractParser[Any, Unit] {
+		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Unit] = Success((), input, Set.empty, Cut.False)
 	}
 
 	/** A parser that consumes no input and always fails */
 	private[stringContextParserCombinator]
-	def Fail[Expr](desc:ExpectingDescription):Parser[Expr, Nothing] = new AbstractParser[Expr, Nothing] {
-		def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, Nothing] = Failure(Set(Expecting(desc, input.position)), Cut.False)
+	def Fail(desc:ExpectingDescription):Parser[Any, Nothing] = new AbstractParser[Any, Nothing] {
+		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Nothing] = Failure(Set(Expecting(desc, input.position)), Cut.False)
 	}
 
 	private[stringContextParserCombinator]

@@ -10,7 +10,7 @@ private[stringContextParserCombinator]
 final class OfType[A : Type](using Quotes) extends AbstractParser[Expr[_], Expr[A]] {
 	private val expecting = ExpectingDescription(Type.show[A])
 
-	def parse[Pos](input:Input[Expr[_], Pos]):Result[Expr[_], Pos, Expr[A]] = {
+	def parse[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Expr[A]] = {
 		input.consume(
 			_ => None,
 			arg => Some(arg).collect({case x if x.isExprOf[A] => x.asExprOf[A]}),

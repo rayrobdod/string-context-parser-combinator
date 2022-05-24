@@ -252,7 +252,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("right associative variant of \"'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
 			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString[Nothing]("[") andThen (IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](","), strategy = Greedy) andThen IsString[Nothing]("]"))
+			val parser = IsString("[") andThen (IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]"))
 
 			val expected = Failure(
 				SingleExpecting("\",\"",44) ++
@@ -267,7 +267,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
 			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString[Nothing]("[") andThen IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](","), strategy = Greedy) andThen IsString[Nothing]("]")
+			val parser = IsString("[") andThen IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]")
 
 			val expected = Failure(
 				SingleExpecting("\",\"",44) ++
@@ -282,7 +282,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("right associative variant of \"'[' ~/ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
 			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString[Nothing]("[") andThenWithCut (IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](","), strategy = Greedy) andThen IsString[Nothing]("]"))
+			val parser = IsString("[") andThenWithCut (IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]"))
 
 			val expected = Failure(
 				SingleExpecting("\",\"",44) ++
@@ -296,7 +296,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("'[' ~/ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
 			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString[Nothing]("[") andThenWithCut IsString[Nothing]("a").repeat(delimiter = IsString[Nothing](","), strategy = Greedy) andThen IsString[Nothing]("]")
+			val parser = IsString("[") andThenWithCut IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]")
 
 			val expected = Failure(
 				SingleExpecting("\",\"",44) ++

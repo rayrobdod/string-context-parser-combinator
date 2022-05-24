@@ -7,16 +7,16 @@ package com.rayrobdod.stringContextParserCombinator
  * @tparam Expr the macro-level expression type.
  * @tparam A the type of the parsed result
  */
-trait Parser[Expr, +A] {
+trait Parser[-Expr, +A] {
 	private[stringContextParserCombinator]
-	def parse[Pos](input:Input[Expr, Pos]):Result[Expr, Pos, A]
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A]
 
 	/** Returns a parser which invokes this parser, then modifies a successful result according to fn */
 	def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
 		new parsers.Map(this, fn)
 
 	/** Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn */
-	def flatMap[Z](fn:Function1[A, Parser[Expr, Z]]):Parser[Expr, Z] =
+	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Parser[ExprZ, Z]]):Parser[ExprZ, Z] =
 		new parsers.FlatMap(this, fn)
 
 	/** Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate */
@@ -35,7 +35,7 @@ trait Parser[Expr, +A] {
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to combine two values into one value
 	 */
-	def andThen[B, Z](rhs:Parser[Expr, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[Expr, Z] =
+	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new parsers.AndThen(this, rhs, ev)
 
 	/** Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -46,7 +46,7 @@ trait Parser[Expr, +A] {
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to combine two values into one value
 	 */
-	def andThenWithCut[B, Z](rhs:Parser[Expr, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[Expr, Z] =
+	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new parsers.AndThenWithCut(this, rhs, ev)
 
 	/** Returns a parser which invokes this parser, and if this parser fails tries the other parser, and returns the first successful result
@@ -55,7 +55,7 @@ trait Parser[Expr, +A] {
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to treat either value as one value
 	 */
-	def orElse[B, Z](rhs:Parser[Expr, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[Expr, Z] =
+	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[ExprZ, Z] =
 		new parsers.OrElse(this, rhs, ev)
 
 	/** Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -67,13 +67,13 @@ trait Parser[Expr, +A] {
 	 * @param strategy whether the repeat will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to combine the repeated values into one value
 	 */
-	def repeat[Z](
+	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Parser[Expr, Unit] = parsers.Pass,
+		delimiter:Parser[ExprZ, Unit] = parsers.Pass,
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typelevel.Repeated[A, Z]
-	):Parser[Expr, Z] =
+	):Parser[ExprZ, Z] =
 		new parsers.Repeat(this, min, max, delimiter, strategy, ev)
 
 	/** Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed

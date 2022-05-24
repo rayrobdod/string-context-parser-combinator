@@ -23,7 +23,7 @@ final class CodepointInTest extends AnyFunSpec {
 			expecting,
 			Cut.False
 		)
-		val parser = CodePointIn[Expr](parserSet)
+		val parser = CodePointIn(parserSet)
 		assertResult(expected){parser.parse(input)}
 	}
 
@@ -32,7 +32,7 @@ final class CodepointInTest extends AnyFunSpec {
 			Set(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position)),
 			Cut.False
 		)
-		val parser = CodePointIn[Expr](parserSet)
+		val parser = CodePointIn(parserSet)
 		assertResult(expected){parser.parse(input)}
 	}
 
