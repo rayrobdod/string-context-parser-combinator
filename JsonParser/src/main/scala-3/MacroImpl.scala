@@ -19,9 +19,9 @@ object MacroImpl {
 		}
 	}
 
-	private def assembleCollection[A : Type]
+	private def assembleCollection[A]
 			(parts:List[Either[Expr[A], Expr[TraversableOnce[A]]]])
-			(using Quotes)
+			(using Type[A], Quotes)
 	:Expr[List[A]] = {
 		val builder = parts.foldLeft('{ List.newBuilder[A] })({(builder, part) =>
 			part match {
@@ -35,7 +35,7 @@ object MacroImpl {
 	import scala.language.higherKinds
 	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Expr[Z]] = {
 		new LiftFunction[Lifter, Expr[Z]] {
-			def apply[A : Type](lifter:Expr[Lifter[A]], a:Expr[A])(using Quotes):Expr[Z] = {
+			def apply[A](lifter:Expr[Lifter[A]], a:Expr[A])(using Type[A], Quotes):Expr[Z] = {
 				'{ $lifter.apply($a) }
 			}
 		}
@@ -44,7 +44,7 @@ object MacroImpl {
 	/**
 	 * A micro-optimization; basically just removes a call to an identity function if Lifted created one
 	 */
-	private def unwrapIdentityLift[A <: JValue : Type](using Quotes)(in:Expr[A]):Expr[A] = in match {
+	private def unwrapIdentityLift[A <: JValue](in:Expr[A])(using Type[A], Quotes):Expr[A] = in match {
 		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[A].apply(${param}) } => param
 		case _ => in
 	}

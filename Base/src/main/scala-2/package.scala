@@ -115,7 +115,6 @@ package object stringContextParserCombinator {
 
 		parser.parse(input) match {
 			case s:Success[_, _, _] => {
-				//System.out.println(s.value)
 				s.choicesHead.value
 			}
 			case f:Failure[Position.Impl] => {
@@ -130,7 +129,7 @@ package stringContextParserCombinator {
 	private[stringContextParserCombinator] trait Extractor0[A] {def unapply(a:A):Boolean}
 	/** An object that can be a pattern-match pattern */
 	private[stringContextParserCombinator] trait Extractor[A,Z] {def unapply(a:A):Option[Z]}
-	/** Support for Parsers.Lifted; represents a macro-level function that combines a CC[A] and an A. */
+	/** Support for [[Parsers.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
 
 

@@ -9,17 +9,18 @@ import scala.quoted.Type
 private[stringContextParserCombinator]
 object Lifted {
 	/* Help the type checker by asserting here that `Expr[A]` and `Expr[Lifter[A]]` use the same `A` */
-	private final class MyTupleOpt[A : Type, Lifter[A]](value:Expr[A], lifter:Option[Expr[Lifter[A]]]) {
+	private final class MyTupleOpt[A : Type, Lifter[_]](value:Expr[A], lifter:Option[Expr[Lifter[A]]]) {
 		def transpose:Option[MyTuple[A, Lifter]] = lifter.map(x => MyTuple(value, x))
 	}
-	private final class MyTuple[A : Type, Lifter[A]](value:Expr[A], lifter:Expr[Lifter[A]]) {
+	private final class MyTuple[A : Type, Lifter[_]](value:Expr[A], lifter:Expr[Lifter[A]]) {
 		def liftApply[Z](lift:LiftFunction[Lifter, Z])(using Quotes):Z = lift.apply[A](lifter, value)
 	}
 
-	def apply[Lifter[A] : Type, Z](
+	def apply[Lifter[_], Z](
 		lift:LiftFunction[Lifter, Z],
 		description:ExpectingDescription,
 		)(using
+		Type[Lifter],
 		Quotes,
 	):AbstractParser[Expr[_], Z] = {
 		new AbstractParser[Expr[_], Z] {

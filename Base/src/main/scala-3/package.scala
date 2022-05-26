@@ -57,7 +57,6 @@ package object stringContextParserCombinator {
 
 		parser.parse(input) match {
 			case s@Success(_, _) => {
-				//System.out.println(res.show)
 				s.choicesHead.value
 			}
 			case f@Failure(_, _) => {
@@ -68,8 +67,8 @@ package object stringContextParserCombinator {
 }
 
 package stringContextParserCombinator {
-	/** Support for Parsers.Lifted; represents a macro-level function that combines a CC[A] and an A. */
-	trait LiftFunction[-CC[_], +Z] {def apply[A : Type](lifter:Expr[CC[A]], elem:Expr[A])(using Quotes):Z}
+	/** Support for [[Parsers.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
+	trait LiftFunction[-CC[_], +Z] {def apply[A](lifter:Expr[CC[A]], elem:Expr[A])(using Type[A], Quotes):Z}
 
 
 	/*

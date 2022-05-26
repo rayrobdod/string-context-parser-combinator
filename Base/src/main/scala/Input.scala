@@ -7,8 +7,8 @@ package com.rayrobdod.stringContextParserCombinator
  */
 private[stringContextParserCombinator]
 final class Input[+Expr, Pos : Position](
-	val parts:List[(String, Pos)],
-	val args:List[Expr],
+	private val parts:List[(String, Pos)],
+	private val args:List[Expr],
 	argToPosition:Expr => Pos
 ) {
 	private[stringContextParserCombinator] def position:Pos = {

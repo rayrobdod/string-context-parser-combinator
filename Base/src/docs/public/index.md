@@ -31,7 +31,7 @@ def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Q
 extension (inline sc:StringContext) inline def math(inline args:Int*):Int = ${stringContext_math_impl('sc, 'args)}
 ```
 
-```scala
+```
 scala> math"1+2*3+4"
 val res2: Int = 11
 

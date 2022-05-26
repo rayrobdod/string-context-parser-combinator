@@ -38,14 +38,14 @@ object Parsers {
 		parsers.IsString(str)
 
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
-	def OfType[A : Type](using Quotes):Parser[Expr[A]] =
+	def OfType[A](using Type[A], Quotes):Parser[Expr[A]] =
 		new parsers.OfType[A]
 
 	/** A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 	 *
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 */
-	def Lifted[Lifter[A] : Type, Z](lift:LiftFunction[Lifter, Z], description:String)(using Quotes):Parser[Z] =
+	def Lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using Type[Lifter], Quotes):Parser[Z] =
 		parsers.Lifted(lift, ExpectingDescription(description))
 
 	/**
