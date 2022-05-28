@@ -35,18 +35,12 @@ object MacroImpl {
 	import scala.language.higherKinds
 	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Expr[Z]] = {
 		new LiftFunction[Lifter, Expr[Z]] {
-			def apply[A](lifter:Expr[Lifter[A]], a:Expr[A])(using Type[A], Quotes):Expr[Z] = {
-				'{ $lifter.apply($a) }
+			def apply[A](lifter:Expr[Lifter[A]], a:Expr[A])(using Type[A], Quotes):Expr[Z] = lifter match {
+				// Lifter being a Lift.jvalue implies that A =:= Z
+				case '{ Lift.jvalue } => a.asExprOf[Z]
+				case _ => '{ $lifter.apply($a) }
 			}
 		}
-	}
-
-	/**
-	 * A micro-optimization; basically just removes a call to an identity function if Lifted created one
-	 */
-	private def unwrapIdentityLift[A <: JValue](in:Expr[A])(using Type[A], Quotes):Expr[A] = in match {
-		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[A].apply(${param}) } => param
-		case _ => in
 	}
 
 	/**
@@ -140,7 +134,7 @@ object MacroImpl {
 		val LiftedArrayV = Lifted[Lift.Array, Expr[JArray]](
 			myLiftFunction[JArray, Lift.Array],
 			"A for Lift[A, JArray]"
-		).map(unwrapIdentityLift _)
+		)
 		val LiftedArrayV2 = LiftedArrayV.map(x => '{ $x.arr })
 
 		val SplicableValue:Parser[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]] = (
@@ -167,7 +161,7 @@ object MacroImpl {
 		val ObjectV = Lifted[Lift.Object, Expr[JObject]](
 			myLiftFunction[JObject, Lift.Object],
 			"A for Lift[A, JObject]"
-		).map(unwrapIdentityLift _)
+		)
 		val ObjectV2 = ObjectV.map(x => '{ $x.obj })
 
 		val KeyValueV = Lifted[Lift.KeyValue, Expr[(java.lang.String, JValue)]](
@@ -208,7 +202,7 @@ object MacroImpl {
 	private def LiftedP(using Quotes) = Lifted[Lift.Value, Expr[JValue]](
 		myLiftFunction[JValue, Lift.Value],
 		"Lifted Value"
-	).map(unwrapIdentityLift _)
+	)
 
 	private def ValueP(using Quotes):Parser[Expr[JValue]] = {
 		(WhitespaceP andThen (
