@@ -1,17 +1,55 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.collection.immutable.Seq
+import scala.collection.immutable.{Seq, Set}
+#if scala=3.x
 import scala.language.higherKinds
-import scala.quoted.Expr
-import scala.quoted.Quotes
-import scala.quoted.Type
+import scala.quoted.*
+#endif /* scala=3 */
 import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
 
+#if scala=2.x
+/**
+ * A trait that provides Parser factory methods that conform to a particular input type parameter.
+ *
+ * The trait can either be used as a Mixin
+ *
+ * {{{
+ * object Parsers extends stringContextParserCombinator.Parsers {
+ *   def LowerAlpha:Parser[Char] = CharIn('a' to 'z')
+ * }
+ * Parsers.LowerAlpha
+ * }}}
+ *
+ * or an instance can be created with the companion object's apply method,
+ * and the methods can be imported from that instance
+ *
+ * {{{
+ * val p = stringContextParserCombinator.Parsers(c)
+ * import p._
+ * val lowerAlpha:Parser[Char] = CharIn('a' to 'z')
+ * lowerAlpha
+ * }}}
+ */
+#else /* scala=2 */
 /**
  * Methods to create leaf parsers
  */
+#endif /* scala=2 */
+
+#if scala=2.x
+trait Parsers {
+	type Context <: scala.reflect.macros.blackbox.Context
+	val ctx:Context
+	/** The parser type, with the input parameter concretized */
+	type Parser[A] = SCParser[ctx.Expr[_], A]
+#else /* scala=2 */
 object Parsers {
 	type Parser[A] = SCParser[Expr[_], A]
+#endif /* scala=2 */
+
+	/** Succeeds if the next character is a member of the given Set; captures that character */
+	def CharIn(str:Set[Char]):Parser[Char] =
+		parsers.CharIn(str)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
 	def CharIn(str:Seq[Char]):Parser[Char] =
@@ -25,11 +63,19 @@ object Parsers {
 	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] =
 		parsers.CharWhere(fn, ExpectingDescription(description))
 
+	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
+	def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] =
+		parsers.CodePointIn(str)
+
+	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
+	def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] =
+		parsers.CodePointIn(str)
+
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	def CodePointIn(str:String):Parser[CodePoint] =
 		parsers.CodePointIn(str)
 
-	/** Succeeds if the next codepoint is matches the given predicate; captures that code point */
+	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] =
 		parsers.CodePointWhere(fn, ExpectingDescription(description))
 
@@ -38,15 +84,25 @@ object Parsers {
 		parsers.IsString(str)
 
 	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
+#if scala=2.x
+	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] =
+		new parsers.OfType[ctx.type, A](tpe)
+#else /* scala=2 */
 	def OfType[A](using Type[A], Quotes):Parser[Expr[A]] =
 		new parsers.OfType[A]
+#endif /* scala=2 */
 
 	/** A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 	 *
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 */
+#if scala=2.x
+	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Parser[Z] =
+		parsers.Lifted(ctx)(lift, ExpectingDescription(description))
+#else /* scala=2 */
 	def Lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using Type[Lifter], Quotes):Parser[Z] =
 		parsers.Lifted(lift, ExpectingDescription(description))
+#endif /* scala=2 */
 
 	/**
 	 * A parser that consumes no input and always succeeds
@@ -68,5 +124,18 @@ object Parsers {
 
 	/** Indirectly refers to a parser, to allow for mutual-recursion */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
-		parsers.DelayedConstruction(fn)
+		new parsers.DelayedConstruction(fn)
 }
+
+#if scala=2.x
+/**
+ */
+object Parsers {
+	def apply(c:scala.reflect.macros.blackbox.Context):Parsers {
+		type Context = c.type
+	} = new Parsers {
+		type Context = c.type
+		override val ctx:Context = c
+	}
+}
+#endif /* scala=2 */
