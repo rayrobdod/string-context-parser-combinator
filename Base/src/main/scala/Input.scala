@@ -2,8 +2,6 @@ package com.rayrobdod.stringContextParserCombinator
 
 /**
  * The input to a [[Parser]]
- *
- * @group Input/Result
  */
 private[stringContextParserCombinator]
 final class Input[+Expr, Pos : Position](

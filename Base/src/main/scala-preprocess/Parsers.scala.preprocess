@@ -29,13 +29,18 @@ import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
  * val lowerAlpha:Parser[Char] = CharIn('a' to 'z')
  * lowerAlpha
  * }}}
- */
 #else /* scala=2 */
 /**
  * Methods to create leaf parsers
- */
 #endif /* scala=2 */
-
+ *
+ * @groupname Part String-Part
+ * @groupprio Part 100
+ * @groupname Arg Argument-Part
+ * @groupprio Arg 110
+ * @groupname Constant Constant
+ * @groupprio Constant 300
+ */
 #if scala=2.x
 trait Parsers {
 	type Context <: scala.reflect.macros.blackbox.Context
@@ -47,43 +52,73 @@ object Parsers {
 	type Parser[A] = SCParser[Expr[_], A]
 #endif /* scala=2 */
 
-	/** Succeeds if the next character is a member of the given Set; captures that character */
+	/**
+	 * Succeeds if the next character is a member of the given Set; captures that character
+	 * @group Part
+	 */
 	def CharIn(str:Set[Char]):Parser[Char] =
 		parsers.CharIn(str)
 
-	/** Succeeds if the next character is a member of the given Seq; captures that character */
+	/**
+	 * Succeeds if the next character is a member of the given Seq; captures that character
+	 * @group Part
+	 */
 	def CharIn(str:Seq[Char]):Parser[Char] =
 		parsers.CharIn(str)
 
-	/** Succeeds if the next character is a member of the given String; captures that character */
+	/**
+	 * Succeeds if the next character is a member of the given String; captures that character
+	 * @group Part
+	 */
 	def CharIn(str:String):Parser[Char] =
 		parsers.CharIn(scala.Predef.wrapString(str))
 
-	/** Succeeds if the next character matches the given predicate; captures that character */
+	/**
+	 * Succeeds if the next character matches the given predicate; captures that character
+	 * @group Part
+	 */
 	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] =
 		parsers.CharWhere(fn, ExpectingDescription(description))
 
-	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
+	/**
+	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
+	 * @group Part
+	 */
 	def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] =
 		parsers.CodePointIn(str)
 
-	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
+	/**
+	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
+	 * @group Part
+	 */
 	def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] =
 		parsers.CodePointIn(str)
 
-	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
+	/**
+	 * Succeeds if the next codepoint is a member of the given string; captures that code point
+	 * @group Part
+	 */
 	def CodePointIn(str:String):Parser[CodePoint] =
 		parsers.CodePointIn(str)
 
-	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
+	/**
+	 * Succeeds if the next codepoint matches the given predicate; captures that code point
+	 * @group Part
+	 */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] =
 		parsers.CodePointWhere(fn, ExpectingDescription(description))
 
-	/** Succeeds if the next set of characters in the input is equal to the given string */
+	/**
+	 * Succeeds if the next set of characters in the input is equal to the given string
+	 * @group Part
+	 */
 	def IsString(str:String):Parser[Unit] =
 		parsers.IsString(str)
 
-	/** A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree */
+	/**
+	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
+	 * @group Arg
+	 */
 #if scala=2.x
 	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] =
 		new parsers.OfType[ctx.type, A](tpe)
@@ -92,9 +127,11 @@ object Parsers {
 		new parsers.OfType[A]
 #endif /* scala=2 */
 
-	/** A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
+	/**
+	 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 	 *
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+	 * @group Arg
 	 */
 #if scala=2.x
 	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Parser[Z] =
@@ -118,11 +155,15 @@ object Parsers {
 	def Fail(message:String):Parser[Nothing] =
 		parsers.Fail(ExpectingDescription(message))
 
-	/** A parser that succeeds iff the input is empty */
+	/**
+	 * A parser that succeeds iff the input is empty
+	 */
 	def End:Parser[Unit] =
 		new parsers.End()
 
-	/** Indirectly refers to a parser, to allow for mutual-recursion */
+	/**
+	 * Indirectly refers to a parser, to allow for mutual-recursion
+	 */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
 		new parsers.DelayedConstruction(fn)
 }

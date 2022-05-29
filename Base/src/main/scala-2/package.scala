@@ -7,10 +7,6 @@ import scala.reflect.macros.blackbox.Context
 
 /**
  * A library for implementing StringContext methods via Parser Combinators
- *
- * @groupprio Parser 100
- * @groupprio macro 200
- * @groupprio Input/Result 300
  */
 package object stringContextParserCombinator {
 	private[this] val Name = new Extractor[Universe#Name, String] {
@@ -93,8 +89,6 @@ package object stringContextParserCombinator {
 	 * 	macroimpl(c)("\$package.package.\$extensionclass", parser)(args)
 	 * }
 	 * }}}
-	 *
-	 * @group macro
 	 */
 	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.Expr[_], c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)

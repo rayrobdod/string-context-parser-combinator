@@ -4,15 +4,12 @@ import scala.collection.immutable.Set
 
 /**
  * The result of a parse
- * @group Input/Result
  */
 private[stringContextParserCombinator]
 sealed trait Result[+Expr, Pos, +A] {
 }
 
 /**
- * @group Input/Result
- *
  * @constructor
  * @param value the parsed value
  * @param remaining input that was not consumed by the parser
@@ -32,7 +29,6 @@ final case class Success1[+Expr, Pos, +A](
 
 /**
  * The result of a successful parse
- * @group Input/Result
  */
 private[stringContextParserCombinator]
 final case class Success[+Expr, Pos, +A](
@@ -79,8 +75,6 @@ object Success {
 
 /**
  * The result of a failed parse
- *
- * @group Input/Result
  *
  * @constructor
  * @param expecting a description of what the parser was expecting to find

@@ -10,10 +10,6 @@ import scala.quoted.Varargs
 
 /**
  * A library for implementing StringContext methods via Parser Combinators
- *
- * @groupprio Parser 100
- * @groupprio macro 200
- * @groupprio Input/Result 300
  */
 package object stringContextParserCombinator {
 	private[this] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
@@ -42,8 +38,6 @@ package object stringContextParserCombinator {
 	 * 	macroimpl(parser)(sc, args)
 	 * }
 	 * ```
-	 *
-	 * @group macro
 	 */
 	def macroimpl[Z](parser:Parser[Expr[_], Expr[Z]])(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Z] = {
 		val strings = sc match {
