@@ -100,3 +100,12 @@ private[datetime] trait TimeUnliftables {
 		}
 	}
 }
+
+object TimeUnliftables {
+	def apply(c:scala.reflect.macros.blackbox.Context):TimeUnliftables {
+		type Context = c.type
+	} = new TimeUnliftables {
+		type Context = c.type
+		override val ctx:Context = c
+	}
+}

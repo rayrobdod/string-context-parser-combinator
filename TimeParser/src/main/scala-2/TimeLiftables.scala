@@ -47,3 +47,12 @@ private[datetime] trait TimeLiftables {
 		}
 	}
 }
+
+object TimeLiftables {
+	def apply(c:scala.reflect.macros.blackbox.Context):TimeLiftables {
+		type Context = c.type
+	} = new TimeLiftables {
+		type Context = c.type
+		override val ctx:Context = c
+	}
+}
