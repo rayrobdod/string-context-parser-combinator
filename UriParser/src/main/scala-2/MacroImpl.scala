@@ -302,6 +302,6 @@ object MacroImpl {
 		val Aggregate:Parser[c.Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End
 
 		val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.uri.package.UriStringContext"
-		macroimpl(c)(extensionClassName, Aggregate)(args.toList)
+		Aggregate.parse(c)(extensionClassName)(args.toList)
 	}
 }

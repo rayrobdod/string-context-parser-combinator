@@ -27,7 +27,7 @@ def divMul(using Quotes):Parser[Expr[Int]] = (factor andThen (CharIn("*/") andTh
 def addSub(using Quotes):Parser[Expr[Int]] = (divMul andThen (CharIn("+-") andThenWithCut divMul).repeat()).map(eval _)
 def expr(using Quotes):Parser[Expr[Int]] = addSub andThen End()
 
-def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = macroimpl(expr)(sc, args)
+def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.parse(sc, args)
 extension (inline sc:StringContext) inline def math(inline args:Int*):Int = ${stringContext_math_impl('sc, 'args)}
 ```
 
@@ -46,6 +46,6 @@ scala> math"1+A"
 
 # Entry Points
 
-As for API, leaf parsers are avaliable from [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]]
-and the created extension method implementation should ends up calling [[the macroimpl
-method|com.rayrobdod.stringContextParserCombinator.macroimpl]]
+Create leaf parsers using the methods in [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]],
+combine and manipulate them with the methods in [[com.rayrobdod.stringContextParserCombinator.Parser]], then parse
+using the [[Parser.parse|com.rayrobdod.stringContextParserCombinator.Parser#parse-fffff934]] method

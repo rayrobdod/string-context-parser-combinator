@@ -1,5 +1,9 @@
 package com.rayrobdod.stringContextParserCombinator
 
+#if scala=2.x
+import scala.reflect.macros.blackbox.Context
+#endif
+
 /**
  * Parses an interpolated string expression into some value
  *
@@ -7,6 +11,95 @@ package com.rayrobdod.stringContextParserCombinator
  * @tparam A the type of the parsed result
  */
 trait Parser[-Expr, +A] {
+#if scala=2.x
+	/**
+	 * Parses a StringContext and its arguments into a value
+	 *
+	 * @example
+	 * {{{
+	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
+	 *   val myParser:Parser[Expr[Result]] = ???
+	 *   myParser.parse(c)("package.ValueStringContext")(args)
+	 * }
+	 *
+	 * implicit final class ValueStringContext(val sc:scala.StringContext) extends AnyVal {
+	 *   def value(args:Any*):Result = macro valueImpl
+	 * }
+	 * }}}
+	 */
+	final def parse(c:Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
+		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
+		val StringContextApply = stringContextApply(c)
+
+		import c.universe.ApplyTag
+		val strings = c.prefix.tree.duplicate match {
+			case c.universe.Apply(
+				ExtensionClassSelectChain(),
+				List(StringContextApply(strings))
+			) => {
+				strings.map({x => (c.eval(x), Position(x.tree.pos))})
+			}
+			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
+		}
+
+		val input = new Input[c.Expr[Any], Position.Impl](strings, args.toList, x => Position(x.tree.pos))
+
+#if scala=2.13.x
+		type ExprCoSubst[+B] = Input[B, Position.Impl]
+		val input2:Input[Expr, Position.Impl] = ev.substituteCo[ExprCoSubst](input)
+#else
+		val input2 = input.asInstanceOf[Input[Expr, Position.Impl]]
+#endif
+
+		this.parse(input2) match {
+			case s:Success[_, _, _] => {
+				s.choicesHead.value
+			}
+			case f:Failure[Position.Impl] => {
+				reportFailure(c)(f)
+			}
+		}
+	}
+#else
+	/**
+	 * Parses a StringContext and its arguments into a value
+	 *
+	 * @example
+	 * ```
+	 * def valueImpl(sc:Expr[scala.StringContext],
+	 *         args:Expr[Seq[Any]])(using Quotes):Expr[Result] = {
+	 *   val myParser:Parser[Expr[Result]] = ???
+	 *   myParser.parse(sc, args)
+	 * }
+	 *
+	 * extension (inline sc:scala.StringContext)
+	 *	  inline def value(inline args:Any*):Result =
+	 *	    ${valueImpl('sc, 'args)}
+	 * ```
+	 */
+	final def parse(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
+		import scala.quoted.*
+		val strings = sc match {
+			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
+			case _ => scala.quoted.quotes.reflect.report.throwError(s"Do not know how to process this tree", sc)
+		}
+		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
+		val args2 = Varargs.unapply(args).get.toList
+
+		val input = new Input[quoted.Expr[_], Position.Impl](strings2, args2, x => Position(x))
+		val input2:Input[this.Expr, Position.Impl] = ev.substituteCo[[A] =>> Input[A, Position.Impl]](input)
+
+		this.parse(input2) match {
+			case s@Success(_, _) => {
+				s.choicesHead.value
+			}
+			case f@Failure(_, _) => {
+				reportFailure(f)
+			}
+		}
+	}
+#endif
+
 	private[stringContextParserCombinator]
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A]
 

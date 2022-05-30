@@ -1,7 +1,6 @@
 package com.rayrobdod
 
 import scala.Predef.refArrayOps
-import scala.collection.immutable.Seq
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 
@@ -9,11 +8,13 @@ import scala.reflect.macros.blackbox.Context
  * A library for implementing StringContext methods via Parser Combinators
  */
 package object stringContextParserCombinator {
-	private[this] val Name = new Extractor[Universe#Name, String] {
+	private[stringContextParserCombinator]
+	val Name = new Extractor[Universe#Name, String] {
 		def unapply(input:Universe#Name):Option[String] = Option(input.decodedName.toString)
 	}
 
-	private[this] def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
+	private[stringContextParserCombinator]
+	def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
 		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
@@ -30,7 +31,8 @@ package object stringContextParserCombinator {
 		}
 	}
 
-	private[this] def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
+	private[stringContextParserCombinator]
+	def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
 		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
@@ -59,62 +61,12 @@ package object stringContextParserCombinator {
 		def +(offset:Int):Pos = ev.offset(pos, offset)
 	}
 
-	private[this] def reportFailure(c:Context)(failure:Failure[Position.Impl]):Nothing = {
+	private[stringContextParserCombinator]
+	def reportFailure(c:Context)(failure:Failure[Position.Impl]):Nothing = {
 		val remainingPosition = failure.expecting.map(_.position).max
 		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 
 		remainingPosition.errorAndAbort(c)(s"Expected ${expectingDescription}")
-	}
-
-	/**
-	 * A macro impl scaffold, which takes care of extracting strings from a
-	 * StringContext prefix, creating a parser with that value, then interpreting
-	 * the parse result
-	 *
-	 * == Usage ==
-	 *
-	 * Given a StringContext extension class
-	 * {{{
-	 * package object \$package {
-	 * 	implicit final class \$extensionclass(val backing:StringContext) extends AnyVal {
-	 * 		def \$method(args:\$paramtype*):\$rettype = macro \$impl_method
-	 * 	}
-	 * }
-	 * }}}
-	 *
-	 * Then, macro implementation should consist of
-	 * {{{
-	 * def \$impl_method(c:Context)(args:c.Expr[\$paramtype]*):c.Expr[\$rettype] = {
-	 * 	val parser = ???
-	 * 	macroimpl(c)("\$package.package.\$extensionclass", parser)(args)
-	 * }
-	 * }}}
-	 */
-	def macroimpl[Z](c:Context)(extensionClassName:String, parser:Parser[c.Expr[_], c.Expr[Z]])(args:Seq[c.Expr[Any]]):c.Expr[Z] = {
-		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
-		val StringContextApply = stringContextApply(c)
-
-		import c.universe._ // ApplyTag, SelectTag etc.
-		val strings = c.prefix.tree.duplicate match {
-			case c.universe.Apply(
-				ExtensionClassSelectChain(),
-				List(StringContextApply(strings))
-			) => {
-				strings.map({x => (c.eval(x), Position(x.tree.pos))})
-			}
-			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
-		}
-
-		val input = new Input[c.Expr[Any], Position.Impl](strings, args.toList, x => Position(x.tree.pos))
-
-		parser.parse(input) match {
-			case s:Success[_, _, _] => {
-				s.choicesHead.value
-			}
-			case f:Failure[Position.Impl] => {
-				reportFailure(c)(f)
-			}
-		}
 	}
 }
 

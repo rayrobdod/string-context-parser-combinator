@@ -17,47 +17,6 @@ package object stringContextParserCombinator {
 		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
 		remainingPosition.throwError(s"Expected ${expectingDescription}")
 	}
-
-	/**
-	 * A macro impl scaffold, which takes care of extracting strings from a
-	 * StringContext prefix, creating a parser with that value, then interpreting
-	 * the parse result
-	 *
-	 * ## Usage
-	 *
-	 * Given a StringContext extension
-	 * ```scala
-	 * 	extension (inline sc:scala.StringContext)
-	 * 		inline def \$method(inline args:\$paramtype*):\$rettype = macro \$impl_method
-	 * ```
-	 *
-	 * Then, macro implementation should consist of
-	 * ```scala
-	 * def \$impl_method(sc:Expr[scala.StringContext], args:Expr[Seq[\$paramtype]])(using Quotes):Expr[\$rettype] = {
-	 * 	val parser:Parser[Expr[\$rettype]] = ???
-	 * 	macroimpl(parser)(sc, args)
-	 * }
-	 * ```
-	 */
-	def macroimpl[Z](parser:Parser[Expr[_], Expr[Z]])(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Z] = {
-		val strings = sc match {
-			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
-			case _ => scala.quoted.quotes.reflect.report.throwError(s"Do not know how to process this tree", sc)
-		}
-		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
-		val args2 = Varargs.unapply(args).get.toList
-
-		val input = new Input[Expr[Any], Position.Impl](strings2, args2, x => Position(x))
-
-		parser.parse(input) match {
-			case s@Success(_, _) => {
-				s.choicesHead.value
-			}
-			case f@Failure(_, _) => {
-				reportFailure(f)
-			}
-		}
-	}
 }
 
 package stringContextParserCombinator {
