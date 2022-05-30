@@ -76,20 +76,28 @@ object Preprocess extends AutoPlugin {
 		def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState)
 	}
 	object ProcessState {
+		private val IF_COMMAND = "if (.+)".r
+		private def handleIf(log:sbt.util.Logger, defines:Defines, source:Source, condition:String, stack:ProcessState):ProcessState = {
+			condition match {
+				case "scala=2.x" => ProcessState.If("2." == defines.scalaVersion.substring(0,2), stack)
+				case "scala=2.11.x" => ProcessState.If("2.11." == defines.scalaVersion.substring(0,5), stack)
+				case "scala=2.12.x" => ProcessState.If("2.12." == defines.scalaVersion.substring(0,5), stack)
+				case "scala=2.13.x" => ProcessState.If("2.13." == defines.scalaVersion.substring(0,5), stack)
+				case "scala=3.x" => ProcessState.If("3." == defines.scalaVersion.substring(0,2), stack)
+				case _ => {
+					log.error(s"${source.logString} unknown condition: ${condition}")
+					stack
+				}
+			}
+		}
+
 		object Unconditional extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
 					val line2 = line.trim.substring(1).replaceAll("/\\*.+\\*/", "").trim
 					if (line2.startsWith("if ")) {
 						val line3 = line2.substring(3).replace("\\s+", " ").trim
-						line3 match {
-							case "scala=2.x" => ("", ProcessState.If("2." == defines.scalaVersion.substring(0,2)))
-							case "scala=3.x" => ("", ProcessState.If("3." == defines.scalaVersion.substring(0,2)))
-							case _ => {
-								log.error(s"${source.logString} unknown condition: ${line3}")
-								("", this)
-							}
-						}
+						("", ProcessState.handleIf(log, defines, source, line3, this))
 					} else {
 						log.error(s"${source.logString} unexpected preprocessor command in unconditional section: ${line2}")
 						("", this)
@@ -99,12 +107,14 @@ object Preprocess extends AutoPlugin {
 				}
 			}
 		}
-		final case class If(active:Boolean) extends ProcessState {
+		final case class If(active:Boolean, stack:ProcessState) extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
 					line.trim.substring(1).replaceAll("/\\*.+\\*/", "").trim match {
-						case "else" => ("", Else(active))
-						case "endif" => ("", Unconditional)
+						case IF_COMMAND(condition) if active => ("", ProcessState.handleIf(log, defines, source, condition, this))
+						case IF_COMMAND(_) => ("", IfChildOfInactive(this))
+						case "else" => ("", Else(!active, stack))
+						case "endif" => ("", stack)
 						case line2 => {
 							log.error(s"${source.logString} unexpected preprocessor command in if section: ${line2}")
 							("", this)
@@ -115,18 +125,53 @@ object Preprocess extends AutoPlugin {
 				}
 			}
 		}
-		final case class Else(active:Boolean) extends ProcessState {
+		final case class Else(active:Boolean, stack:ProcessState) extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
 					line.trim.substring(1).replaceAll("/\\*.+\\*/", "").trim match {
-						case "endif" => ("", Unconditional)
+						case IF_COMMAND(condition) if active => ("", ProcessState.handleIf(log, defines, source, condition, this))
+						case IF_COMMAND(_) => ("", IfChildOfInactive(this))
+						case "endif" => ("", stack)
 						case line2 => {
 							log.error(s"${source.logString} unexpected preprocessor command in else section: ${line2}")
 							("", this)
 						}
 					}
 				} else {
-					(if (! active) {line} else {""}, this)
+					(if (active) {line} else {""}, this)
+				}
+			}
+		}
+		final case class IfChildOfInactive(stack:ProcessState) extends ProcessState {
+			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
+				if (line.trim.startsWith("#")) {
+					line.trim.substring(1).replaceAll("/\\*.+\\*/", "").trim match {
+						case IF_COMMAND(condition) => ("", IfChildOfInactive(this))
+						case "else" => ("", ElseChildOfInactive(stack))
+						case "endif" => ("", stack)
+						case line2 => {
+							log.error(s"${source.logString} unexpected preprocessor command in if section: ${line2}")
+							("", this)
+						}
+					}
+				} else {
+					("", this)
+				}
+			}
+		}
+		final case class ElseChildOfInactive(stack:ProcessState) extends ProcessState {
+			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
+				if (line.trim.startsWith("#")) {
+					line.trim.substring(1).replaceAll("/\\*.+\\*/", "").trim match {
+						case IF_COMMAND(condition) => ("", IfChildOfInactive(this))
+						case "endif" => ("", stack)
+						case line2 => {
+							log.error(s"${source.logString} unexpected preprocessor command in if section: ${line2}")
+							("", this)
+						}
+					}
+				} else {
+					("", this)
 				}
 			}
 		}
