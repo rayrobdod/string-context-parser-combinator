@@ -30,19 +30,18 @@
 </span><span id="22" class=""><span class="tooltip-container"></span>extension (inline sc:StringContext) inline def math(inline args:Int*):Int = ${stringContext_math_impl('sc, 'args)}
 </span></code></pre>
   </div>
-  <div class="snippet" scala-snippet>
-   <div class="buttons"></div>
-   <pre><code class="language-scala"><span id="0" class=""><span class="tooltip-container"></span>scala&gt; math"1+2*3+4"
-</span><span id="1" class=""><span class="tooltip-container"></span>val res2: Int = 11
-</span><span id="2" class=""><span class="tooltip-container"></span>
-</span><span id="3" class=""><span class="tooltip-container"></span>scala&gt; math"1+${' '.toInt}"
-</span><span id="4" class=""><span class="tooltip-container"></span>val res3: Int = 33
-</span><span id="5" class=""><span class="tooltip-container"></span>
-</span><span id="6" class=""><span class="tooltip-container"></span>scala&gt; math"1+A"
-</span><span id="7" class=""><span class="tooltip-container"></span>1 |math"1+A"
-</span><span id="8" class=""><span class="tooltip-container"></span>  |       ^
-</span><span id="9" class=""><span class="tooltip-container"></span>  |       Found "A" ; Expected CharIn("0123456789") | scala.Int
-</span></code></pre>
+  <div class="snippet"> 
+   <pre><code>scala&gt; math"1+2*3+4"
+val res2: Int = 11
+
+scala&gt; math"1+${' '.toInt}"
+val res3: Int = 33
+
+scala&gt; math"1+A"
+1 |math"1+A"
+  |       ^
+  |       Found "A" ; Expected CharIn("0123456789") | scala.Int
+</code></pre> 
   </div> 
   <h1><a href="#entry-points" id="entry-points" class="anchor"></a>Entry Points</h1> 
   <p>As for API, leaf parsers are avaliable from <a href="com/rayrobdod/stringContextParserCombinator/Parsers$.html">the Parsers object</a> and the created extension method implementation should ends up calling <a href="com/rayrobdod/stringContextParserCombinator.html#macroimpl-fffffb00">the macroimpl method</a></p> 
