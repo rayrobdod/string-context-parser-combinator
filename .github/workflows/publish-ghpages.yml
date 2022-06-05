@@ -2,7 +2,7 @@ name: publish-ghpages
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   ghpages_publish:
     runs-on: ubuntu-latest

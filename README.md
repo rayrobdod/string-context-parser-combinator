@@ -1,5 +1,5 @@
 # string context parser combinator
-[![Build status](https://ci.appveyor.com/api/projects/status/rwtfcrrc7xkjsg6s/branch/master?svg=true)](https://ci.appveyor.com/project/rayrobdod/string-context-parser-combinator)
+[![Build status](https://ci.appveyor.com/api/projects/status/rwtfcrrc7xkjsg6s/branch/main?svg=true)](https://ci.appveyor.com/project/rayrobdod/string-context-parser-combinator)
 ![Run tests](https://github.com/rayrobdod/string-context-parser-combinator/workflows/Run%20tests/badge.svg)
 
 This is a library for making parsers for String Context extension implementations.
