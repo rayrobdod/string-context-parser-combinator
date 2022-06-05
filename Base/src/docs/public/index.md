@@ -25,10 +25,14 @@ def factor(using Quotes):Parser[Expr[Int]] = numberLiteral orElse numberProvided
 
 def divMul(using Quotes):Parser[Expr[Int]] = (factor andThen (CharIn("*/") andThenWithCut factor).repeat()).map(eval _)
 def addSub(using Quotes):Parser[Expr[Int]] = (divMul andThen (CharIn("+-") andThenWithCut divMul).repeat()).map(eval _)
-def expr(using Quotes):Parser[Expr[Int]] = addSub andThen End()
+def expr(using Quotes):Parser[Expr[Int]] = addSub andThen End
 
 def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = macroimpl(expr)(sc, args)
-extension (inline sc:StringContext) inline def math(inline args:Int*):Int = ${stringContext_math_impl('sc, 'args)}
+```
+
+```scala sc:nocompile
+extension (inline sc:StringContext) inline def math(inline args:Int*):Int =
+    ${stringContext_math_impl('sc, 'args)}
 ```
 
 ```

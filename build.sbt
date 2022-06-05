@@ -35,6 +35,7 @@ lazy val sharedSettings = Seq(
 			"-revision", git.gitHeadCommit.value.get,
 			"-siteroot", ((sourceDirectory).value / "docs" / "public").toString,
 			"-external-mappings:.*scala.*::scaladoc3::https://scala-lang.org/api/3.x/",
+			"-snippet-compiler:compile",
 			"-social-links:github::https://github.com/rayrobdod/string-context-parser-combinator",
 			"-source-links:Base=github://rayrobdod/string-context-parser-combinator#Base",
 		)

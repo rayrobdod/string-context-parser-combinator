@@ -17,60 +17,194 @@ of a given instance to the minimum viable to prevent given instances from becomi
 
 # Sequenced
 
+A [[Sequenced|com.rayrobdod.stringContextParserCombinator.typelevel.Sequenced]] describes how to combine two adjacent values into
+one value.
+
 The fallback given sequenced places the two items in a tuple.
 
-The `Unit`-handling sequenced values drop the unit value.
-
 ```scala
-(p1:Parser[A] andThen p2:Parser[Unit]):Parser[A]
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+class A {}
+class B {}
+val p1:Parser[A] = ???
+val p2:Parser[B] = ???
+
+//}
+((p1:Parser[A]) andThen (p2:Parser[B])):Parser[(A, B)]
 ```
 
-Below is example of providing and using custom Sequenced.
+This library provides `Sequenced` values that handle the case where one value or the other is a `Unit`. When these are
+used, the unit value is dropped, leaving the other value in tact. If both values are `Unit`, then the result is `Unit`.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+class A {}
+val u1:Parser[Unit] = ???
+val u2:Parser[Unit] = ???
+val p1:Parser[A] = ???
+
+//}
+((u1:Parser[Unit]) andThen (u2:Parser[Unit])):Parser[Unit]
+((p1:Parser[A]   ) andThen (u2:Parser[Unit])):Parser[A]
+((u1:Parser[Unit]) andThen (p1:Parser[A]   )):Parser[A]
+```
+
+The Sequenced interface consists of a single method which takes the two values as parameters and returns the resulting value.
+
+Below is example of defining and using a custom Sequenced.
 
 ```scala
 import java.time._
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.typelevel.Sequenced
+val dateParser:Parser[LocalDate] = ???
+val timeParser:Parser[LocalTime] = ???
 
-given (using Quotes): Sequenced[LocalDate, LocalTime, LocalDateTime] with {
+//}
+given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
 	def aggregate(date:LocalDate, time:LocalTime):LocalDateTime = date.atTime(time)
 }
 
-(dateParser:Parser[LocalDate] andThen IsString("T") andThen timeParser:Parser[LocalTime]):Parser[LocalDateTime]
+((dateParser:Parser[LocalDate]) andThen IsString("T") andThen (timeParser:Parser[LocalTime])):Parser[LocalDateTime]
 ```
 
 
 # Eithered
 
-The fallback given Eithered creates a union type of the two component types.
+An [[Eithered|com.rayrobdod.stringContextParserCombinator.typelevel.Eithered]] describes how to treat a parser result
+that may be the result of one parser or the result of the other parser.
 
-The default given instances of Eithered which handle one Unit type summon a `Optionally` instance and treat the
-non-Unit-typed value as a present value and the Unit-typed value as a missing value
+The fallback given Eithered creates a union type of the two component types. Since the union of a type with itself is
+equivalent to that same type, if this fallback Eithered is used for two parsers of the same type, then the result is a
+parser of that type.
 
 ```scala
-(p1:Parser[A] orElse p2:Parser[Unit]):Parser[Option[A]]
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.typelevel.Eithered
+class A {}
+class B {}
+val p1:Parser[A] = ???
+val p2:Parser[B] = ???
+val p3:Parser[A] = ???
+
+//}
+((p1:Parser[A]) orElse (p2:Parser[B])):Parser[A | B]
+((p1:Parser[A]) orElse (p3:Parser[A])):Parser[A]
 ```
 
-A non-given instance of Eithered is provided, named `discriminatedUnion`, that instead places the two values in a
-`scala.Either`.
+This library provides given `Eithered` values that handle the case where one value or the other is a `Unit`. If both options
+are Parsers of Unit, the result is a Parser of Unit. Otherwise the Unit case is converted to a `scala.None`, and the
+non-unit case is wrapped in a `scala.Some`.
 
 ```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+class A {}
+val p1:Parser[Unit] = ???
+val p2:Parser[Unit] = ???
+val p3:Parser[A] = ???
+
+//}
+((p1:Parser[Unit]) orElse (p2:Parser[Unit])):Parser[Unit]
+((p3:Parser[A]   ) orElse (p2:Parser[Unit])):Parser[Option[A]]
+```
+
+This library provides a non-given instance of Eithered, named `discriminatedUnion`, that instead places the two values
+in a `scala.Either`.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.typelevel.Eithered
+class A {}
+class B {}
+val p1:Parser[A] = ???
+val p2:Parser[B] = ???
+
+//}
+val discriminated:Parser[Either[A, B]] = (p1:Parser[A]).orElse(p2:Parser[B])(using Eithered.discriminatedUnion)
+// in the following, even digits are placed in a Left while odd digits are placed in a Right.
 val evenOdd:Parser[Either[Char, Char]] = CharIn("02468").orElse(CharIn("13579"))(using Eithered.discriminatedUnion)
+```
+
+The interface consists of two methods, the `left` method called if the first choice succeeded, or `right` if the second
+choice succeeded.
+
+Below is example of defining and using a custom Eithered.
+
+```scala
+import java.io.File
+import java.net.URI
+import java.util.UUID
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.typelevel.Eithered
+val uuidParser:Parser[UUID] = ???
+val fileParser:Parser[File] = ???
+
+//}
+given Eithered[File, UUID, URI] with {
+	def left(f:File):URI = f.toURI
+	def right(id:UUID):URI = new URI("urn", s"uuid:${id}", null)
+}
+
+((fileParser:Parser[File]) orElse (uuidParser:Parser[UUID])):Parser[URI]
 ```
 
 
 # Repeated
 
-The fallback given Sequenced places the items in a `scala.Seq`.
+A [[Repeated|com.rayrobdod.stringContextParserCombinator.typelevel.Repeated]] describes how to combine a homogeneous
+sequence of zero-or-more values.
 
-In addition to the given object which combines `scala.Unit` values into a single `scala.Unit`, there are two built-in
-given objects which combine Char values or CodePoint values into a String.
+The fallback given Repeated places the items in a `scala.Seq`.
 
 ```scala
-(CharIn("abcde"):Parser[Char]).repeat():Parser[String]
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+class A {}
+val p1:Parser[A] = ???
+
+//}
+((p1:Parser[A]).repeat()):Parser[List[A]]
 ```
+
+A given Repeated is provided which combines repeated `scala.Unit` values into a single `scala.Unit`
+
+A given Repeated is provided which combines repeated `scala.Char` values into a `String`, and another that combines
+repeated `CodePoint` values into a `String`.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.CodePoint
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+val unitParser:Parser[Unit] = ???
+val charParser:Parser[Char] = ???
+val codePointParser:Parser[CodePoint] = ???
+
+//}
+(unitParser:Parser[Unit]).repeat():Parser[Unit]
+(charParser:Parser[Char]).repeat():Parser[String]
+(codePointParser:Parser[CodePoint]).repeat():Parser[String]
+```
+
+When a Repeated is used
+ * first, `init` is called to create a new mutable builder
+ * then, `append` is called once for each component item in order, using the `init`-created builder and the component item as parameters
+ * lastly, `result` is called with the builder, and the result of this call is overall result.
 
 Below is example of providing and using custom Repeated.
 
 ```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.typelevel.Repeated
+
+//}
 // define the marker types
 /** represents a single digit */
 case class Digit(value:Int)
@@ -88,16 +222,55 @@ given Repeated[Digit, Digits] with {
 
 // create the parsers
 val digit:Parser[Digit] = CharIn('0' to '9').map(x => Digit(x - '0'))
-val digits:Parser[Digits] = digit.repeat(1) // using the given Repeated[Digit, Digits]
+val digits:Parser[Digits] = digit.repeat(1)
 ```
 
 # Optionally
 
+An [[Optionally|com.rayrobdod.stringContextParserCombinator.typelevel.Optionally]] describes the result of a parser that
+might parse another value.
+
 The fallback given Optionally places the items in a `scala.Option`, wrapping a found value in a Some and using a None as
 the empty value.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+class A {}
+val p1:Parser[A] = ???
+
+//}
+((p1:Parser[A]).optionally()):Parser[Option[A]]
+```
 
 The `Unit`-handling Optionally value doesn't wrap a present `()` in an Option, and uses `()` as a default value.
 
 ```scala
-(IsString("0x"):Parser[Unit]).optionally():Parser[Unit]
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+val p1:Parser[Unit] = ???
+
+//}
+((p1:Parser[Unit]).optionally()):Parser[Option[Unit]]
+```
+
+The interface consists of two methods, the `some` method called if there was a value, and `none` method called if there
+was no value.
+
+Below is example of defining and using a custom Optionally. This Optionally has the effect of using the empty string as
+a default value.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.typelevel.Optionally
+val stringParser:Parser[String] = ???
+
+//}
+given Optionally[String, String] with {
+	def none:String = ""
+	def some(s:String):String = s
+}
+
+((stringParser:Parser[String]).optionally()):Parser[String]
 ```

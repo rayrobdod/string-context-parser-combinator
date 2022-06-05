@@ -30,13 +30,13 @@ package object stringContextParserCombinator {
 	 * ## Usage
 	 *
 	 * Given a StringContext extension
-	 * ```scala
+	 * ```
 	 * 	extension (inline sc:scala.StringContext)
 	 * 		inline def \$method(inline args:\$paramtype*):\$rettype = macro \$impl_method
 	 * ```
 	 *
 	 * Then, macro implementation should consist of
-	 * ```scala
+	 * ```
 	 * def \$impl_method(sc:Expr[scala.StringContext], args:Expr[Seq[\$paramtype]])(using Quotes):Expr[\$rettype] = {
 	 * 	val parser:Parser[Expr[\$rettype]] = ???
 	 * 	macroimpl(parser)(sc, args)
