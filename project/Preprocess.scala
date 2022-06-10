@@ -17,7 +17,7 @@ object Preprocess extends AutoPlugin {
 	override def requires = sbt.plugins.JvmPlugin
 
 	object autoImport {
-		val preprocess = taskKey[Seq[File]]("")
+		val preprocess = taskKey[Seq[File]]("Applies c-style preprocessing to scala sources")
 	}
 	import autoImport._
 
@@ -67,16 +67,24 @@ object Preprocess extends AutoPlugin {
 
 	override lazy val projectSettings = perScopeSettings(Compile) ++ perScopeSettings(Test)
 
+	/** Information that can be used by an `#if` to determine whether to echo a section */
 	final case class Defines(scalaVersion:String)
+
+	/** Represents the source location of a line */
 	final case class Source(file:Path, lineNo:Int) {
 		def logString:String = s"${file}:${lineNo}:1:"
 	}
 
 	sealed trait ProcessState {
+		/**
+		 * Process a line of a source.
+		 */
 		def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState)
 	}
 	object ProcessState {
 		private val IF_COMMAND = "if (.+)".r
+
+		/** Determines whether the `condition` string is matched by the data in `defines` */
 		private def handleIf(log:sbt.util.Logger, defines:Defines, source:Source, condition:String, stack:ProcessState):ProcessState = {
 			condition match {
 				case "scala=2.x" => ProcessState.If("2." == defines.scalaVersion.substring(0,2), stack)
@@ -91,6 +99,7 @@ object Preprocess extends AutoPlugin {
 			}
 		}
 
+		/** Outside of all if or else sections. Echoes all lines */
 		object Unconditional extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
@@ -107,6 +116,11 @@ object Preprocess extends AutoPlugin {
 				}
 			}
 		}
+
+		/**
+		 * An if section. `active` is true if the lines in this section should be echoed.
+		 * stack is the state to return to upon an endif.
+		 */
 		final case class If(active:Boolean, stack:ProcessState) extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
@@ -125,6 +139,11 @@ object Preprocess extends AutoPlugin {
 				}
 			}
 		}
+
+		/**
+		 * An else section. `active` is true if the lines in this section should be echoed.
+		 * stack is the state to return to upon an endif.
+		 */
 		final case class Else(active:Boolean, stack:ProcessState) extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
@@ -142,6 +161,11 @@ object Preprocess extends AutoPlugin {
 				}
 			}
 		}
+
+		/**
+		 * An if section that is inside an if/else that is not active. Not echoed, since the outer
+		 * `if` is not echoed. stack is the state to return to upon an endif.
+		 */
 		final case class IfChildOfInactive(stack:ProcessState) extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
@@ -159,6 +183,11 @@ object Preprocess extends AutoPlugin {
 				}
 			}
 		}
+
+		/**
+		 * An else section that is inside an if/else that is not active. Not echoed, since the outer
+		 * `if` is not echoed. stack is the state to return to upon an endif.
+		 */
 		final case class ElseChildOfInactive(stack:ProcessState) extends ProcessState {
 			override def handle(log:sbt.util.Logger, defines:Defines, source:Source, line:String):(String, ProcessState) = {
 				if (line.trim.startsWith("#")) {
@@ -177,6 +206,9 @@ object Preprocess extends AutoPlugin {
 		}
 	}
 
+	/**
+	 * Process a single source file. Returns a sequence of lines that should be written to the result file.
+	 */
 	def process(log:sbt.util.Logger, srcPath:Path, src:Seq[String], defines:Defines):Seq[String] = {
 		val (result, endState) = src.zipWithIndex.foldLeft[(List[String], ProcessState)]((Nil, ProcessState.Unconditional))({(folding, line) =>
 			val (previousLines, state) = folding
