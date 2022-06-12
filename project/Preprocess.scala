@@ -7,6 +7,7 @@ import scala.collection.JavaConverters.{seqAsJavaListConverter, asScalaBufferCon
 import sbt._
 import sbt.Keys._
 import sbt.librarymanagement.Configuration
+import sbt.nio.Keys._
 import sbt.util.CacheImplicits._
 
 /**
@@ -23,18 +24,12 @@ object Preprocess extends AutoPlugin {
 
 	private def perScopeSettings(config:Configuration) = Seq(
 		config / preprocess / sourceDirectory := (config / sourceDirectory).value / "scala-preprocess",
-		config / preprocess / includeFilter := "*.preprocess",
-		config / preprocess / excludeFilter := HiddenFileFilter,
 		config / preprocess / target := (sourceManaged).value / "preprocess",
-		config / preprocess / sources := {
-			(config / preprocess / sourceDirectory).value **
-				((config / preprocess / includeFilter).value --
-				(config / preprocess / excludeFilter).value)
-		}.get,
+		config / preprocess / fileInputs += (config / preprocess / sourceDirectory).value.toGlob / "**" / "*.preprocess",
 		config / preprocess := {
 			val baseSrc = (config / preprocess / sourceDirectory).value.toPath
 			val baseTar = (config / preprocess / target).value.toPath
-			val files = (config / preprocess / sources).value.map{_.toPath}
+			val files = (config / preprocess / allInputFiles).value
 			val srcDest = files.map{x => ((x, baseTar resolve (baseSrc relativize x)
 					resolveSibling (x.getFileName.toString.reverse.split("\\.", 2)(1).reverse)))}
 
@@ -63,6 +58,12 @@ object Preprocess extends AutoPlugin {
 		},
 		config / sourceGenerators += (config / preprocess).taskValue,
 		config / managedSourceDirectories += (config / preprocess / target).value,
+		config / packageSrc / mappings ++= {
+			val files = (config / preprocess).value
+			val dir = (config / preprocess / target).value
+			val mapper = sbt.io.Path.relativeTo(dir)
+			files.map(f => ((f, mapper(f).getOrElse(f.toString))))
+		}
 	)
 
 	override lazy val projectSettings = perScopeSettings(Compile) ++ perScopeSettings(Test)
