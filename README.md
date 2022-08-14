@@ -4,7 +4,7 @@
 
 This is a library for making parsers for String Context extension implementations.
 
-Basically, this is a partser combinator library, but compared to other string context libraries, it has extra leaf
+Basically, this is a parser combinator library, but compared to other string context libraries, it has extra leaf
 parsers which match the 'hole' or 'arg' parts of interpolated strings and is otherwise designed to be used in
 scala macros.
 

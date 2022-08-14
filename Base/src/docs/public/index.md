@@ -50,6 +50,6 @@ scala> math"1+A"
 
 # Entry Points
 
-As for API, leaf parsers are avaliable from [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]]
+As for API, leaf parsers are available from [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]]
 and the created extension method implementation should ends up calling [[the macroimpl
 method|com.rayrobdod.stringContextParserCombinator.macroimpl]]
