@@ -25,10 +25,10 @@ private[datetime] object ExprConversions {
 			// '{Month.of(${Expr(x.getValue)})}
 			import scala.quoted.quotes.reflect._
 			val _root = defn.RootPackage
-			val _java = _root.memberField("java")
-			val _time = _java.memberField("time")
-			val _month = _time.memberField("Month")
-			val _instance = _month.memberField(x.name)
+			val _java = _root.fieldMember("java")
+			val _time = _java.fieldMember("time")
+			val _month = _time.fieldMember("Month")
+			val _instance = _month.fieldMember(x.name)
 
 			Ref(_root).select(_java).select(_time).select(_month).select(_instance).asExprOf[Month]
 		}

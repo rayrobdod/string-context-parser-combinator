@@ -19,7 +19,7 @@ lazy val sharedSettings = Seq(
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-language:higherKinds")
 		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
-		case _ => Seq.empty
+		case _ => Seq("-deprecation")
 	}),
 	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.11" | "2.12" | "2.13" => Seq(

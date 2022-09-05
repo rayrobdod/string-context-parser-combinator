@@ -19,7 +19,7 @@ package object stringContextParserCombinator {
 	private[this] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
 		val remainingPosition = failure.expecting.map(_.position).max
 		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
-		remainingPosition.throwError(s"Expected ${expectingDescription}")
+		remainingPosition.errorAndAbort(s"Expected ${expectingDescription}")
 	}
 
 	/**
@@ -48,9 +48,9 @@ package object stringContextParserCombinator {
 	def macroimpl[Z](parser:Parser[Expr[_], Expr[Z]])(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Z] = {
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
-			case _ => scala.quoted.quotes.reflect.report.throwError(s"Do not know how to process this tree", sc)
+			case _ => scala.quoted.quotes.reflect.report.errorAndAbort(s"Do not know how to process this tree", sc)
 		}
-		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
+		val strings2 = strings.map(x => ((x.valueOrAbort, Position(x)))).toList
 		val args2 = Varargs.unapply(args).get.toList
 
 		val input = new Input[Expr[Any], Position.Impl](strings2, args2, x => Position(x))
@@ -87,8 +87,8 @@ package stringContextParserCombinator {
 	object Position {
 		/** The canonical production-use Position type */
 		final class Impl(private[Position] val q:Quotes)(private[Position] val file:q.reflect.SourceFile, private[Position] val start:Int, private[Position] val end:Int) {
-			def throwError(msg:String):Nothing = {
-				q.reflect.report.throwError(msg, q.reflect.Position(file, start, end))
+			def errorAndAbort(msg:String):Nothing = {
+				q.reflect.report.errorAndAbort(msg, q.reflect.Position(file, start, end))
 			}
 			override def toString:String = s"Position.Impl($file, $start, $end)"
 			override def hashCode:Int = this.start * 31 + this.end
