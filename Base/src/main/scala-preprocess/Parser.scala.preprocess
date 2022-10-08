@@ -9,6 +9,11 @@ import scala.reflect.macros.blackbox.Context
  *
  * @tparam Expr the macro-level expression type.
  * @tparam A the type of the parsed result
+ *
+ * @groupname Parse parse
+ * @groupprio Parse 100
+ * @groupname Combinator Combinators
+ * @groupprio Combinator 3010
  */
 trait Parser[-Expr, +A] {
 #if scala=2.x
@@ -26,6 +31,7 @@ trait Parser[-Expr, +A] {
 	 *   def value(args:Any*):Result = macro valueImpl
 	 * }
 	 * }}}
+	 * @group Parse
 	 */
 	final def parse(c:Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
@@ -76,6 +82,7 @@ trait Parser[-Expr, +A] {
 	 *	  inline def value(inline args:Any*):Result =
 	 *	    ${valueImpl('sc, 'args)}
 	 * ```
+	 * @group Parse
 	 */
 	final def parse(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
 		import scala.quoted.*
@@ -105,18 +112,21 @@ trait Parser[-Expr, +A] {
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
+	 * @group Combinator
 	 */
 	def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
 		new parsers.Map(this, fn)
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
+	 * @group Combinator
 	 */
 	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Parser[ExprZ, Z]]):Parser[ExprZ, Z] =
 		new parsers.FlatMap(this, fn)
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
+	 * @group Combinator
 	 */
 	def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
 		new parsers.Filter(this, predicate, ExpectingDescription(description))
@@ -124,6 +134,7 @@ trait Parser[-Expr, +A] {
 
 	/**
 	 * Returns a parser which invokes this parser, but has the given description upon failure
+	 * @group Combinator
 	 */
 	def opaque(description:String):Parser[Expr, A] =
 		new parsers.Opaque(this, ExpectingDescription(description))
@@ -135,6 +146,7 @@ trait Parser[-Expr, +A] {
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to combine two values into one value
+	 * @group Combinator
 	 */
 	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new parsers.AndThen(this, rhs, ev)
@@ -147,6 +159,7 @@ trait Parser[-Expr, +A] {
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to combine two values into one value
+	 * @group Combinator
 	 */
 	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new parsers.AndThenWithCut(this, rhs, ev)
@@ -157,6 +170,7 @@ trait Parser[-Expr, +A] {
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to treat either value as one value
+	 * @group Combinator
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[ExprZ, Z] =
 		new parsers.OrElse(this, rhs, ev)
@@ -170,6 +184,7 @@ trait Parser[-Expr, +A] {
 	 * @param delimiter a parser describing separators between each repeat. Defaults to a parser that always succeeds and consumes no input.
 	 * @param strategy whether the repeat will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to combine the repeated values into one value
+	 * @group Combinator
 	 */
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
@@ -186,6 +201,7 @@ trait Parser[-Expr, +A] {
 	 * @tparam Z the result parser's parsed value type
 	 * @param strategy whether the optionally will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to mark present or absent values
+	 * @group Combinator
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
