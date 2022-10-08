@@ -15,7 +15,7 @@ import scala.reflect.macros.blackbox.Context
  * @groupname Combinator Combinators
  * @groupprio Combinator 3010
  */
-trait Parser[-Expr, +A] {
+final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[stringContextParserCombinator] val impl: parsers.Parser[Expr, A]) {
 #if scala=2.x
 	/**
 	 * Parses a StringContext and its arguments into a value
@@ -57,7 +57,7 @@ trait Parser[-Expr, +A] {
 		val input2 = input.asInstanceOf[Input[Expr, Position.Impl]]
 #endif
 
-		this.parse(input2) match {
+		impl.parse(input2) match {
 			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
@@ -96,7 +96,7 @@ trait Parser[-Expr, +A] {
 		val input = new Input[quoted.Expr[_], Position.Impl](strings2, args2, x => Position(x))
 		val input2:Input[this.Expr, Position.Impl] = ev.substituteCo[[A] =>> Input[A, Position.Impl]](input)
 
-		this.parse(input2) match {
+		impl.parse(input2) match {
 			case s@Success(_, _) => {
 				s.choicesHead.value
 			}
@@ -107,29 +107,26 @@ trait Parser[-Expr, +A] {
 	}
 #endif
 
-	private[stringContextParserCombinator]
-	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A]
-
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
 	 * @group Combinator
 	 */
 	def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
-		new parsers.Map(this, fn)
+		new Parser(new parsers.Map(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
 	 * @group Combinator
 	 */
 	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Parser[ExprZ, Z]]):Parser[ExprZ, Z] =
-		new parsers.FlatMap(this, fn)
+		new Parser(new parsers.FlatMap(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
 	 * @group Combinator
 	 */
 	def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
-		new parsers.Filter(this, predicate, ExpectingDescription(description))
+		new Parser(new parsers.Filter(this.impl, predicate, ExpectingDescription(description)))
 
 
 	/**
@@ -137,7 +134,7 @@ trait Parser[-Expr, +A] {
 	 * @group Combinator
 	 */
 	def opaque(description:String):Parser[Expr, A] =
-		new parsers.Opaque(this, ExpectingDescription(description))
+		new Parser(new parsers.Opaque(this.impl, ExpectingDescription(description)))
 
 
 	/**
@@ -149,7 +146,7 @@ trait Parser[-Expr, +A] {
 	 * @group Combinator
 	 */
 	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
-		new parsers.AndThen(this, rhs, ev)
+		new Parser(new parsers.AndThen(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -162,7 +159,7 @@ trait Parser[-Expr, +A] {
 	 * @group Combinator
 	 */
 	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
-		new parsers.AndThenWithCut(this, rhs, ev)
+		new Parser(new parsers.AndThenWithCut(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser, and if this parser fails tries the other parser, and returns the first successful result
@@ -173,7 +170,7 @@ trait Parser[-Expr, +A] {
 	 * @group Combinator
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[ExprZ, Z] =
-		new parsers.OrElse(this, rhs, ev)
+		new Parser(new parsers.OrElse(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -189,11 +186,11 @@ trait Parser[-Expr, +A] {
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Parser[ExprZ, Unit] = parsers.Pass,
+		delimiter:Parser[ExprZ, Unit] = new Parser(parsers.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typelevel.Repeated[A, Z]
 	):Parser[ExprZ, Z] =
-		new parsers.Repeat(this, min, max, delimiter, strategy, ev)
+		new Parser(new parsers.Repeat(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
 	 * Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed
@@ -207,5 +204,5 @@ trait Parser[-Expr, +A] {
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typelevel.Optionally[A, Z]
 	):Parser[Expr, Z] =
-		parsers.Optionally(this, strategy, ev)
+		new Parser(parsers.Optionally(this.impl, strategy, ev))
 }

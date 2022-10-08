@@ -57,63 +57,63 @@ object Parsers {
 	 * @group Part
 	 */
 	def CharIn(str:Set[Char]):Parser[Char] =
-		parsers.CharIn(str)
+		new Parser(parsers.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group Part
 	 */
 	def CharIn(str:Seq[Char]):Parser[Char] =
-		parsers.CharIn(str)
+		new Parser(parsers.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group Part
 	 */
 	def CharIn(str:String):Parser[Char] =
-		parsers.CharIn(scala.Predef.wrapString(str))
+		new Parser(parsers.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group Part
 	 */
 	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] =
-		parsers.CharWhere(fn, ExpectingDescription(description))
+		new Parser(parsers.CharWhere(fn, ExpectingDescription(description)))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group Part
 	 */
 	def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] =
-		parsers.CodePointIn(str)
+		new Parser(parsers.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group Part
 	 */
 	def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] =
-		parsers.CodePointIn(str)
+		new Parser(parsers.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group Part
 	 */
 	def CodePointIn(str:String):Parser[CodePoint] =
-		parsers.CodePointIn(str)
+		new Parser(parsers.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group Part
 	 */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] =
-		parsers.CodePointWhere(fn, ExpectingDescription(description))
+		new Parser(parsers.CodePointWhere(fn, ExpectingDescription(description)))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
 	def IsString(str:String):Parser[Unit] =
-		parsers.IsString(str)
+		new Parser(parsers.IsString(str))
 
 	/**
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
@@ -121,10 +121,10 @@ object Parsers {
 	 */
 #if scala=2.x
 	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] =
-		new parsers.OfType[ctx.type, A](tpe)
+		new Parser(new parsers.OfType[ctx.type, A](tpe))
 #else /* scala=2 */
 	def OfType[A](using Type[A], Quotes):Parser[Expr[A]] =
-		new parsers.OfType[A]
+		new Parser(new parsers.OfType[A])
 #endif /* scala=2 */
 
 	/**
@@ -135,10 +135,10 @@ object Parsers {
 	 */
 #if scala=2.x
 	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Parser[Z] =
-		parsers.Lifted(ctx)(lift, ExpectingDescription(description))
+		new Parser(parsers.Lifted(ctx)(lift, ExpectingDescription(description)))
 #else /* scala=2 */
 	def Lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using Type[Lifter], Quotes):Parser[Z] =
-		parsers.Lifted(lift, ExpectingDescription(description))
+		new Parser(parsers.Lifted(lift, ExpectingDescription(description)))
 #endif /* scala=2 */
 
 	/**
@@ -146,26 +146,26 @@ object Parsers {
 	 * @group Constant
 	 */
 	def Pass:Parser[Unit] =
-		parsers.Pass
+		new Parser(parsers.Pass)
 
 	/**
 	 * A parser that always reports a failure
 	 * @group Constant
 	 */
 	def Fail(message:String):Parser[Nothing] =
-		parsers.Fail(ExpectingDescription(message))
+		new Parser(parsers.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 */
 	def End:Parser[Unit] =
-		new parsers.End()
+		new Parser(new parsers.End())
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
-		new parsers.DelayedConstruction(fn)
+		new Parser(new parsers.DelayedConstruction(fn))
 }
 
 #if scala=2.x
