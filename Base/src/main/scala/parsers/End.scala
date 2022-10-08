@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 package parsers
 
 private[stringContextParserCombinator]
-final class End extends AbstractParser[Any, Unit] {
+final class End extends Parser[Any, Unit] {
 	override def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Unit] = {
 		val expecting = Expecting(description, input.position)
 		if (input.isEmpty) {

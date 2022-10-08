@@ -5,7 +5,7 @@ private[stringContextParserCombinator]
 final class Opaque[Expr, A](
 	backing:Parser[Expr, A],
 	description:ExpectingDescription
-) extends AbstractParser[Expr, A] {
+) extends Parser[Expr, A] {
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
 		val descriptionPosition = Set(Expecting(description, input.position))
 		backing.parse(input) match {

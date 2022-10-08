@@ -9,7 +9,7 @@ final class Repeat[Expr, A, Z](
 	delimiter:Parser[Expr, Unit],
 	strategy:RepeatStrategy,
 	ev:typelevel.Repeated[A, Z]
-) extends AbstractParser[Expr, Z] {
+) extends Parser[Expr, Z] {
 	require(min >= 0)
 	require(max >= 1)
 	require(max >= min)

@@ -10,8 +10,8 @@ object Lifted {
 		lift:LiftFunction[c.type, Lifter, Z],
 		description:ExpectingDescription
 		)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]
-	):AbstractParser[c.Expr[_], Z] = {
-		new AbstractParser[c.Expr[_], Z] {
+	):Parser[c.Expr[_], Z] = {
+		new Parser[c.Expr[_], Z] {
 			override def parse[ExprZ <: c.Expr[_], Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
 				input.consume(
 					_ => None,

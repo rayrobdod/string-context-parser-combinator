@@ -6,7 +6,7 @@ final class Filter[Expr, A](
 	backing:Parser[Expr, A],
 	predicate:Function1[A, Boolean],
 	predicateDescription:ExpectingDescription
-) extends AbstractParser[Expr, A] {
+) extends Parser[Expr, A] {
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
 		backing.parse(input) match {
 			case Success(choicesHead, choicesTail) => {
