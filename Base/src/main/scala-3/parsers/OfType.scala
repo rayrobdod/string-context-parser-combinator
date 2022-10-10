@@ -7,7 +7,7 @@ import scala.quoted.Type
 
 /** Succeeds if the next input element is an `arg` with the given type; captures the expression */
 private[stringContextParserCombinator]
-final class OfType[A](using Type[A], Quotes) extends AbstractParser[Expr[_], Expr[A]] {
+final class OfType[A](using Type[A], Quotes) extends Parser[Expr[_], Expr[A]] {
 	private val expecting = ExpectingDescription(Type.show[A])
 
 	def parse[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Expr[A]] = {

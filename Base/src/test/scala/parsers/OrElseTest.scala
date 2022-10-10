@@ -63,7 +63,7 @@ final class OrElseTest extends AnyFunSpec {
 				rightExpect,
 				Cut.False
 			)
-			val parser = leftParser orElse rightParser
+			val parser = new OrElse[Nothing, Object, Object, Object](leftParser, rightParser, implicitly)
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it("`Failure | Cut` returns a failure that mentions only the cut branch") {

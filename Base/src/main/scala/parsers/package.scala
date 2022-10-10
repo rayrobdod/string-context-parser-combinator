@@ -3,14 +3,11 @@ package com.rayrobdod.stringContextParserCombinator
 import scala.collection.immutable.{Seq, Set}
 
 package parsers {
-	/** An intermediary class to lessen the weight of implementing Parser repeatedly, Parser being a trait with several concrete methods */
-	private[parsers] abstract class AbstractParser[-Expr, +A] extends Parser[Expr,A]
-
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
 	private[parsers] final class PartsParser[+A](
 		partsFn:String => Option[(A, Int)],
 		expecting: ExpectingDescription
-	) extends AbstractParser[Any, A] {
+	) extends Parser[Any, A] {
 		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, A] = {
 			input.consume(
 				partsFn,
@@ -140,13 +137,13 @@ package object parsers {
 
 	/** A parser that consumes no input and always succeeds */
 	private[stringContextParserCombinator]
-	def Pass:Parser[Any, Unit] = new AbstractParser[Any, Unit] {
+	def Pass:Parser[Any, Unit] = new Parser[Any, Unit] {
 		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Unit] = Success((), input, Set.empty, Cut.False)
 	}
 
 	/** A parser that consumes no input and always fails */
 	private[stringContextParserCombinator]
-	def Fail(desc:ExpectingDescription):Parser[Any, Nothing] = new AbstractParser[Any, Nothing] {
+	def Fail(desc:ExpectingDescription):Parser[Any, Nothing] = new Parser[Any, Nothing] {
 		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Nothing] = Failure(Set(Expecting(desc, input.position)), Cut.False)
 	}
 

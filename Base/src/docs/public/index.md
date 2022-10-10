@@ -8,7 +8,6 @@ StringContextParserCombinators is a library for writing String Context extension
 ```scala
 import scala.quoted.{Expr, Quotes}
 import com.rayrobdod.stringContextParserCombinator.Parsers._
-import com.rayrobdod.stringContextParserCombinator.macroimpl
 
 def eval1(folding:Expr[Int], elem:(Char, Expr[Int]))(using Quotes):Expr[Int] = elem._1 match {
 	case '+' => '{${folding} + ${elem._2}}
@@ -27,7 +26,7 @@ def divMul(using Quotes):Parser[Expr[Int]] = (factor andThen (CharIn("*/") andTh
 def addSub(using Quotes):Parser[Expr[Int]] = (divMul andThen (CharIn("+-") andThenWithCut divMul).repeat()).map(eval _)
 def expr(using Quotes):Parser[Expr[Int]] = addSub andThen End
 
-def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = macroimpl(expr)(sc, args)
+def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.parse(sc, args)
 ```
 
 ```scala sc:nocompile
@@ -50,6 +49,6 @@ scala> math"1+A"
 
 # Entry Points
 
-As for API, leaf parsers are available from [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]]
-and the created extension method implementation should ends up calling [[the macroimpl
-method|com.rayrobdod.stringContextParserCombinator.macroimpl]]
+Create leaf parsers using the methods in [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]],
+combine and manipulate them with the methods in [[com.rayrobdod.stringContextParserCombinator.Parser]], then parse
+using the [[Parser.parse|com.rayrobdod.stringContextParserCombinator.Parser#parse-fffff934]] method
