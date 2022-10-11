@@ -25,7 +25,7 @@ object Preprocess extends AutoPlugin {
 	private def perScopeSettings(config:Configuration) = Seq(
 		config / preprocess / sourceDirectory := (config / sourceDirectory).value / "scala-preprocess",
 		config / preprocess / target := (sourceManaged).value / "preprocess",
-		config / preprocess / fileInputs += (config / preprocess / sourceDirectory).value.toGlob / "**" / "*.preprocess",
+		config / preprocess / fileInputs := Seq((config / preprocess / sourceDirectory).value.toGlob / "**" / "*.preprocess"),
 		config / preprocess := {
 			val baseSrc = (config / preprocess / sourceDirectory).value.toPath
 			val baseTar = (config / preprocess / target).value.toPath
