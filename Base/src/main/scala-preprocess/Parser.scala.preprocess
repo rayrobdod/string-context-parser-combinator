@@ -88,9 +88,9 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		import scala.quoted.*
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
-			case _ => scala.quoted.quotes.reflect.report.throwError(s"Do not know how to process this tree", sc)
+			case _ => scala.quoted.quotes.reflect.report.errorAndAbort(s"Do not know how to process this tree", sc)
 		}
-		val strings2 = strings.map(x => ((x.valueOrError, Position(x)))).toList
+		val strings2 = strings.map(x => ((x.valueOrAbort, Position(x)))).toList
 		val args2 = Varargs.unapply(args).get.toList
 
 		val input = new Input[quoted.Expr[_], Position.Impl](strings2, args2, x => Position(x))

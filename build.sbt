@@ -2,18 +2,18 @@ ThisBuild / version := "-SNAPSHOT"
 ThisBuild / organization := "com.rayrobdod"
 
 val scala211Ver = "2.11.12"
-val scala212Ver = "2.12.15"
-val scala213Ver = "2.13.8"
-val scala30Ver = "3.1.3"
+val scala212Ver = "2.12.17"
+val scala213Ver = "2.13.10"
+val scala30Ver = "3.2.0"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %%% "scalatest" % "3.2.12" % "test",
+		"org.scalatest" %%% "scalatest" % "3.2.14" % "test",
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.11" => Seq("-target:jvm-1.7")
-		case "2.12" | "2.13" => Seq("-target:jvm-1.8")
+		case "2.12" => Seq("-target:jvm-1.8")
 		case _ => if (scala.util.Properties.isJavaAtLeast("9")) {Seq("-release", "8")} else {Seq.empty}
 	}),
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
@@ -82,7 +82,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		name := "json",
 		publish / skip := true,
 		libraryDependencies ++= Seq(
-			"org.json4s" %%% "json4s-ast" % "4.0.5",
+			"org.json4s" %%% "json4s-ast" % "4.0.6",
 		),
 		console / initialCommands := """
 			import org.json4s._
@@ -124,7 +124,7 @@ lazy val time = (projectMatrix in file("TimeParser"))
 			scala30Ver,
 		),
 		libraryDependencies ++= Seq(
-			"io.github.cquiroz" %%% "scala-java-time" % "2.3.0",
+			"io.github.cquiroz" %%% "scala-java-time" % "2.4.0",
 		),
 	)
 
@@ -146,6 +146,7 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		scala30Ver,
 	))
 
+autoScalaLibrary := false
 publish / skip := true
 enablePlugins(GhpagesPlugin)
 ghpagesSynchLocal / mappings := (base.jvm(scala30Ver) / Compile / packageDoc / mappings).value
