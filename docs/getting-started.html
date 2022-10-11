@@ -1,0 +1,159 @@
+<html><head><meta charset="utf-8"></meta><meta name="viewport" content="width=device-width, initial-scale=1"></meta><title>Getting Started</title><link rel="shortcut icon" type="image/x-icon" href="../favicon.ico"></link><script type="text/javascript" src="../scripts/theme.js"></script><script type="text/javascript" src="../scripts/searchData.js" defer="true"></script><script type="text/javascript" src="../scripts/scastieConfiguration.js" defer="true"></script><link rel="stylesheet" href="../styles/nord-light.css"></link><link rel="stylesheet" href="../styles/scalastyle.css"></link><link rel="stylesheet" href="../styles/colors.css"></link><link rel="stylesheet" href="../styles/dotty-icons.css"></link><link rel="stylesheet" href="../styles/diagram.css"></link><link rel="stylesheet" href="../styles/filter-bar.css"></link><link rel="stylesheet" href="../styles/code-snippets.css"></link><link rel="stylesheet" href="../styles/searchbar.css"></link><link rel="stylesheet" href="../styles/social-links.css"></link><link rel="stylesheet" href="../styles/ux.css"></link><link rel="stylesheet" href="../styles/versions-dropdown.css"></link><link rel="stylesheet" href="../styles/fontawesome.css"></link><script type="text/javascript" src="../hljs/highlight.min.js" defer="true"></script><script type="text/javascript" src="../scripts/hljs-scala3.js" defer="true"></script><script type="text/javascript" src="../scripts/ux.js" defer="true"></script><script type="text/javascript" src="../scripts/common/component.js" defer="true"></script><script type="text/javascript" src="../scripts/common/utils.js" defer="true"></script><script type="text/javascript" src="../scripts/components/FilterBar.js" defer="true"></script><script type="text/javascript" src="../scripts/components/DocumentableList.js" defer="true"></script><script type="text/javascript" src="../scripts/components/Input.js" defer="true"></script><script type="text/javascript" src="../scripts/components/FilterGroup.js" defer="true"></script><script type="text/javascript" src="../scripts/components/Filter.js" defer="true"></script><script type="text/javascript" src="../scripts/scaladoc-scalajs.js" defer="true"></script><script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js" defer="true"></script><script type="text/javascript" src="https://d3js.org/d3.v6.min.js" defer="true"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.2/dist/graphlib-dot.min.js" defer="true"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.1/dagre-d3.min.js" defer="true"></script><script type="text/javascript" src="https://scastie.scala-lang.org/embedded.js" defer="true"></script><script type="text/javascript" src="../scripts/data.js" defer="true"></script><script>var pathToRoot = "../";</script><script>var githubContributorsUrl = "https://api.github.com/repos/rayrobdod/string-context-parser-combinator";</script><script>var githubContributorsFilename = "/Base/src/docs/_docs/getting-started.md";</script></head><body><div id="container"><div id="leftColumn"><div id="logo"><span><div class="projectName">string-context-parser-combinator</div></span><div id="version"><div class="versions-dropdown"><div onclick="dropdownHandler()" id="dropdown-button" class="dropdownbtn dropdownbtnactive"><div class="projectVersion">SNAPSHOT</div><div id="dropdown-content" class="dropdown-content"><input type="text" placeholder="Search..." id="dropdown-input" onkeyup="filterFunction()"></input></div></div></div></div><div class="socials"><a href="https://github.com/rayrobdod/string-context-parser-combinator"><span class="social-icon" data-icon-path="github-icon-white.png"></span></a></div></div><div id="paneSearch"></div><nav id="sideMenu2"><div class="ni expanded"><span class="nh expanded"><span class="ar"></span><a href="index.html"><span>string-context-parser-combinator</span></a></span><div class="ni "><span class="nh "><a href="context-parameters.html"><span>Context Parameters</span></a></span></div><div class="ni expanded"><span class="nh selected"><a href="getting-started.html"><span>Getting Started</span></a></span></div><div class="ni"><span class="nh "><span class="ar"></span><a href="../index.html"><span>API</span></a></span><div class="ni"><span class="nh "><span class="ar"></span><a href="../com/rayrobdod/stringContextParserCombinator.html"><span class="micon pa"></span><span>com.rayrobdod.stringContextParserCombinator</span></a></span><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/CodePoint.html"><span class="micon cl"></span><span>CodePoint</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/LiftFunction.html"><span class="micon tr"></span><span>LiftFunction</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/Parser.html"><span class="micon cl"></span><span>Parser</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/Parsers$.html"><span class="micon ob"></span><span>Parsers</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/RepeatStrategy.html"><span class="micon en"></span><span>RepeatStrategy</span></a></span></div></div><div class="ni"><span class="nh "><span class="ar"></span><a href="../com/rayrobdod/stringContextParserCombinator/typelevel.html"><span class="micon pa"></span><span>com.rayrobdod.stringContextParserCombinator.typelevel</span></a></span><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Eithered.html"><span class="micon tr"></span><span>Eithered</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Eithered$.html"><span class="micon ob"></span><span>Eithered</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Optionally.html"><span class="micon tr"></span><span>Optionally</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Optionally$.html"><span class="micon ob"></span><span>Optionally</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Repeated.html"><span class="micon tr"></span><span>Repeated</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Repeated$.html"><span class="micon ob"></span><span>Repeated</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Sequenced.html"><span class="micon tr"></span><span>Sequenced</span></a></span></div><div class="ni "><span class="nh "><a href="../com/rayrobdod/stringContextParserCombinator/typelevel/Sequenced$.html"><span class="micon ob"></span><span>Sequenced</span></a></span></div></div></div></div></nav></div><div id="main"><div id="leftToggler"><span class="icon-toggler"></span></div><div id="scaladoc-searchBar"></div><main id="main-content"><div class="breadcrumbs container"><a href="index.html">string-context-parser-combinator</a>/<a href="getting-started.html">Getting Started</a></div><div id="content"><html>
+ <head></head>
+ <body>
+  <p>For our first parser, we'll implement a string interpolator equivalent to the standard <code>s</code> interpolator. To start with, we'll create a <code>s2</code> StringContext extension, same as we would for any other StringContext extension macro, and the scaffold for a method implementing this macro.</p> 
+  <div class="snippet" scala-snippet="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="0" class=""><span class="tooltip-container"></span>extension (inline sc:StringContext)
+</span><span id="1" class=""><span class="tooltip-container"></span>  inline def s2(inline args:Any*):String =
+</span><span id="2" class=""><span class="tooltip-container"></span>    ${s2impl('sc, 'args)}
+</span><span id="3" class=""><span class="tooltip-container"></span>
+</span><span id="4" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = ???
+</span></code></pre>
+  </div> 
+  <p>From here on, every change will be in the macro impl function; we'll iterate on s2impl until we get our final parser.</p> 
+  <p>We'll start by creating a Parser that will match one of any character from the processed string. <code>CharWhere</code> is one of the leaf parsers that can be used for this; <code>CharWhere</code> takes a predicate and a description of the predicate, used for error reporting; if the next character passes the predicate, then the CharWhere parser matches the character and captures the character. Since we want this parser to match any character, we will use a predicate that always returns true.</p> 
+  <p>The result of this parser will be a <code>Char</code>, but since we know that we want our macro to return a <code>Expr[String]</code> (and since it has to return an <code>Expr[_]</code> since it is a macro), we will force the result into this shape to test the macro.</p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="0" class=""><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="1" class=""><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="2" class=""><span class="tooltip-container"></span>
+</span><span id="3" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="4" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="5" class=""><span class="tooltip-container"></span>
+</span><span id="6" class=""><span class="tooltip-container"></span>  val result = anyChar.parse(sc, args)
+</span><span id="7" class=""><span class="tooltip-container"></span>  // `result` is a `Char`. Stringify the result and wrap it to fit the required shape.
+</span><span id="8" class=""><span class="tooltip-container"></span>  Expr(s"$result")
+</span><span id="9" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div>
+  <div class="snippet"> 
+   <pre><code>s2"Hello" == "H"
+s2"${name}" fails with Expected anyChar
+</code></pre> 
+  </div> 
+  <p>Note that the parser matches the first character if there is one. Parsing starts at the start of the processed string.</p> 
+  <p>Using a parser that can match one of any character, we can create a parser that can match a sequence of characters using the <code>repeat</code> operator. The repeat operator creates a parser that will invoke the operand repeatedly until the operand parser fails, and then combine the results of the repeated operand runs into a new value. In this case, since the operand is a <code>Parser[Char]</code>, the result is a <code>Parser[String]</code>.</p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="1" class="hideable"><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="4" class=""><span class="tooltip-container"></span>
+</span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat()
+</span><span id="8" class=""><span class="tooltip-container"></span>
+</span><span id="9" class=""><span class="tooltip-container"></span>  val result = anyChars.parse(sc, args)
+</span><span id="10" class=""><span class="tooltip-container"></span>  // `result` is a `String`. wrap it to fit the required shape.
+</span><span id="11" class=""><span class="tooltip-container"></span>  Expr(s"$result")
+</span><span id="12" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div>
+  <div class="snippet"> 
+   <pre><code>s2"Hello." == "Hello."
+s2"Hello ${name}!" == "Hello "
+</code></pre> 
+  </div> 
+  <p>Now, we'd like our parser to directly return an <code>Expr[String]</code>, instead of returning whatever and requiring us to transform it outside of the parser. Especially since after this, we'll be dealing with args that are already <code>Expr</code>s.</p> 
+  <p>The map operator takes a <code>Parser[A]</code> and a mapping <code>A =&gt; B</code> and will create a parser which will consume the same input an the input parser, but will return the result of applying the mapping to the input parser's result. In this case, we want <code>anyChars</code> to return a <code>Expr[String]</code> instead of a <code>String</code>, so we will apply a mapping of <code>String =&gt; Expr[String]</code> to the parser.</p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="1" class="hideable"><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="4" class=""><span class="tooltip-container"></span>
+</span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat(1).map(str =&gt; Expr(str))
+</span><span id="8" class=""><span class="tooltip-container"></span>
+</span><span id="9" class=""><span class="tooltip-container"></span>  anyChars.parse(sc, args)
+</span><span id="10" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div> 
+  <p>This version is functionally equivalent to the previous version.</p> 
+  <p>Next, lets handle processed string arguments. We will set aside <code>anyChars</code> for now. Of the leaf parsers that handle args, <code>OfType</code> is the simplest to use. An <code>OfType</code> takes a type parameter and will match any argument of that type and return that argument. So, an <code>OfType[Int]</code> would match any argument that is an <code>Expr[Int]</code> or a subclass of Int. Since we want to match any Expr, we will use <code>OfType[Any]</code>. The result of running this parser is <code>Expr[Any]</code>, but we want an <code>Expr[String]</code>, so we will map the parser using the <code>Any.toString</code> method.</p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="1" class="hideable"><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="4" class=""><span class="tooltip-container"></span>
+</span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
+</span><span id="7" class=""><span class="tooltip-container"></span>
+</span><span id="8" class=""><span class="tooltip-container"></span>  anyArg.parse(sc, args)
+</span><span id="9" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div>
+  <div class="snippet"> 
+   <pre><code>s2"${name}" == "Mr. Smith"
+s2"Hello ${name}!" fails with Expected OfType[Any]
+</code></pre> 
+  </div> 
+  <p>Now that we have one parser that will match a sequence of characters and another that will match an arg, we can create a parser that will match either a sequence of characters or an arg by combing the two other parsers using the <code>orElse</code> operator. The <code>orElse</code> operator creates a parser that will attempt the left parser, passing the result of left parser if the result was a success, otherwise attempting the right parser and passing that result. Since both arguments to the orElse operator are <code>Parser[Expr[String]]</code>, the result of the operator will also be a <code>Parser[Expr[String]]</code></p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="1" class="hideable"><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="4" class=""><span class="tooltip-container"></span>
+</span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat().map(str =&gt; Expr(str))
+</span><span id="8" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
+</span><span id="9" class=""><span class="tooltip-container"></span>  val segment = anyChars orElse anyArg
+</span><span id="10" class=""><span class="tooltip-container"></span>
+</span><span id="11" class=""><span class="tooltip-container"></span>  segment.parse(sc, args)
+</span><span id="12" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div>
+  <div class="snippet"> 
+   <pre><code>s2"Hello ${name}!" == "Hello "
+s2"${name}" == ""
+</code></pre> 
+  </div> 
+  <p>Oh, the parser didn't do quite what we wanted. Here, the parser saw that the string started with zero characters and considered that to be a match of the <code>anyChars</code> branch. To fix this, we are going to modify the <code>repeat</code> call in <code>anyChars</code>. <code>repeat</code> has several optional arguments, the first of which is the minimum number of repeats required for the parse to be considered a success. This argument defaults to zero, but if it is explicitly set to one and the processed string starts with an arg, then <code>anyChars</code> will not consider a run of zero characters to be a success, and <code>segment</code> will try the <code>anyArg</code> branch after the <code>anyChars</code> branch fails.</p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="1" class="hideable"><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="4" class=""><span class="tooltip-container"></span>
+</span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat(1).map(str =&gt; Expr(str))
+</span><span id="8" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
+</span><span id="9" class=""><span class="tooltip-container"></span>  val segment = anyChars orElse anyArg
+</span><span id="10" class=""><span class="tooltip-container"></span>
+</span><span id="11" class=""><span class="tooltip-container"></span>  segment.parse(sc, args)
+</span><span id="12" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div>
+  <div class="snippet"> 
+   <pre><code>s2"Hello ${name}!" == "Hello "
+s2"${name}" == "Mr. Smith"
+</code></pre> 
+  </div> 
+  <p>Now that we have a parser that can match either a run of characters or an argument, we can <code>repeat</code> that parser to create a parser that can match a sequence of character-sequences-or-arguments. Similar to last time, however, since the input to the repeat parser is a <code>Parser[Expr[String]]</code>, the result will instead be a <code>Parser[Seq[Expr[String]]]</code>. In general, without providing a custom instance of the Repeated typeclass, <code>repeat</code> will create a parser that produces a <code>Seq[A]</code>; the <code>Char</code> to <code>String</code> seen before was a special case. Anyway, we have a <code>Parser[Seq[Expr[String]]]</code>, and we can map a <code>Seq[Expr[String]]</code> to an <code>Expr[String]</code>, using that mapping will give us our final parser.</p> 
+  <div class="snippet" scala-snippet="" runnable="">
+   <div class="buttons"></div>
+   <pre><code class="language-scala"><span id="1" class="hideable"><span class="tooltip-container"></span>import scala.quoted.{Expr, Quotes}
+</span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
+</span><span id="4" class=""><span class="tooltip-container"></span>
+</span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat(1).map(str =&gt; Expr(str))
+</span><span id="8" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
+</span><span id="9" class=""><span class="tooltip-container"></span>  val segment = anyChars orElse anyArg
+</span><span id="10" class=""><span class="tooltip-container"></span>  val segments = segment.repeat().map(strExprs =&gt; '{${Expr.ofList(strExprs)}.mkString})
+</span><span id="11" class=""><span class="tooltip-container"></span>  // concatenation using a StringBuilder instead of List::mkString is left as an exercise for the reader
+</span><span id="12" class=""><span class="tooltip-container"></span>
+</span><span id="13" class=""><span class="tooltip-container"></span>  segment.parse(sc, args)
+</span><span id="14" class=""><span class="tooltip-container"></span>}
+</span></code></pre>
+  </div>
+  <div class="snippet"> 
+   <pre><code>s2"Hello ${name}!" == "Hello Mr. Smith!"
+s2"1 + 1 = ${1 + 1}" == "1 + 1 = 2"
+</code></pre> 
+  </div> 
+  <p>Now, we have a re-implementation of the standard string interpolator.</p> 
+ </body>
+</html></div></main><footer><div id="generated-by"><span class="footer-text">Generated by</span><a href="https://github.com/lampepfl/dotty/tree/main/scaladoc"><img src="../images/scaladoc_logo.svg" alt="scaladoc" class="scaladoc_logo"></img><img src="../images/scaladoc_logo_dark.svg" alt="scaladoc" class="scaladoc_logo_dark"></img></a></div><div class="socials"><span class="footer-text">Social links</span><a href="https://github.com/rayrobdod/string-context-parser-combinator"><span class="social-icon" data-icon-path="github-icon-black.png"></span></a></div><div class="mode"><span class="footer-text">Mode</span><label id="theme-toggle" class="switch"><input type="checkbox"></input><span class="slider"></span></label></div><span class="go-to-top-icon"><a href="#container"><span class="icon-vertical_align_top"></span><span class="footer-text">Back to top</span></a></span></footer></div></div></body></html>
