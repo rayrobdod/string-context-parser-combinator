@@ -4,7 +4,7 @@ ThisBuild / organization := "com.rayrobdod"
 val scala211Ver = "2.11.12"
 val scala212Ver = "2.12.15"
 val scala213Ver = "2.13.8"
-val scala30Ver = "3.1.2"
+val scala30Ver = "3.1.3"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
@@ -33,7 +33,7 @@ lazy val sharedSettings = Seq(
 		case _ => Seq(
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-revision", git.gitHeadCommit.value.get,
-			"-siteroot", ((sourceDirectory).value / "docs" / "public").toString,
+			"-siteroot", ((sourceDirectory).value / "docs").toString,
 			"-external-mappings:.*scala.*::scaladoc3::https://scala-lang.org/api/3.x/",
 			"-snippet-compiler:compile",
 			"-social-links:github::https://github.com/rayrobdod/string-context-parser-combinator",
