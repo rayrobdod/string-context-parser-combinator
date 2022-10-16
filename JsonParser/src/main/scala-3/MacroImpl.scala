@@ -99,7 +99,7 @@ object MacroImpl {
 
 	private def StringBase(using Quotes):Parser[Expr[String]] = {
 		val DelimiterP:Parser[Unit] = IsString("\"")
-		val JCharImmediate:Parser[Char] = CharWhere(c => c >= ' ' && c != '"' && c != '\\', "printable character other than '\"' or '\\'")
+		val JCharImmediate:Parser[Char] = CharWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
 		val JCharEscaped:Parser[Char] = (
 			(IsString("\\") andThen (
 				CharIn("\\/\"") orElse

@@ -77,8 +77,8 @@ object Parsers {
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group Part
 	 */
-	def CharWhere(fn:Function1[Char, Boolean], description:String):Parser[Char] =
-		new Parser(parsers.CharWhere(fn, ExpectingDescription(description)))
+	def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] =
+		new Parser(parsers.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
@@ -105,8 +105,8 @@ object Parsers {
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group Part
 	 */
-	def CodePointWhere(fn:Function1[CodePoint, Boolean], description:String):Parser[CodePoint] =
-		new Parser(parsers.CodePointWhere(fn, ExpectingDescription(description)))
+	def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] =
+		new Parser(parsers.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string

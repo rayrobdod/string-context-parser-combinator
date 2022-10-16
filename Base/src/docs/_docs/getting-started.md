@@ -30,7 +30,7 @@ import scala.quoted.{Expr, Quotes}
 import com.rayrobdod.stringContextParserCombinator.Parsers._
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true, "anyChar")
+  val anyChar = CharWhere(_ => true)
 
   val result = anyChar.parse(sc, args)
   // `result` is a `Char`. Stringify the result and wrap it to fit the required shape.
@@ -57,7 +57,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true, "anyChar")
+  val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat()
 
   val result = anyChars.parse(sc, args)
@@ -86,7 +86,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true, "anyChar")
+  val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat(1).map(str => Expr(str))
 
   anyChars.parse(sc, args)
@@ -132,7 +132,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true, "anyChar")
+  val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat().map(str => Expr(str))
   val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
   val segment = anyChars orElse anyArg
@@ -160,7 +160,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true, "anyChar")
+  val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat(1).map(str => Expr(str))
   val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
   val segment = anyChars orElse anyArg
@@ -188,7 +188,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true, "anyChar")
+  val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat(1).map(str => Expr(str))
   val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
   val segment = anyChars orElse anyArg

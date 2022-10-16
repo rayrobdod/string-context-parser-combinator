@@ -20,7 +20,11 @@ package parsers {
 
 package object parsers {
 
-	private def unescape(in:Char):String = in match {
+	/**
+	 * Returns a string representing the given code point, possibly represented
+	 * with scala-type escape sequences
+	 */
+	private def escape(in:Int):String = in match {
 		case '\"' => "\\\""
 		case '\\' => "\\\\"
 		case '\b' => "\\b"
@@ -28,20 +32,55 @@ package object parsers {
 		case '\n' => "\\n"
 		case '\r' => "\\r"
 		case '\t' => "\\t"
-		case x if x < ' ' => f"\\u${x.toInt}%04d"
-		case x => f"$x"
+		case x if Character.isISOControl(x) => f"\\u${x.toInt}%04X"
+		case _ => CodePoint(in).toString
 	}
 
-	private def unescape(in:CodePoint):String = in.value match {
-		case '\"' => "\\\""
-		case '\\' => "\\\\"
-		case '\b' => "\\b"
-		case '\f' => "\\f"
-		case '\n' => "\\n"
-		case '\r' => "\\r"
-		case '\t' => "\\t"
-		case x if x < ' ' => f"\\u${x}%04d"
-		case _ => in.toString
+	/**
+	 * Returns a string that describes which codepoints match the predicate
+	 */
+	private def describeCodepointPredicate(predicate:Int => Boolean, domainMax: Int):ExpectingDescription = {
+		val builder = new StringBuilder()
+		var inMatchingBlock:Boolean = false
+		var firstCharOfBlock:Int = 0
+
+		(0 to domainMax).foreach({c =>
+			if (predicate(c)) {
+				if (inMatchingBlock) {
+					// continue
+				} else {
+					inMatchingBlock = true
+					firstCharOfBlock = c
+				}
+			} else {
+				if (inMatchingBlock) {
+					builder.++=("'")
+					builder.++=(escape(firstCharOfBlock))
+					if (firstCharOfBlock != c - 1) {
+						builder.++=("'<=c<='")
+						builder.++=(escape((c - 1)))
+					}
+					builder.++=("' or ")
+					inMatchingBlock = false
+				} else {
+					// continue
+				}
+			}
+		})
+		if (inMatchingBlock) {
+			builder.++=("'")
+			builder.++=(escape(firstCharOfBlock))
+			builder.++=("'<=c<='")
+			builder.++=(escape(domainMax))
+			builder.++=("' or ")
+		}
+		ExpectingDescription(
+			if (builder.length > 4) {
+				builder.substring(0, builder.length - 4)
+			} else {
+				"nothing"
+			}
+		)
 	}
 
 	/* * * Leaf parsers * * */
@@ -52,7 +91,7 @@ package object parsers {
 		chooseFrom:Set[Char]
 	):Parser[Any, Char] = CharWhere(
 		chooseFrom.contains _,
-		ExpectingDescription(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
+		ExpectingDescription(chooseFrom.map(c => escape(c)).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
@@ -61,8 +100,20 @@ package object parsers {
 		chooseFrom:Seq[Char]
 	):Parser[Any, Char] = CharWhere(
 		chooseFrom.contains _,
-		ExpectingDescription(chooseFrom.map(unescape _).mkString("CharIn(\"", "", "\")"))
+		ExpectingDescription(chooseFrom.map(c => escape(c)).mkString("CharIn(\"", "", "\")"))
 	)
+
+	/** Succeeds if the next character matches the given predicate; captures that character */
+	private[stringContextParserCombinator]
+	def CharWhere(
+		predicate:Function1[Char, Boolean]
+	):Parser[Any, Char] = {
+		val description = describeCodepointPredicate(c => predicate(c.toChar), Character.MAX_VALUE)
+		CharWhere(
+			predicate,
+			description
+		)
+	}
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
@@ -82,7 +133,7 @@ package object parsers {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
 		this.CodePointWhere(
 			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
-			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(c => escape(c)).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -93,7 +144,7 @@ package object parsers {
 	):Parser[Any, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(c => escape(c.value)).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -104,7 +155,19 @@ package object parsers {
 	):Parser[Any, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			ExpectingDescription(chooseFrom.map(unescape _).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(c => escape(c.value)).mkString("CodePointIn(\"", "", "\")"))
+		)
+	}
+
+	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
+	private[stringContextParserCombinator]
+	def CodePointWhere(
+		predicate:Function1[CodePoint, Boolean]
+	):Parser[Any, CodePoint] = {
+		val description = describeCodepointPredicate(c => predicate(CodePoint(c)), Character.MAX_CODE_POINT)
+		CodePointWhere(
+			predicate,
+			description
 		)
 	}
 
@@ -123,7 +186,7 @@ package object parsers {
 		value:String
 	):Parser[Any, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
-		ExpectingDescription(value.map(unescape _).mkString("\"", "", "\""))
+		ExpectingDescription(value.map(c => escape(c)).mkString("\"", "", "\""))
 	)
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
