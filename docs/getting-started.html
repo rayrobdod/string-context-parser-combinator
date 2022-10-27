@@ -20,7 +20,7 @@
 </span><span id="1" class=""><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
 </span><span id="2" class=""><span class="tooltip-container"></span>
 </span><span id="3" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-</span><span id="4" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="4" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true)
 </span><span id="5" class=""><span class="tooltip-container"></span>
 </span><span id="6" class=""><span class="tooltip-container"></span>  val result = anyChar.parse(sc, args)
 </span><span id="7" class=""><span class="tooltip-container"></span>  // `result` is a `Char`. Stringify the result and wrap it to fit the required shape.
@@ -41,7 +41,7 @@ s2"${name}" fails with Expected anyChar
 </span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
 </span><span id="4" class=""><span class="tooltip-container"></span>
 </span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true)
 </span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat()
 </span><span id="8" class=""><span class="tooltip-container"></span>
 </span><span id="9" class=""><span class="tooltip-container"></span>  val result = anyChars.parse(sc, args)
@@ -63,7 +63,7 @@ s2"Hello ${name}!" == "Hello "
 </span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
 </span><span id="4" class=""><span class="tooltip-container"></span>
 </span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true)
 </span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat(1).map(str =&gt; Expr(str))
 </span><span id="8" class=""><span class="tooltip-container"></span>
 </span><span id="9" class=""><span class="tooltip-container"></span>  anyChars.parse(sc, args)
@@ -96,7 +96,7 @@ s2"Hello ${name}!" fails with Expected OfType[Any]
 </span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
 </span><span id="4" class=""><span class="tooltip-container"></span>
 </span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true)
 </span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat().map(str =&gt; Expr(str))
 </span><span id="8" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
 </span><span id="9" class=""><span class="tooltip-container"></span>  val segment = anyChars orElse anyArg
@@ -117,7 +117,7 @@ s2"${name}" == ""
 </span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
 </span><span id="4" class=""><span class="tooltip-container"></span>
 </span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true)
 </span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat(1).map(str =&gt; Expr(str))
 </span><span id="8" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
 </span><span id="9" class=""><span class="tooltip-container"></span>  val segment = anyChars orElse anyArg
@@ -138,7 +138,7 @@ s2"${name}" == "Mr. Smith"
 </span><span id="2" class="hideable"><span class="tooltip-container"></span>import com.rayrobdod.stringContextParserCombinator.Parsers._
 </span><span id="4" class=""><span class="tooltip-container"></span>
 </span><span id="5" class=""><span class="tooltip-container"></span>def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true, "anyChar")
+</span><span id="6" class=""><span class="tooltip-container"></span>  val anyChar = CharWhere(_ =&gt; true)
 </span><span id="7" class=""><span class="tooltip-container"></span>  val anyChars = anyChar.repeat(1).map(str =&gt; Expr(str))
 </span><span id="8" class=""><span class="tooltip-container"></span>  val anyArg = OfType[Any].map(anyExpr =&gt; '{$anyExpr.toString()})
 </span><span id="9" class=""><span class="tooltip-container"></span>  val segment = anyChars orElse anyArg
