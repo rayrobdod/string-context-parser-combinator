@@ -32,7 +32,7 @@ object MacroImpl {
 	private val UnreservedChar:Parser[CodePoint] = AlphaNumChar orElse CodePointIn("-_.!~*'()")
 
 	private val EscapedChar:Parser[CodePoint] = {
-		implicit val Utf8ContinuationAndThen:typelevel.Sequenced[Int, Int, Int] = {(a:Int, b:Int) => a << 6 | b}
+		given Utf8ContinuationAndThen:typelevel.Sequenced[Int, Int, Int] = {(a:Int, b:Int) => a << 6 | b}
 		val EscapedContinuation:Parser[Int] = (IsString("%") andThen CharIn("89ABab") andThen HexChar).map({x => (parseByteHex(x) & 0x3F)})
 
 		(IsString("%") andThen (
@@ -147,21 +147,17 @@ object MacroImpl {
 			.repeat()
 			.map(xs => concatenateStrings(xs))
 		val Mapping = {
-			import scala.language.implicitConversions
-			implicit def fn2then[A,B,Z](fn:(A,B) => Z):typelevel.Sequenced[A,B,Z] = new typelevel.Sequenced[A,B,Z]{
-				def aggregate(a:A, b:B):Z = fn(a,b)
-			}
-			implicit def AndThenElemElem:typelevel.Sequenced[Expr[String], Expr[String], List[Expr[String]]] = (a:Expr[String],b:Expr[String]) => a :: b :: Nil
-			implicit def AndThenElemList:typelevel.Sequenced[Expr[String], List[Expr[String]], List[Expr[String]]] = (a:Expr[String], b:List[Expr[String]]) => a +: b
-			implicit def AndThenListElem:typelevel.Sequenced[List[Expr[String]], Expr[String], List[Expr[String]]] = (a:List[Expr[String]], b:Expr[String]) => a :+ b
-			implicit def AndThenListList:typelevel.Sequenced[List[Expr[String]], List[Expr[String]], List[Expr[String]]] = (a:List[Expr[String]], b:List[Expr[String]]) => a ++: b
-			final class ListRepeatTypes[A] extends typelevel.Repeated[List[A], List[A]] {
+			given typelevel.Sequenced[Expr[String], Expr[String], List[Expr[String]]] = (a, b) => a :: b :: Nil
+			given typelevel.Sequenced[Expr[String], List[Expr[String]], List[Expr[String]]] = (a, b) => a +: b
+			given typelevel.Sequenced[List[Expr[String]], Expr[String], List[Expr[String]]] = (a, b) => a :+ b
+			given typelevel.Sequenced[List[Expr[String]], List[Expr[String]], List[Expr[String]]] = (a, b) => a ++: b
+			given [A]:typelevel.Repeated[List[A], List[A]] = new typelevel.Repeated[List[A], List[A]] {
 				type Acc = scala.collection.mutable.Builder[A, List[A]]
 				def init():Acc = List.newBuilder
 				def append(acc:Acc, elem:List[A]):Unit = {acc ++= elem}
 				def result(acc:Acc):List[A] = acc.result
 			}
-			implicit def ListRepeatTypes[A]:typelevel.Repeated[List[A], List[A]] = new ListRepeatTypes[A]
+
 			val EqualsChar = CodePointIn("=").map(x => Expr.apply(x.toString))
 			val AndChar = CodePointIn("&").map(x => Expr.apply(x.toString))
 

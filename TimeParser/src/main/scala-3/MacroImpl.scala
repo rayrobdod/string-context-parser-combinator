@@ -47,14 +47,14 @@ object MacroImpl {
 
 	/** Adds symbolic methods to Parsers */
 	extension [U, A, B, Z] (backing:Parser[U, A])
-		def ~(rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-		def ~/(rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
-		def |(rhs:Parser[U, B])(implicit ev:typelevel.Eithered[A,B,Z]) = backing.orElse(rhs)(ev)
+		def ~(rhs:Parser[U, B])(using ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
+		def ~/(rhs:Parser[U, B])(using ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
+		def |(rhs:Parser[U, B])(using ev:typelevel.Eithered[A,B,Z]) = backing.orElse(rhs)(ev)
 
 	/** Adds symbolic methods to Parsers */
 	extension [U, A, Z] (backing:Parser[U, A])
-		def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
-		def opt(implicit ev:typelevel.Optionally[A, Z]) = backing.optionally()(ev)
+		def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(using ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
+		def opt(using ev:typelevel.Optionally[A, Z]) = backing.optionally()(ev)
 
 
 
