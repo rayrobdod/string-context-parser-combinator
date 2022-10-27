@@ -2,7 +2,8 @@
 title: Context Parameters
 ---
 
-The Parser methods `andThen`, `orElse`, `repeat` and `optionally` each take a context parameter which describes how to
+The [[Parser|com.rayrobdod.stringContextParserCombinator.Parser]] methods
+`andThen`, `orElse`, `repeat` and `optionally` each take a context parameter which describes how to
 combine the results of the aggregate parser's components. Each of these types reside in
 [[com.rayrobdod.stringContextParserCombinator.typelevel]]. Each of these four types' companion object defines one
 low-priority given instance that accepts any type and produces an appropriate generic result. The companion object also
@@ -11,11 +12,11 @@ maybe a few more for common use cases.
 
 Defining custom instances of these types is supported. Making custom given instances can significantly reduce the number
 of explicit `map` calls required when writing a parser, however the usual advice with [given
-instances](https://dotty.epfl.ch/docs/reference/contextual/givens.html) applies: keep types specific, or keep the scope
+instances](https://docs.scala-lang.org/scala3/reference/contextual/givens.html) applies: keep types specific, or keep the scope
 of a given instance to the minimum viable to prevent given instances from becoming confusing.
 
 
-# Sequenced
+## Sequenced
 
 A [[Sequenced|com.rayrobdod.stringContextParserCombinator.typelevel.Sequenced]] describes how to combine two adjacent values into
 one value.
@@ -72,7 +73,7 @@ given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
 ```
 
 
-# Eithered
+## Eithered
 
 An [[Eithered|com.rayrobdod.stringContextParserCombinator.typelevel.Eithered]] describes how to treat a parser result
 that may be the result of one parser or the result of the other parser.
@@ -156,7 +157,7 @@ given Eithered[File, UUID, URI] with {
 ```
 
 
-# Repeated
+## Repeated
 
 A [[Repeated|com.rayrobdod.stringContextParserCombinator.typelevel.Repeated]] describes how to combine a homogeneous
 sequence of zero-or-more values.
@@ -225,7 +226,7 @@ val digit:Parser[Digit] = CharIn('0' to '9').map(x => Digit(x - '0'))
 val digits:Parser[Digits] = digit.repeat(1)
 ```
 
-# Optionally
+## Optionally
 
 An [[Optionally|com.rayrobdod.stringContextParserCombinator.typelevel.Optionally]] describes the result of a parser that
 might parse another value.
