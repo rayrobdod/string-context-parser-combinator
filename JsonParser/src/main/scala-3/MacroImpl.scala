@@ -127,8 +127,8 @@ object MacroImpl {
 	}
 
 	private def ArrayP(using Quotes):Parser[Expr[JArray]] = DelayedConstruction(() => {
-		val Prefix:Parser[Unit] = IsString("[")
-		val Delim:Parser[Unit] = IsString(",")
+		val Prefix:Parser[Unit] = IsString("[") andThen WhitespaceP
+		val Delim:Parser[Unit] = IsString(",") andThen WhitespaceP
 		val Suffix:Parser[Unit] = IsString("]")
 
 		val LiftedArrayV = Lifted[Lift.Array, Expr[JArray]](
@@ -139,7 +139,7 @@ object MacroImpl {
 
 		val SplicableValue:Parser[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]] = (
 			ValueP.map(x => Left(x)) orElse
-			(WhitespaceP andThen IsString("..") andThen LiftedArrayV2
+			(IsString("..") andThen LiftedArrayV2
 				andThen WhitespaceP).map(x => Right(x))
 		)
 		val LiteralPresplice:Parser[List[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]]] = (
@@ -153,9 +153,9 @@ object MacroImpl {
 	})
 
 	private def ObjectP(using Quotes):Parser[Expr[JObject]] = DelayedConstruction(() => {
-		val Prefix:Parser[Unit] = IsString("{")
-		val Separator:Parser[Unit] = IsString(":")
-		val Delim:Parser[Unit] = IsString(",")
+		val Prefix:Parser[Unit] = IsString("{") andThen WhitespaceP
+		val Separator:Parser[Unit] = IsString(":") andThen WhitespaceP
+		val Delim:Parser[Unit] = IsString(",") andThen WhitespaceP
 		val Suffix:Parser[Unit] = IsString("}")
 
 		val ObjectV = Lifted[Lift.Object, Expr[JObject]](
@@ -176,17 +176,17 @@ object MacroImpl {
 			).map(jstringExprToStringExpr _)
 			val Immediate:Parser[Expr[String]] = StringBase
 
-			WhitespaceP andThen (LiftedV orElse Immediate) andThen WhitespaceP
+			(LiftedV orElse Immediate) andThen WhitespaceP
 		}
 
 
 		val SplicableValue:Parser[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]] = (
-			(WhitespaceP andThen KeyValueV andThen WhitespaceP)
+			(KeyValueV andThen WhitespaceP)
 				.map(x => Left(x)) orElse
 			(KeyV andThen Separator andThenWithCut ValueP)
 				.map(x => {val (k, v) = x; '{ Tuple2.apply($k, $v) }})
 				.map(x => Left(x)) orElse
-			(WhitespaceP andThen IsString("..") andThen ObjectV2 andThen WhitespaceP)
+			(IsString("..") andThen ObjectV2 andThen WhitespaceP)
 				.map(x => Right(x))
 		)
 		val LiteralPresplice:Parser[List[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]]] = (
@@ -205,12 +205,12 @@ object MacroImpl {
 	)
 
 	private def ValueP(using Quotes):Parser[Expr[JValue]] = {
-		(WhitespaceP andThen (
+		((
 			NullP orElse BooleanP orElse NumberP orElse JStringP orElse ArrayP orElse ObjectP orElse LiftedP
 		) andThen WhitespaceP)
 	}
 
-	private def Aggregate(using Quotes) = (ValueP andThen End)
+	private def Aggregate(using Quotes) = (WhitespaceP andThen ValueP andThen End)
 
 	def stringContext_json(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[JValue] = {
 		Aggregate.parse(sc, args)
