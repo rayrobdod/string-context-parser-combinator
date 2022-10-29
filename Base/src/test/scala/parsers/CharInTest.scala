@@ -6,20 +6,19 @@ import org.scalatest.funspec.AnyFunSpec
 import TestUtilities._
 
 object CharInTest {
-	final case class Expr(value:String, pos:Int)
+	final case class Expr(value:String)
 }
 
 final class CharInTest extends AnyFunSpec {
 	import CharInTest._
 	def InputPart(str:String, pos:Int) = ((str, StubPosition(pos)))
-	val exprToPosition:Expr => StubPosition = (expr:Expr) => StubPosition(expr.pos)
 
-	def expectSuccess(head:Char, restOfSet:Set[Char], tail:(List[(String, StubPosition)], List[Expr]), expecting:Set[Expecting[StubPosition]]) = {
-		val input = new Input(((s"${head}${tail._1.head._1}", tail._1.head._2 + -1)) :: tail._1.tail, tail._2, exprToPosition)
+	def expectSuccess(head:Char, restOfSet:Set[Char], tail:(List[(String, StubPosition)], List[(Expr, StubPosition)]), expecting:Set[Expecting[StubPosition]]) = {
+		val input = new Input(((s"${head}${tail._1.head._1}", tail._1.head._2 + -1)) :: tail._1.tail, tail._2)
 		val parserSet = restOfSet + head
 		val expected = Success(
 			head,
-			new Input(tail._1, tail._2, exprToPosition),
+			new Input(tail._1, tail._2),
 			expecting,
 			Cut.False
 		)
@@ -38,10 +37,10 @@ final class CharInTest extends AnyFunSpec {
 
 	describe("CharIn") {
 		it ("Fails to parse an empty input") {
-			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: Nil, Nil, exprToPosition))
+			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: Nil, Nil))
 		}
 		it ("Fails to parse when next value is an Arg") {
-			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: InputPart("More", 1) :: Nil, Expr("Arg", 101) :: Nil, exprToPosition))
+			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: InputPart("More", 1) :: Nil, (Expr("Arg"), StubPosition(101)) :: Nil))
 		}
 		it ("1 | 1") {
 			expectSuccess(

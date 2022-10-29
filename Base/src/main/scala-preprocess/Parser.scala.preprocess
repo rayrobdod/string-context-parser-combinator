@@ -48,16 +48,9 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[c.Expr[Any], Position.Impl](strings, args.toList, x => Position(x.tree.pos))
+		val input = new Input[Expr, Position.Impl](strings, args.toList.map(arg => (ev(arg), Position(arg.tree.pos))))
 
-#if scala=2.13.x
-		type ExprCoSubst[+B] = Input[B, Position.Impl]
-		val input2:Input[Expr, Position.Impl] = ev.substituteCo[ExprCoSubst](input)
-#else
-		val input2 = input.asInstanceOf[Input[Expr, Position.Impl]]
-#endif
-
-		impl.parse(input2) match {
+		impl.parse(input) match {
 			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
@@ -85,18 +78,17 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @group Parse
 	 */
 	final def parse(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
-		import scala.quoted.*
+		import scala.quoted.{Expr => _, _}
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
 			case _ => scala.quoted.quotes.reflect.report.errorAndAbort(s"Do not know how to process this tree", sc)
 		}
 		val strings2 = strings.map(x => ((x.valueOrAbort, Position(x)))).toList
-		val args2 = Varargs.unapply(args).get.toList
+		val args2 = Varargs.unapply(args).get.toList.map(arg => (ev(arg), Position(arg)))
 
-		val input = new Input[quoted.Expr[_], Position.Impl](strings2, args2, x => Position(x))
-		val input2:Input[this.Expr, Position.Impl] = ev.substituteCo[[A] =>> Input[A, Position.Impl]](input)
+		val input = new Input[Expr, Position.Impl](strings2, args2)
 
-		impl.parse(input2) match {
+		impl.parse(input) match {
 			case s@Success(_, _) => {
 				s.choicesHead.value
 			}

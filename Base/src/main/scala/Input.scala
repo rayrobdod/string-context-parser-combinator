@@ -6,14 +6,13 @@ package com.rayrobdod.stringContextParserCombinator
 private[stringContextParserCombinator]
 final class Input[+Expr, Pos : Position](
 	private val parts:List[(String, Pos)],
-	private val args:List[Expr],
-	argToPosition:Expr => Pos
+	private val args:List[(Expr, Pos)]
 ) {
 	private[stringContextParserCombinator] def position:Pos = {
 		if (this.parts(0)._1.length != 0) {
 			this.parts(0)._2
 		} else if (this.args.nonEmpty) {
-			argToPosition(this.args(0))
+			this.args(0)._2
 		} else {
 			this.parts(0)._2
 		}
@@ -37,14 +36,14 @@ final class Input[+Expr, Pos : Position](
 		def failure = Failure(expectingPositionSet, Cut.False)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
-				def success(x:A) = Success(x, new Input(parts.tail, args.tail, argToPosition), expectingPositionSet, Cut.False)
-				argsFn(args.head).fold[Result[Expr, Pos, A]](failure)(success _)
+				def success(x:A) = Success(x, new Input(parts.tail, args.tail), expectingPositionSet, Cut.False)
+				argsFn(args.head._1).fold[Result[Expr, Pos, A]](failure)(success _)
 			} else {
 				failure
 			}
 		} else {
 			val (headStr, headPos) = parts.head
-			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args, argToPosition), expectingPositionSet, Cut.False)
+			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args), expectingPositionSet, Cut.False)
 			partsFn(headStr).fold[Result[Expr, Pos, A]](failure)(success _)
 		}
 	}
