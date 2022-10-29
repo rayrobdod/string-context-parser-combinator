@@ -31,6 +31,7 @@ lazy val sharedSettings = Seq(
 			"-sourcepath", baseDirectory.value.toString,
 		)
 		case _ => Seq(
+			"-groups",
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-revision", git.gitHeadCommit.value.get,
 			"-siteroot", ((sourceDirectory).value / "docs").toString,
