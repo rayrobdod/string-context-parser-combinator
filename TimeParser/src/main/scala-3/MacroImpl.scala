@@ -13,7 +13,7 @@ import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given
 object MacroImpl {
 	private given Conversion[String, Parsers.Parser[Unit]] = Parsers.IsString(_)
 
-	private given given_Sequenced_Expr_YearMonth(using Quotes):typelevel.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
+	private given given_Sequenced_Expr_YearMonth(using Quotes):typeclass.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
 		def aggregate(left:Expr[Year], right:Expr[Month]):Expr[YearMonth] = (left, right) match {
 			case (Expr(year), Expr(month)) => '{YearMonth.of(${Expr(year.getValue())}, ${Expr(month.getValue())})}
 			case (Expr(year), month) => '{YearMonth.of(${Expr(year.getValue())}, $month)}
@@ -22,7 +22,7 @@ object MacroImpl {
 		}
 	}
 
-	private given given_Sequenced_Expr_DateTime(using Quotes):typelevel.Sequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
+	private given given_Sequenced_Expr_DateTime(using Quotes):typeclass.Sequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
 		def aggregate(left:Expr[LocalDate], right:Expr[LocalTime]):Expr[LocalDateTime] = (left, right) match {
 			case (Expr(date), Expr(time)) => '{
 				LocalDateTime.of(
@@ -47,14 +47,14 @@ object MacroImpl {
 
 	/** Adds symbolic methods to Parsers */
 	extension [U, A, B, Z] (backing:Parser[U, A])
-		def ~(rhs:Parser[U, B])(using ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-		def ~/(rhs:Parser[U, B])(using ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
-		def |(rhs:Parser[U, B])(using ev:typelevel.Eithered[A,B,Z]) = backing.orElse(rhs)(ev)
+		def ~(rhs:Parser[U, B])(using ev:typeclass.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
+		def ~/(rhs:Parser[U, B])(using ev:typeclass.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
+		def |(rhs:Parser[U, B])(using ev:typeclass.Eithered[A,B,Z]) = backing.orElse(rhs)(ev)
 
 	/** Adds symbolic methods to Parsers */
 	extension [U, A, Z] (backing:Parser[U, A])
-		def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(using ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
-		def opt(using ev:typelevel.Optionally[A, Z]) = backing.optionally()(ev)
+		def rep(min:Int = 0, max:Int = Integer.MAX_VALUE)(using ev:typeclass.Repeated[A, Z]) = backing.repeat(min, max)(ev)
+		def opt(using ev:typeclass.Optionally[A, Z]) = backing.optionally()(ev)
 
 
 

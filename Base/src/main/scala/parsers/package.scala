@@ -214,9 +214,9 @@ package object parsers {
 	def Optionally[Expr, A, Z](
 		backing:Parser[Expr, A],
 		strategy:RepeatStrategy,
-		ev:typelevel.Optionally[A, Z]
+		ev:typeclass.Optionally[A, Z]
 	):Parser[Expr, Z] = {
-		new Repeat(backing, 0, 1, Pass, strategy, new typelevel.Repeated[A, Z] {
+		new Repeat(backing, 0, 1, Pass, strategy, new typeclass.Repeated[A, Z] {
 			final class Box[BoxType](var value:BoxType)
 			type Acc = Box[Z]
 			def init():Acc = new Box(ev.none)

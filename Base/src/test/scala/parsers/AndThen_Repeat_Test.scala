@@ -6,7 +6,7 @@ import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 import TestUtilities._
 
 final class AndThen_Repeat_Test extends AnyFunSpec {
-	implicit object RepeatedNothing extends typelevel.Repeated[Nothing, Unit] {
+	implicit object RepeatedNothing extends typeclass.Repeated[Nothing, Unit] {
 		type Acc = Unit
 		def init():Acc = ()
 		def append(acc:Acc, elem:Nothing):Unit = ()

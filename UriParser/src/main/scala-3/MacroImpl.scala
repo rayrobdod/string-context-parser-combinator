@@ -32,7 +32,7 @@ object MacroImpl {
 	private val UnreservedChar:Parser[CodePoint] = AlphaNumChar orElse CodePointIn("-_.!~*'()")
 
 	private val EscapedChar:Parser[CodePoint] = {
-		given Utf8ContinuationAndThen:typelevel.Sequenced[Int, Int, Int] = {(a:Int, b:Int) => a << 6 | b}
+		given Utf8ContinuationAndThen:typeclass.Sequenced[Int, Int, Int] = {(a:Int, b:Int) => a << 6 | b}
 		val EscapedContinuation:Parser[Int] = (IsString("%") andThen CharIn("89ABab") andThen HexChar).map({x => (parseByteHex(x) & 0x3F)})
 
 		(IsString("%") andThen (
@@ -147,11 +147,11 @@ object MacroImpl {
 			.repeat()
 			.map(xs => concatenateStrings(xs))
 		val Mapping = {
-			given typelevel.Sequenced[Expr[String], Expr[String], List[Expr[String]]] = (a, b) => a :: b :: Nil
-			given typelevel.Sequenced[Expr[String], List[Expr[String]], List[Expr[String]]] = (a, b) => a +: b
-			given typelevel.Sequenced[List[Expr[String]], Expr[String], List[Expr[String]]] = (a, b) => a :+ b
-			given typelevel.Sequenced[List[Expr[String]], List[Expr[String]], List[Expr[String]]] = (a, b) => a ++: b
-			given [A]:typelevel.Repeated[List[A], List[A]] = new typelevel.Repeated[List[A], List[A]] {
+			given typeclass.Sequenced[Expr[String], Expr[String], List[Expr[String]]] = (a, b) => a :: b :: Nil
+			given typeclass.Sequenced[Expr[String], List[Expr[String]], List[Expr[String]]] = (a, b) => a +: b
+			given typeclass.Sequenced[List[Expr[String]], Expr[String], List[Expr[String]]] = (a, b) => a :+ b
+			given typeclass.Sequenced[List[Expr[String]], List[Expr[String]], List[Expr[String]]] = (a, b) => a ++: b
+			given [A]:typeclass.Repeated[List[A], List[A]] = new typeclass.Repeated[List[A], List[A]] {
 				type Acc = scala.collection.mutable.Builder[A, List[A]]
 				def init():Acc = List.newBuilder
 				def append(acc:Acc, elem:List[A]):Unit = {acc ++= elem}

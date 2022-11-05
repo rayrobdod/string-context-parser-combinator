@@ -73,11 +73,11 @@ object MacroImpl {
 		def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min, strategy = RepeatStrategy.Possessive)
 
 		/* Concatenate every capture in the following parser and combine into one long string */
-		given typelevel.Sequenced[String, String, String] with {
+		given typeclass.Sequenced[String, String, String] with {
 			def aggregate(a:String, b:String):String = a + b
 		}
-		given typelevel.Optionally[Char, String] = typelevel.Optionally("", _.toString)
-		given typelevel.Optionally[String, String] = typelevel.Optionally.whereDefault[String]("")
+		given typeclass.Optionally[Char, String] = typeclass.Optionally("", _.toString)
+		given typeclass.Optionally[String, String] = typeclass.Optionally.whereDefault[String]("")
 
 		(
 			CharIn("-").optionally()

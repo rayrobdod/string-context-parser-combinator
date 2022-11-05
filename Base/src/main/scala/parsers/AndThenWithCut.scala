@@ -5,7 +5,7 @@ private[stringContextParserCombinator]
 final class AndThenWithCut[Expr, A, B, Z](
 	left:Parser[Expr, A],
 	right:Parser[Expr, B],
-	ev:typelevel.Sequenced[A, B, Z]
+	ev:typeclass.Sequenced[A, B, Z]
 ) extends Parser[Expr, Z] {
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
 		left.parse(input) match {

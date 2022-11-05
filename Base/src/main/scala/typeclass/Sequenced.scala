@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package typelevel
+package typeclass
 
 /**
  * Describes how to combine two adjacent values into one value
@@ -15,7 +15,7 @@ trait Sequenced[-A, -B, +Z] {
 
 /** Predefined implicit implementations of Sequenced */
 object Sequenced extends LowPrioSequenced {
-	private[typelevel] def apply[A, B, Z](fn:(A, B) => Z):Sequenced[A, B, Z] = {
+	private[typeclass] def apply[A, B, Z](fn:(A, B) => Z):Sequenced[A, B, Z] = {
 		final class Apply extends Sequenced[A, B, Z] {
 			def aggregate(left:A, right:B):Z = fn(left, right)
 		}
@@ -27,6 +27,6 @@ object Sequenced extends LowPrioSequenced {
 	implicit def sequencedGenericUnit[A]:Sequenced[A, Unit, A] = apply((a:A, _:Unit) => a)
 }
 
-private[typelevel] trait LowPrioSequenced {
+private[typeclass] trait LowPrioSequenced {
 	implicit def sequencedGenricToPair[A, B]:Sequenced[A, B, (A, B)] = Sequenced.apply((a:A, b:B) => (a, b))
 }

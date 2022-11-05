@@ -103,11 +103,11 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		def RepeatedDigits(min:Int):Parser[String] = CharIn('0' to '9').repeat(min, strategy = RepeatStrategy.Possessive)
 
 		/* Concatenate every capture in the following parser and combine into one long string */
-		implicit object StringStringAndThenTypes extends typelevel.Sequenced[String, String, String] {
+		implicit object StringStringAndThenTypes extends typeclass.Sequenced[String, String, String] {
 			def aggregate(a:String, b:String):String = a + b
 		}
-		implicit val CharStringOptionallyTypes = typelevel.Optionally[Char, String]("", _.toString)
-		implicit val StringStringOptionallyTypes = typelevel.Optionally.whereDefault[String]("")
+		implicit val CharStringOptionallyTypes = typeclass.Optionally[Char, String]("", _.toString)
+		implicit val StringStringOptionallyTypes = typeclass.Optionally.whereDefault[String]("")
 
 		(
 			CharIn("-").optionally()
@@ -166,7 +166,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = {
 			val value = ValueP
 			val array = (IsString("..") andThenWithCut LiftedArrayV andThen WhitespaceP)
-			value.orElse(array)(typelevel.Eithered.discriminatedUnion)
+			value.orElse(array)(typeclass.Eithered.discriminatedUnion)
 		}
 		val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
 			Prefix
@@ -209,7 +209,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			val keyThenValue = (KeyV andThen Separator andThenWithCut ValueP)
 				.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
 			val mapping = (IsString("..") andThenWithCut ObjectV andThen WhitespaceP)
-			keyValue.orElse(keyThenValue).orElse(mapping)(typelevel.Eithered.discriminatedUnion)
+			keyValue.orElse(keyThenValue).orElse(mapping)(typeclass.Eithered.discriminatedUnion)
 		}
 		val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
 			Prefix

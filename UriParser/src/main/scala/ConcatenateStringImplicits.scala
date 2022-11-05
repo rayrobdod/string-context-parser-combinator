@@ -1,7 +1,7 @@
 package com.rayrobdod.stringContextParserCombinatorExample.uri
 
 import com.rayrobdod.stringContextParserCombinator.CodePoint
-import com.rayrobdod.stringContextParserCombinator.typelevel._
+import com.rayrobdod.stringContextParserCombinator.typeclass._
 
 /**
  * Instances of SCPC implicits that concatenate strings or default-value strings

@@ -23,13 +23,13 @@ object TestUtilities {
 		def opaque(description:String):Parser[Expr, A] =
 			new parsers.Opaque(self, ExpectingDescription(description))
 
-		def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
+		def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 			new AndThen(self, rhs, ev)
 
-		def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
+		def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 			new AndThenWithCut(self, rhs, ev)
 
-		def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[ExprZ, Z] =
+		def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Parser[ExprZ, Z] =
 			new OrElse(self, rhs, ev)
 
 		def repeat[ExprZ <: Expr, Z](
@@ -37,7 +37,7 @@ object TestUtilities {
 			max:Int = Integer.MAX_VALUE,
 			delimiter:Parser[ExprZ, Unit] = parsers.Pass,
 			strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-			implicit ev:typelevel.Repeated[A, Z]
+			implicit ev:typeclass.Repeated[A, Z]
 		):Parser[ExprZ, Z] = new Repeat(self, min, max, delimiter, strategy, ev)
 	}
 }

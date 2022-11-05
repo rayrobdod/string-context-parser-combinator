@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package typelevel
+package typeclass
 
 import scala.collection.mutable.Builder
 
@@ -51,7 +51,7 @@ object Repeated extends LowPrioRepeated {
 	}
 }
 
-private[typelevel] trait LowPrioRepeated {
+private[typeclass] trait LowPrioRepeated {
 	implicit def repeatedGenericToList[A]:Repeated[A, List[A]] = {
 		final class RepeatedGenericToList extends Repeated[A, List[A]] {
 			type Acc = Builder[A, List[A]]

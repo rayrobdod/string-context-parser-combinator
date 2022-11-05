@@ -9,11 +9,11 @@ import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Se
 
 /** Adds symbolic methods to Parsers */
 private[datetime] class ParserWithOps[U, A](val backing:Parser[U, A]) extends AnyVal {
-	def ~[B, Z](rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:typelevel.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
+	def ~[B, Z](rhs:Parser[U, B])(implicit ev:typeclass.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
+	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:typeclass.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
 	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
-	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typelevel.Repeated[A, Z]) = backing.repeat(min, max)(ev)
-	def opt[Z](implicit ev:typelevel.Optionally[A, Z]) = backing.optionally()(ev)
+	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typeclass.Repeated[A, Z]) = backing.repeat(min, max)(ev)
+	def opt[Z](implicit ev:typeclass.Optionally[A, Z]) = backing.optionally()(ev)
 }
 
 final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
@@ -34,7 +34,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	private[this] implicit def str2parserWithOps(str:String) = parserWithOps(str2parser(str))
 
 
-	private[this] implicit object sequenced_YearMonth extends typelevel.Sequenced[c.Expr[Year], c.Expr[Month], c.Expr[YearMonth]] {
+	private[this] implicit object sequenced_YearMonth extends typeclass.Sequenced[c.Expr[Year], c.Expr[Month], c.Expr[YearMonth]] {
 		def aggregate(left:c.Expr[Year], right:c.Expr[Month]):c.Expr[YearMonth] = {
 			import c.universe._
 			(left, right) match {
@@ -44,7 +44,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		}
 	}
 
-	private[this] implicit object sequenced_LocalDateTime extends typelevel.Sequenced[c.Expr[LocalDate], c.Expr[LocalTime], c.Expr[LocalDateTime]]{
+	private[this] implicit object sequenced_LocalDateTime extends typeclass.Sequenced[c.Expr[LocalDate], c.Expr[LocalTime], c.Expr[LocalDateTime]]{
 		def aggregate(left:c.Expr[LocalDate], right:c.Expr[LocalTime]):c.Expr[LocalDateTime] = {
 			import c.universe._
 			(left, right) match {

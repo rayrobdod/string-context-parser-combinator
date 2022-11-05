@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample.datetime
 
-import com.rayrobdod.stringContextParserCombinator.typelevel.Sequenced
+import com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
 
 final class Sign(isPositive:Boolean) {
 	def *(rhs:Int) = if (this.isPositive) {rhs} else {-rhs}

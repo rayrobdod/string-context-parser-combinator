@@ -5,7 +5,7 @@ title: Context Parameters
 The [[Parser|com.rayrobdod.stringContextParserCombinator.Parser]] methods
 `andThen`, `orElse`, `repeat` and `optionally` each take a context parameter which describes how to
 combine the results of the aggregate parser's components. Each of these types reside in
-[[com.rayrobdod.stringContextParserCombinator.typelevel]]. Each of these four types' companion object defines one
+[[com.rayrobdod.stringContextParserCombinator.typeclass]]. Each of these four types' companion object defines one
 low-priority given instance that accepts any type and produces an appropriate generic result. The companion object also
 defines additional instances for more specific types, usually to avoid sticking `scala.Unit` values in a collection, and
 maybe a few more for common use cases.
@@ -18,7 +18,7 @@ of a given instance to the minimum viable to prevent given instances from becomi
 
 ## Sequenced
 
-A [[Sequenced|com.rayrobdod.stringContextParserCombinator.typelevel.Sequenced]] describes how to combine two adjacent values into
+A [[Sequenced|com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced]] describes how to combine two adjacent values into
 one value.
 
 The fallback given sequenced places the two items in a tuple.
@@ -60,7 +60,7 @@ Below is example of defining and using a custom Sequenced.
 import java.time._
 //{
 import com.rayrobdod.stringContextParserCombinator.Parsers._
-import com.rayrobdod.stringContextParserCombinator.typelevel.Sequenced
+import com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
 val dateParser:Parser[LocalDate] = ???
 val timeParser:Parser[LocalTime] = ???
 
@@ -75,7 +75,7 @@ given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
 
 ## Eithered
 
-An [[Eithered|com.rayrobdod.stringContextParserCombinator.typelevel.Eithered]] describes how to treat a parser result
+An [[Eithered|com.rayrobdod.stringContextParserCombinator.typeclass.Eithered]] describes how to treat a parser result
 that may be the result of one parser or the result of the other parser.
 
 The fallback given Eithered creates a union type of the two component types. Since the union of a type with itself is
@@ -85,7 +85,7 @@ parser of that type.
 ```scala
 //{
 import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
-import com.rayrobdod.stringContextParserCombinator.typelevel.Eithered
+import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
 val p1:Parser[A] = ???
@@ -120,7 +120,7 @@ in a `scala.Either`.
 ```scala
 //{
 import com.rayrobdod.stringContextParserCombinator.Parsers._
-import com.rayrobdod.stringContextParserCombinator.typelevel.Eithered
+import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
 val p1:Parser[A] = ???
@@ -143,7 +143,7 @@ import java.net.URI
 import java.util.UUID
 //{
 import com.rayrobdod.stringContextParserCombinator.Parsers._
-import com.rayrobdod.stringContextParserCombinator.typelevel.Eithered
+import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 val uuidParser:Parser[UUID] = ???
 val fileParser:Parser[File] = ???
 
@@ -159,7 +159,7 @@ given Eithered[File, UUID, URI] with {
 
 ## Repeated
 
-A [[Repeated|com.rayrobdod.stringContextParserCombinator.typelevel.Repeated]] describes how to combine a homogeneous
+A [[Repeated|com.rayrobdod.stringContextParserCombinator.typeclass.Repeated]] describes how to combine a homogeneous
 sequence of zero-or-more values.
 
 The fallback given Repeated places the items in a `scala.Seq`.
@@ -203,7 +203,7 @@ Below is example of providing and using custom Repeated.
 ```scala
 //{
 import com.rayrobdod.stringContextParserCombinator.Parsers._
-import com.rayrobdod.stringContextParserCombinator.typelevel.Repeated
+import com.rayrobdod.stringContextParserCombinator.typeclass.Repeated
 
 //}
 // define the marker types
@@ -228,7 +228,7 @@ val digits:Parser[Digits] = digit.repeat(1)
 
 ## Optionally
 
-An [[Optionally|com.rayrobdod.stringContextParserCombinator.typelevel.Optionally]] describes the result of a parser that
+An [[Optionally|com.rayrobdod.stringContextParserCombinator.typeclass.Optionally]] describes the result of a parser that
 might parse another value.
 
 The fallback given Optionally places the items in a `scala.Option`, wrapping a found value in a Some and using a None as
@@ -264,7 +264,7 @@ a default value.
 ```scala
 //{
 import com.rayrobdod.stringContextParserCombinator.Parsers._
-import com.rayrobdod.stringContextParserCombinator.typelevel.Optionally
+import com.rayrobdod.stringContextParserCombinator.typeclass.Optionally
 val stringParser:Parser[String] = ???
 
 //}

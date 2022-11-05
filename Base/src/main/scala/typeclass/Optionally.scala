@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package typelevel
+package typeclass
 
 /**
  * Describes how to represent an optional value
@@ -32,6 +32,6 @@ object Optionally extends LowPrioOptionally {
 	implicit def optionallyUnit:Optionally[Unit, Unit] = this.whereDefault(())
 }
 
-private[typelevel] trait LowPrioOptionally {
+private[typeclass] trait LowPrioOptionally {
 	implicit def optionallyGeneric[A]:Optionally[A, Option[A]] = Optionally(None, Some.apply _)
 }

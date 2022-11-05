@@ -137,7 +137,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Combinator
 	 */
-	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
+	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new Parser(new parsers.AndThen(this.impl, rhs.impl, ev))
 
 	/**
@@ -150,7 +150,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Combinator
 	 */
-	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
+	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new Parser(new parsers.AndThenWithCut(this.impl, rhs.impl, ev))
 
 	/**
@@ -161,7 +161,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @param ev A descriptor of how to treat either value as one value
 	 * @group Combinator
 	 */
-	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typelevel.Eithered[A,B,Z]):Parser[ExprZ, Z] =
+	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Parser[ExprZ, Z] =
 		new Parser(new parsers.OrElse(this.impl, rhs.impl, ev))
 
 	/**
@@ -180,7 +180,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		max:Int = Integer.MAX_VALUE,
 		delimiter:Parser[ExprZ, Unit] = new Parser(parsers.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typelevel.Repeated[A, Z]
+		implicit ev:typeclass.Repeated[A, Z]
 	):Parser[ExprZ, Z] =
 		new Parser(new parsers.Repeat(this.impl, min, max, delimiter.impl, strategy, ev))
 
@@ -194,7 +194,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typelevel.Optionally[A, Z]
+		implicit ev:typeclass.Optionally[A, Z]
 	):Parser[Expr, Z] =
 		new Parser(parsers.Optionally(this.impl, strategy, ev))
 }

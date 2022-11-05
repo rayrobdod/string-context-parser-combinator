@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package typelevel
+package typeclass
 
 /**
  * Describes how to represent the union of two types
@@ -30,6 +30,6 @@ object Eithered extends LowPrioEithered {
 	def discriminatedUnion[A, B]:Eithered[A, B, Either[A, B]] = Eithered(Left.apply _, Right.apply _)
 }
 
-private[typelevel] trait LowPrioEithered {
+private[typeclass] trait LowPrioEithered {
 	implicit def eitheredSymetric[A]:Eithered[A, A, A] = Eithered(Predef.identity _, Predef.identity _)
 }

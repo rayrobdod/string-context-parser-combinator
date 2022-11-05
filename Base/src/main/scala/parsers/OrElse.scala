@@ -5,7 +5,7 @@ private[stringContextParserCombinator]
 final class OrElse[Expr, A, B, Z](
 	left:Parser[Expr, A],
 	right:Parser[Expr, B],
-	combiner:typelevel.Eithered[A, B, Z]
+	combiner:typeclass.Eithered[A, B, Z]
 ) extends Parser[Expr, Z] {
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
 		left.parse(input) match {
