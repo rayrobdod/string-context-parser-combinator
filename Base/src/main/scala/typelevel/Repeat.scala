@@ -22,35 +22,43 @@ trait Repeated[-A, +Z] {
 
 /** Predefined implicit implementations of Repeated */
 object Repeated extends LowPrioRepeated {
-	implicit def repeatedUnit:Repeated[Unit, Unit] = new RepeatedUnit
-	private[this] final class RepeatedUnit extends Repeated[Unit, Unit] {
-		type Acc = Unit
-		def init():Acc = ()
-		def append(acc:Acc, elem:Unit):Unit = {}
-		def result(acc:Acc):Unit = ()
+	implicit def repeatedUnit:Repeated[Unit, Unit] = {
+		final class RepeatedUnit extends Repeated[Unit, Unit] {
+			type Acc = Unit
+			def init():Acc = ()
+			def append(acc:Acc, elem:Unit):Unit = {}
+			def result(acc:Acc):Unit = ()
+		}
+		new RepeatedUnit()
 	}
-	implicit def repeatedChar:Repeated[Char, String] = new RepeatedChar
-	private[this] final class RepeatedChar extends Repeated[Char, String] {
-		type Acc = StringBuilder
-		def init():Acc = new StringBuilder
-		def append(acc:Acc, elem:Char):Unit = {acc += elem}
-		def result(acc:Acc):String = acc.toString
+	implicit def repeatedChar:Repeated[Char, String] = {
+		final class RepeatedChar extends Repeated[Char, String] {
+			type Acc = StringBuilder
+			def init():Acc = new StringBuilder
+			def append(acc:Acc, elem:Char):Unit = {acc += elem}
+			def result(acc:Acc):String = acc.toString
+		}
+		new RepeatedChar()
 	}
-	implicit def repeatedCodepoint:Repeated[CodePoint, String] = new RepeatedCodepoint
-	private[this] final class RepeatedCodepoint extends Repeated[CodePoint, String] {
-		type Acc = java.lang.StringBuilder
-		def init():Acc = new java.lang.StringBuilder
-		def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.value)}
-		def result(acc:Acc):String = acc.toString
+	implicit def repeatedCodepoint:Repeated[CodePoint, String] = {
+		final class RepeatedCodepoint extends Repeated[CodePoint, String] {
+			type Acc = java.lang.StringBuilder
+			def init():Acc = new java.lang.StringBuilder
+			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.value)}
+			def result(acc:Acc):String = acc.toString
+		}
+		new RepeatedCodepoint()
 	}
 }
 
 private[typelevel] trait LowPrioRepeated {
-	implicit def repeatedGenericToList[A]:Repeated[A, List[A]] = new RepeatedGenericToList
-	private[this] final class RepeatedGenericToList[A] extends Repeated[A, List[A]] {
-		type Acc = Builder[A, List[A]]
-		def init():Acc = List.newBuilder[A]
-		def append(acc:Acc, elem:A):Unit = {acc += elem}
-		def result(acc:Acc):List[A] = acc.result()
+	implicit def repeatedGenericToList[A]:Repeated[A, List[A]] = {
+		final class RepeatedGenericToList extends Repeated[A, List[A]] {
+			type Acc = Builder[A, List[A]]
+			def init():Acc = List.newBuilder[A]
+			def append(acc:Acc, elem:A):Unit = {acc += elem}
+			def result(acc:Acc):List[A] = acc.result()
+		}
+		new RepeatedGenericToList()
 	}
 }

@@ -16,17 +16,22 @@ trait Optionally[-A, +Z] {
 
 /** Predefined implicit implementations of Optionally */
 object Optionally extends LowPrioOptionally {
-	implicit def optionallyUnit:Optionally[Unit, Unit] = new OptionallyUnit
-	private[this] final class OptionallyUnit extends Optionally[Unit, Unit] {
-		def none:Unit = ()
-		def some(elem:Unit):Unit = elem
+	private[typelevel] def apply[A, Z](noneFn:Z, someFn:A => Z):Optionally[A, Z] = {
+		final class Apply extends Optionally[A, Z] {
+			def none:Z = noneFn
+			def some(elem:A):Z = someFn(elem)
+		}
+		new Apply
 	}
+
+	/**
+	 * An Optionally in which `default` is used as the result if the value is missing, and otherwise the value is preserved
+	 */
+	private[typelevel] def whereDefault[A](default:A):Optionally[A, A] = this.apply[A, A](default, Predef.identity _)
+
+	implicit def optionallyUnit:Optionally[Unit, Unit] = this.whereDefault(())
 }
 
 private[typelevel] trait LowPrioOptionally {
-	implicit def optinallyGeneric[A]:Optionally[A, Option[A]] = new OptinallyGeneric[A]
-	private[this] final class OptinallyGeneric[A] extends Optionally[A, Option[A]] {
-		def none:Option[A] = None
-		def some(elem:A):Option[A] = Some(elem)
-	}
+	implicit def optionallyGeneric[A]:Optionally[A, Option[A]] = Optionally(None, Some.apply _)
 }
