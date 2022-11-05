@@ -15,7 +15,7 @@ trait Eithered[-A, -B, +Z] {
 
 /** Predefined implicit implementations of Eithered */
 object Eithered extends LowPrioEithered {
-	private[typelevel] def apply[A, B, Z](leftFn:A => Z, rightFn:B => Z):Eithered[A, B, Z] = {
+	def apply[A, B, Z](leftFn:A => Z, rightFn:B => Z):Eithered[A, B, Z] = {
 		final class Apply extends Eithered[A, B, Z] {
 			def left(elem:A):Z = leftFn(elem)
 			def right(elem:B):Z = rightFn(elem)

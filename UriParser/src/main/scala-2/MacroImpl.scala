@@ -7,7 +7,7 @@ import java.net.URI
 import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
-import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatinateStringImplicits._
+import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits._
 
 object MacroImpl {
 	/**

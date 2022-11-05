@@ -4,7 +4,7 @@ import java.net.URI
 import scala.quoted._
 import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
-import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatinateStringImplicits.{given}
+import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits.{given}
 
 object MacroImpl {
 	/**

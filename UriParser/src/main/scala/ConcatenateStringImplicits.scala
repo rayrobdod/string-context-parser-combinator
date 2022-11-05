@@ -4,9 +4,9 @@ import com.rayrobdod.stringContextParserCombinator.CodePoint
 import com.rayrobdod.stringContextParserCombinator.typelevel._
 
 /**
- * Instances of SCPC implicits that concatinate strings or default-value strings
+ * Instances of SCPC implicits that concatenate strings or default-value strings
  */
-object ConcatinateStringImplicits {
+object ConcatenateStringImplicits {
 	implicit val AndThenCodepointString: Sequenced[CodePoint, String, String] = new Sequenced[CodePoint, String, String] {
 		def aggregate(a:CodePoint, b:String):String = s"${a}${b}"
 	}
@@ -19,15 +19,9 @@ object ConcatinateStringImplicits {
 		def aggregate(a:String, b:String):String = s"${a}${b}"
 	}
 
-	implicit val EmptyStringOptionallyTypes: Optionally[String, String] = new Optionally[String, String] {
-		def none:String = ""
-		def some(elem:String):String = elem
-	}
+	implicit val EmptyStringOptionallyTypes: Optionally[String, String] = Optionally.whereDefault[String]("")
 
-	implicit val CodePointOptionallyTypes: Optionally[CodePoint, String] = new Optionally[CodePoint, String] {
-		def none:String = ""
-		def some(elem:CodePoint):String = elem.toString
-	}
+	implicit val CodePointOptionallyTypes: Optionally[CodePoint, String] = Optionally[CodePoint, String]("", _.toString)
 
 	implicit val StringRepeatTypes: Repeated[String, String] = new Repeated[String, String] {
 		type Acc = StringBuilder

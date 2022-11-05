@@ -106,14 +106,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		implicit object StringStringAndThenTypes extends typelevel.Sequenced[String, String, String] {
 			def aggregate(a:String, b:String):String = a + b
 		}
-		implicit object CharStringOptionallyTypes extends typelevel.Optionally[Char, String] {
-			def none:String = ""
-			def some(elem:Char):String = elem.toString
-		}
-		implicit object StringStringOptionallyTypes extends typelevel.Optionally[String, String] {
-			def none:String = ""
-			def some(elem:String):String = elem
-		}
+		implicit val CharStringOptionallyTypes = typelevel.Optionally[Char, String]("", _.toString)
+		implicit val StringStringOptionallyTypes = typelevel.Optionally.whereDefault[String]("")
 
 		(
 			CharIn("-").optionally()

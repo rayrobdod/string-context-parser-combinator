@@ -76,14 +76,8 @@ object MacroImpl {
 		given typelevel.Sequenced[String, String, String] with {
 			def aggregate(a:String, b:String):String = a + b
 		}
-		given typelevel.Optionally[Char, String] with {
-			def none:String = ""
-			def some(elem:Char):String = elem.toString
-		}
-		given typelevel.Optionally[String, String] with {
-			def none:String = ""
-			def some(elem:String):String = elem
-		}
+		given typelevel.Optionally[Char, String] = typelevel.Optionally("", _.toString)
+		given typelevel.Optionally[String, String] = typelevel.Optionally.whereDefault[String]("")
 
 		(
 			CharIn("-").optionally()
