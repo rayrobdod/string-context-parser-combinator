@@ -87,6 +87,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	private[this] val LeafParsers = Parsers(c)
 	import LeafParsers._
 
+	private[this] def CharFlatCollect[A](pf: PartialFunction[Char, Parser[A]]):Parser[A] = CharWhere(pf.isDefinedAt).flatMap(pf.apply)
+
 	private[this] val WhitespaceP:Parser[Unit] = CharIn("\n\r\t ").repeat(strategy = RepeatStrategy.Possessive).map(_ => ()).opaque("Whitespace")
 
 	private[this] val NullP:Parser[c.Expr[JNull.type]] = IsString("null").map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JNull))
@@ -126,15 +128,17 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val DelimiterP:Parser[Unit] = IsString("\"")
 		val JCharImmediate:Parser[Char] = CharWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
 		val JCharEscaped:Parser[Char] = (
-			(IsString("\\") andThen (
-				CharIn("\\/\"") orElse
-				IsString("n").map(_ => '\n') orElse
-				IsString("r").map(_ => '\r') orElse
-				IsString("b").map(_ => '\b') orElse
-				IsString("f").map(_ => '\f') orElse
-				IsString("t").map(_ => '\t') orElse
-				(IsString("u") andThen CharIn(('1' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar))
-			))
+			(IsString("\\") andThen CharFlatCollect({
+				case '\\' => Pass.map(_ => '\\')
+				case '/' => Pass.map(_ => '/')
+				case '"' => Pass.map(_ => '"')
+				case 'n' => Pass.map(_ => '\n')
+				case 'r' => Pass.map(_ => '\r')
+				case 'b' => Pass.map(_ => '\b')
+				case 'f' => Pass.map(_ => '\f')
+				case 't' => Pass.map(_ => '\t')
+				case 'u' => CharIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar)
+			}))
 		)
 		val JCharP:Parser[Char] = JCharEscaped orElse JCharImmediate
 		val JCharsI:Parser[c.Expr[String]] = JCharP.repeat(1, strategy = RepeatStrategy.Possessive)

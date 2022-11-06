@@ -120,17 +120,13 @@ final class StringContextTest extends AnyFunSpec {
 			val exp = JString("1π2")
 			assertResult(exp)(json""" "1${Pi}2" """)
 		}
-		it ("Accepts a literal escaped-tab string") {
-			val exp = JString("\t")
-			assertResult(exp)(json""" "\t" """)
-		}
-		it ("Accepts a literal escaped-backslash string") {
-			val exp = JString("\\")
-			assertResult(exp)(json""" "\\" """)
+		it ("Accepts a literal with the simple escape sequences") {
+			val exp = JString("\\/\"\n\r\b\f\t")
+			assertResult(exp)(json""" "\\\/\"\n\r\b\f\t" """)
 		}
 		it ("Accepts a literal escaped-unicode string") {
-			val exp = JString("\u1234")
-			assertResult(exp)(json""" "\u1234" """)
+			val exp = JString("\u1234 \u09AF")
+			assertResult(exp)(json""" "\u1234 \u09AF" """)
 		}
 		it ("Does not take an excessively long time to match a longish string") {
 			val exp = JString("12345678901234567890")
@@ -270,6 +266,12 @@ final class StringContextTest extends AnyFunSpec {
 		}
 		it ("Rejects trailing content") {
 			assertDoesNotCompile(""" json"true false" """)
+		}
+		it ("Rejects string with unknown escape sequence (a)") {
+			assertDoesNotCompile(" json\"\"\" \"\\a\" \"\"\" ")
+		}
+		it ("Rejects string with an invalid unicode escape sequence") {
+			assertDoesNotCompile(" json\"\"\" \"\\u12u4\" \"\"\" ")
 		}
 		it ("Rejects array with object prefix/suffix") {
 			assertDoesNotCompile(""" json"{null}" """)
