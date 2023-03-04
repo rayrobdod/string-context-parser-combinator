@@ -265,33 +265,5 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 
 			assertResult(expected){parser.parse(initialInput)}
 		}
-		it ("right associative variant of \"'[' ~/ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
-			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString("[") andThenWithCut (IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]"))
-
-			val expected = Failure(
-				SingleExpecting("\",\"",44) ++
-					SingleExpecting("\"]\"",44) ++
-					SingleExpecting("\"]\"",43) ++
-					SingleExpecting("\"a\"",43),
-				Cut.True
-			)
-
-			assertResult(expected){parser.parse(initialInput)}
-		}
-		it ("'[' ~/ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
-			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString("[") andThenWithCut IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]")
-
-			val expected = Failure(
-				SingleExpecting("\",\"",44) ++
-					SingleExpecting("\"]\"",44) ++
-					SingleExpecting("\"]\"",43) ++
-					SingleExpecting("\"a\"",43),
-				Cut.True
-			)
-
-			assertResult(expected){parser.parse(initialInput)}
-		}
 	}
 }

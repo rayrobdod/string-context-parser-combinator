@@ -686,7 +686,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		describe("`(a ~ b ~ c)*`") {
 			val childParser = (CharIn("a")
-				andThenWithCut CharIn("b")
+				andThen CharIn("b")
 				andThen CharIn("c"))
 			val parser = childParser.repeat(strategy = Greedy)
 
@@ -706,7 +706,7 @@ final class RepeatTest extends AnyFunSpec {
 
 				val expected = Failure(
 					SingleExpecting("CharIn(\"b\")", 43),
-					Cut.True
+					Cut.False
 				)
 				assertResult(expected){parser.parse(initialInput)}
 			}
@@ -720,9 +720,15 @@ final class RepeatTest extends AnyFunSpec {
 						SingleExpecting("CharIn(\"b\")", 43) ++
 							SingleExpecting("CharIn(\"c\")", 44) ++
 							SingleExpecting("CharIn(\"a\")", 45),
-						Cut.True
+						Cut.False
 					),
 					List(
+						Success1(
+							List(),
+							SinglePartInput("abcde", 42),
+							EmptyExpecting,
+							Cut.False
+						)
 					)
 				)
 				assertResult(expected){parser.parse(initialInput)}
@@ -734,7 +740,7 @@ final class RepeatTest extends AnyFunSpec {
 					SingleExpecting("CharIn(\"b\")", 43) ++
 						SingleExpecting("CharIn(\"c\")", 44) ++
 						SingleExpecting("CharIn(\"b\")", 46),
-					Cut.True
+					Cut.False
 				)
 				assertResult(expected){parser.parse(initialInput)}
 			}

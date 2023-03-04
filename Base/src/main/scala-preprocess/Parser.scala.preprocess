@@ -147,19 +147,6 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		new Parser(new parsers.AndThen(this.impl, rhs.impl, ev))
 
 	/**
-	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
-	 * If the second parser fails, the error is marked so that prior
-	 * `orElse` parsers will not try other branches.
-	 *
-	 * @tparam Z the result parser's parsed value type
-	 * @param rhs the parser to call after this one
-	 * @param ev A descriptor of how to combine two values into one value
-	 * @group Combinator
-	 */
-	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
-		new Parser(new parsers.AndThenWithCut(this.impl, rhs.impl, ev))
-
-	/**
 	 * Returns a parser which invokes this parser, and then:
 	 *   * If this parser run succeeded, return this parsers's success
 	 *   * If this parser failed and consumed input, return this parser's failure

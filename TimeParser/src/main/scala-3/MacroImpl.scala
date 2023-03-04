@@ -48,7 +48,6 @@ object MacroImpl {
 	/** Adds symbolic methods to Parsers */
 	extension [U, A, B, Z] (backing:Parser[U, A])
 		def ~(rhs:Parser[U, B])(using ev:typeclass.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-		def ~/(rhs:Parser[U, B])(using ev:typeclass.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
 		def |(rhs:Parser[U, B])(using ev:typeclass.Eithered[A,B,Z]) = backing.orElse(rhs)(ev)
 
 	/** Adds symbolic methods to Parsers */
@@ -93,7 +92,7 @@ object MacroImpl {
 	}
 
 	private[this] def YearMonthP(using Quotes):Parser[Expr[YearMonth]] = {
-		val PartsP:Parser[Expr[YearMonth]] = (YearP ~ "-" ~/ MonthP)
+		val PartsP:Parser[Expr[YearMonth]] = (YearP ~ "-" ~ MonthP)
 		val VariableP:Parser[Expr[YearMonth]] = OfType[YearMonth]
 		VariableP | PartsP
 	}
@@ -141,7 +140,7 @@ object MacroImpl {
 	}
 
 	private[this] def LocalTimeP(using Quotes):Parser[Expr[LocalTime]] = {
-		val LiteralP:Parser[Expr[LocalTime]] = (HourP ~ ":" ~/ MinuteP ~ (":" ~/ SecondP ~ ("." ~/ NanoP).opt).opt)
+		val LiteralP:Parser[Expr[LocalTime]] = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
 			.map({hmsn =>
 				val constZero = Expr(0)
 				val (hm, sn) = hmsn
@@ -156,7 +155,7 @@ object MacroImpl {
 	}
 
 	private[this] def LocalDateTimeP(using Quotes):Parser[Expr[LocalDateTime]] = {
-		(LocalDateP ~ "T" ~/ LocalTimeP)
+		(LocalDateP ~ "T" ~ LocalTimeP)
 	}
 
 	def stringContext_localdate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDate] = {
