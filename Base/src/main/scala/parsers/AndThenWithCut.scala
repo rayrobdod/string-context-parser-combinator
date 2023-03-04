@@ -21,7 +21,7 @@ final class AndThenWithCut[Expr, A, B, Z](
 					Cut.True
 				)
 			}})
-			case failure@Failure(_, _) => failure
+			case failure:Failure[Pos] => failure
 		}
 	}
 }

@@ -16,7 +16,7 @@ final class FlatMap[Expr, A, Z](
 					case failure@Failure(_, Cut.True) => failure
 				}
 			})
-			case failure@Failure(_, _) => failure
+			case failure:Failure[Pos] => failure
 		}
 	}
 }
