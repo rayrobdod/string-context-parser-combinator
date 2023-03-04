@@ -28,7 +28,7 @@ final class OrElseTest extends AnyFunSpec {
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}
 		}
-		it("`Cut | Whatever` returns that failure") {
+		it("`Advanced | Whatever` returns that failure") {
 			val initialInput = SinglePartInput("1234", 42)
 			val rightEndInput = SinglePartInput("wxyz", 151)
 
@@ -46,12 +46,12 @@ final class OrElseTest extends AnyFunSpec {
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}
 		}
-		it("`Failure | Success` returns that success") {
+		it("`NonConsume | Success` returns that success") {
 			val initialInput = SinglePartInput("1234", 42)
 			val rightEndInput = SinglePartInput("wxyz", 151)
 
 			val rightResult = new Object
-			val leftExpect = SingleExpecting("Left", 101)
+			val leftExpect = SingleExpecting("Left", 42)
 			val rightExpect = SingleExpecting("Right", 102)
 
 			val leftParser:Parser[Nothing, Object] = new ConstFailure(leftExpect, Cut.False)
@@ -66,10 +66,10 @@ final class OrElseTest extends AnyFunSpec {
 			val parser = new OrElse[Nothing, Object, Object, Object](leftParser, rightParser, implicitly)
 			assertResult(expected){parser.parse(initialInput)}
 		}
-		it("`Failure | Cut` returns a failure that mentions only the cut branch") {
+		it("`NonConsume | Advanced` returns a failure that mentions only the cut branch") {
 			val initialInput = SinglePartInput("1234", 42)
 
-			val leftExpect = SingleExpecting("Left", 101)
+			val leftExpect = SingleExpecting("Left", 42)
 			val rightExpect = SingleExpecting("Right", 102)
 
 			val leftParser = new ConstFailure(leftExpect, Cut.False)
@@ -82,11 +82,11 @@ final class OrElseTest extends AnyFunSpec {
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}
 		}
-		it("`Failure | Failure` returns a failure that mentions both branches") {
+		it("`NonConsume | NonConsume` returns a failure that mentions both branches") {
 			val initialInput = SinglePartInput("1234", 42)
 
-			val leftExpect = SingleExpecting("Left", 101)
-			val rightExpect = SingleExpecting("Right", 102)
+			val leftExpect = SingleExpecting("Left", 42)
+			val rightExpect = SingleExpecting("Right", 42)
 
 			val leftParser = new ConstFailure(leftExpect, Cut.False)
 			val rightParser = new ConstFailure(rightExpect, Cut.False)
