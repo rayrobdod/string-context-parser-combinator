@@ -18,11 +18,10 @@ private[stringContextParserCombinator]
 final case class Success1[+Expr, Pos, +A](
 	val value:A,
 	val remaining:Input[Expr, Pos],
-	val expecting:ExpectingSet[Pos],
-	val isCut:Cut
+	val expecting:ExpectingSet[Pos]
 ) {
 	private[stringContextParserCombinator]
-	def map[Z](fn:A => Z):Success1[Expr, Pos, Z] = Success1(fn(value), remaining, expecting, isCut)
+	def map[Z](fn:A => Z):Success1[Expr, Pos, Z] = Success1(fn(value), remaining, expecting)
 }
 
 /**
@@ -51,7 +50,7 @@ final case class Success[+Expr, Pos : Ordering, +A](
 		if (successes.nonEmpty) {
 			Success(successes.head, successes.tail)
 		} else {
-			Failure(failures.map(_.expecting).foldLeft[ExpectingSet[Pos]](ExpectingSet.empty)(_ ++ _), failures.map(_.isCut).foldLeft[Cut](Cut.False)(_ | _))
+			Failure(failures.map(_.expecting).foldLeft[ExpectingSet[Pos]](ExpectingSet.empty)(_ ++ _))
 		}
 	}
 
@@ -66,9 +65,8 @@ object Success {
 	def apply[Expr, Pos : Ordering, A](
 		value:A,
 		remaining:Input[Expr, Pos],
-		expecting:ExpectingSet[Pos],
-		isCut:Cut
-	):Success[Expr, Pos, A] = Success(Success1(value, remaining, expecting, isCut))
+		expecting:ExpectingSet[Pos]
+	):Success[Expr, Pos, A] = Success(Success1(value, remaining, expecting))
 }
 
 /**
@@ -80,11 +78,10 @@ object Success {
  */
 private[stringContextParserCombinator]
 final case class Failure[Pos](
-	val expecting:ExpectingSet[Pos],
-	val isCut:Cut
+	val expecting:ExpectingSet[Pos]
 ) extends Result[Nothing, Pos, Nothing] {
 	private[stringContextParserCombinator]
-	def or(other:Failure[Pos]):Failure[Pos] = new Failure(this.expecting ++ other.expecting, this.isCut | other.isCut)
+	def or(other:Failure[Pos]):Failure[Pos] = new Failure(this.expecting ++ other.expecting)
 
 	def isPositionGt(other:Pos)(implicit ev1:Ordering[Pos]):Boolean = this.expecting match {
 		case ExpectingSet.NonEmpty(position, _) if ev1.gt(position, other) => {

@@ -89,10 +89,10 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		val input = new Input[Expr, Position.Impl](strings2, args2)
 
 		impl.parse(input) match {
-			case s@Success(_, _) => {
+			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
-			case f@Failure(_, _) => {
+			case f:Failure[Position.Impl] => {
 				reportFailure(f)
 			}
 		}

@@ -9,8 +9,8 @@ final class Opaque[Expr, A](
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 		val descriptionPosition = ExpectingSet(Expecting(description, input.position))
 		backing.parse(input) match {
-			case success:Success[ExprZ, Pos, A] => success.map({case Success1(value, rest, _, cut) => Success1(value, rest, descriptionPosition, cut)})
-			case Failure(_, cut) => Failure(descriptionPosition, cut)
+			case success:Success[ExprZ, Pos, A] => success.map({case Success1(value, rest, _) => Success1(value, rest, descriptionPosition)})
+			case Failure(_) => Failure(descriptionPosition)
 		}
 	}
 }

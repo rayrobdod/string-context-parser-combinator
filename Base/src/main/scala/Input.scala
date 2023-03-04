@@ -33,17 +33,17 @@ final class Input[+Expr, Pos : Position : Ordering](
 	):Result[Expr, Pos, A] = {
 		val expectingPosition = Expecting(expecting, this.position)
 		val expectingPositionSet = ExpectingSet(expectingPosition)
-		def failure = Failure(expectingPositionSet, Cut.False)
+		def failure = Failure(expectingPositionSet)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {
-				def success(x:A) = Success(x, new Input(parts.tail, args.tail), expectingPositionSet, Cut.False)
+				def success(x:A) = Success(x, new Input(parts.tail, args.tail), expectingPositionSet)
 				argsFn(args.head._1).fold[Result[Expr, Pos, A]](failure)(success _)
 			} else {
 				failure
 			}
 		} else {
 			val (headStr, headPos) = parts.head
-			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args), expectingPositionSet, Cut.False)
+			def success(x:(A, Int)) = Success(x._1, new Input((headStr.substring(x._2), headPos + x._2) :: parts.tail, args), expectingPositionSet)
 			partsFn(headStr).fold[Result[Expr, Pos, A]](failure)(success _)
 		}
 	}

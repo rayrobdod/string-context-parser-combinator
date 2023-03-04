@@ -15,7 +15,7 @@ final class Filter[Expr, A](
 				filteredChoices match {
 					case head :: tail => Success(head, tail)
 					case Nil => {
-						choices.map(s => Failure(s.expecting.mapDescriptions(_.where(predicateDescription)), s.isCut)).reduce[Failure[Pos]](_ or _)
+						choices.map(s => Failure(s.expecting.mapDescriptions(_.where(predicateDescription)))).reduce[Failure[Pos]](_ or _)
 					}
 				}
 			}

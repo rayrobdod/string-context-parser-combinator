@@ -37,58 +37,58 @@ object Repeat {
 		strategy:RepeatStrategy,
 		isFirst:Boolean
 	):Result[Expr, Pos, List[A]] = {
-		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos], Cut.False)} else {delimiter.parse(input)}) match {
+		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos])} else {delimiter.parse(input)}) match {
 			case failureDelimiter:Failure[Pos] => {
 				if (min != 0 || failureDelimiter.isPositionGt(input.position)) {
 					failureDelimiter
 				} else {
-					Success(Nil, input, failureDelimiter.expecting, failureDelimiter.isCut)
+					Success(Nil, input, failureDelimiter.expecting)
 				}
 			}
-			case successDelimiter:Success[Expr, Pos, Unit] => successDelimiter.flatMap[Expr, List[A]]({case Success1((), restDelimiter, expectingDelimiter, cutDelimiter) =>
+			case successDelimiter:Success[Expr, Pos, Unit] => successDelimiter.flatMap[Expr, List[A]]({case Success1((), restDelimiter, expectingDelimiter) =>
 				inner.parse(restDelimiter) match {
 					case failureA:Failure[Pos] => {
 						if (min != 0 || failureA.isPositionGt(restDelimiter.position)) {
-							Failure(expectingDelimiter ++ failureA.expecting, cutDelimiter | failureA.isCut)
+							Failure(expectingDelimiter ++ failureA.expecting)
 						} else {
-							Success(Nil, input, expectingDelimiter ++ failureA.expecting, cutDelimiter | failureA.isCut)
+							Success(Nil, input, expectingDelimiter ++ failureA.expecting)
 						}
 					}
-					case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, List[A]]({case Success1(valueA, restA, expectingA, cutA) =>
+					case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, List[A]]({case Success1(valueA, restA, expectingA) =>
 						if (max == 1 || restA == input) {
 							// `restA == input` means quit if inner did not consume any input
 							if (min != 0 || strategy == RepeatStrategy.Possessive) {
-								Success(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+								Success(valueA :: Nil, restA, expectingDelimiter ++ expectingA)
 							} else {
 								if (strategy == RepeatStrategy.Greedy) {
 									Success(
-										Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA),
+										Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA),
 										List(
-											Success1(Nil, input, expectingDelimiter, cutDelimiter)
+											Success1(Nil, input, expectingDelimiter)
 										)
 									)
 								} else {
 									Success(
-										Success1(Nil, input, expectingDelimiter, cutDelimiter),
+										Success1(Nil, input, expectingDelimiter),
 										List(
-											Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+											Success1(valueA :: Nil, restA, expectingDelimiter ++ expectingA)
 										)
 									)
 								}
 							}
 						} else {
 							parse0(restA, inner, math.max(0, min - 1), max - 1, delimiter, strategy, false) match {
-								case Failure(expectingC, cutC) => Failure(expectingA ++ expectingDelimiter ++ expectingC, cutA | cutDelimiter | cutC)
+								case Failure(expectingC) => Failure(expectingA ++ expectingDelimiter ++ expectingC)
 								case successC:Success[Expr, Pos, List[A]] => {
-									val successCWithValA = successC.map({case Success1(valueC, restC, expectingC, cutC) =>
-										Success1(valueA :: valueC, restC, expectingA ++ expectingDelimiter ++ expectingC, cutA | cutDelimiter | cutC)
+									val successCWithValA = successC.map({case Success1(valueC, restC, expectingC) =>
+										Success1(valueA :: valueC, restC, expectingA ++ expectingDelimiter ++ expectingC)
 									})
-									if (min == 0 && !successCWithValA.choicesHead.isCut.toBoolean && strategy != RepeatStrategy.Possessive) {
+									if (min == 0 && strategy != RepeatStrategy.Possessive) {
 										if (strategy == RepeatStrategy.Greedy) {
 											successCWithValA :+
-												Success1(Nil, input, ExpectingSet.empty, Cut.False)
+												Success1(Nil, input, ExpectingSet.empty)
 										} else {
-											Success1(Nil, input, ExpectingSet.empty[Pos], Cut.False) +: successCWithValA
+											Success1(Nil, input, ExpectingSet.empty[Pos]) +: successCWithValA
 										}
 									} else {
 										successCWithValA

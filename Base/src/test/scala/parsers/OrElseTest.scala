@@ -16,14 +16,13 @@ final class OrElseTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 101)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser = new ConstSuccess(leftResult, leftEndInput, leftExpect, Cut.False)
-			val rightParser = new ConstSuccess(rightResult, rightEndInput, rightExpect, Cut.False)
+			val leftParser = new ConstSuccess(leftResult, leftEndInput, leftExpect)
+			val rightParser = new ConstSuccess(rightResult, rightEndInput, rightExpect)
 
 			val expected = Success[Nothing, StubPosition, Object](
 				leftResult,
 				leftEndInput,
-				leftExpect,
-				Cut.False
+				leftExpect
 			)
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -36,12 +35,11 @@ final class OrElseTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 101)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser = new ConstFailure(leftExpect, Cut.True)
-			val rightParser = new ConstSuccess(rightResult, rightEndInput, rightExpect, Cut.False)
+			val leftParser = new ConstFailure(leftExpect)
+			val rightParser = new ConstSuccess(rightResult, rightEndInput, rightExpect)
 
 			val expected = Failure(
-				leftExpect,
-				Cut.True
+				leftExpect
 			)
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -54,14 +52,13 @@ final class OrElseTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 42)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser:Parser[Nothing, Object] = new ConstFailure(leftExpect, Cut.False)
-			val rightParser:Parser[Nothing, Object] = new ConstSuccess(rightResult, rightEndInput, rightExpect, Cut.False)
+			val leftParser:Parser[Nothing, Object] = new ConstFailure(leftExpect)
+			val rightParser:Parser[Nothing, Object] = new ConstSuccess(rightResult, rightEndInput, rightExpect)
 
 			val expected = Success[Nothing, StubPosition, Object](
 				rightResult,
 				rightEndInput,
-				rightExpect,
-				Cut.False
+				rightExpect
 			)
 			val parser = new OrElse[Nothing, Object, Object, Object](leftParser, rightParser, implicitly)
 			assertResult(expected){parser.parse(initialInput)}
@@ -72,12 +69,11 @@ final class OrElseTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 42)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser = new ConstFailure(leftExpect, Cut.False)
-			val rightParser = new ConstFailure(rightExpect, Cut.True)
+			val leftParser = new ConstFailure(leftExpect)
+			val rightParser = new ConstFailure(rightExpect)
 
 			val expected = Failure(
-				rightExpect,
-				Cut.True
+				rightExpect
 			)
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -88,12 +84,11 @@ final class OrElseTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 42)
 			val rightExpect = SingleExpecting("Right", 42)
 
-			val leftParser = new ConstFailure(leftExpect, Cut.False)
-			val rightParser = new ConstFailure(rightExpect, Cut.False)
+			val leftParser = new ConstFailure(leftExpect)
+			val rightParser = new ConstFailure(rightExpect)
 
 			val expected = Failure(
-				leftExpect ++ rightExpect,
-				Cut.False
+				leftExpect ++ rightExpect
 			)
 			val parser = leftParser orElse rightParser
 			assertResult(expected){parser.parse(initialInput)}

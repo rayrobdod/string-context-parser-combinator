@@ -19,8 +19,7 @@ final class CharInTest extends AnyFunSpec {
 		val expected = Success(
 			head,
 			new Input(tail._1, tail._2),
-			expecting,
-			Cut.False
+			expecting
 		)
 		val parser = CharIn(parserSet)
 		assertResult(expected){parser.parse(input)}
@@ -28,8 +27,7 @@ final class CharInTest extends AnyFunSpec {
 
 	def expectFailure(parserSet:Set[Char], input:Input[Expr, StubPosition]) = {
 		val expected = Failure(
-			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CharIn(\"", "", "\")")), input.position)),
-			Cut.False
+			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CharIn(\"", "", "\")")), input.position))
 		)
 		val parser = CharIn(parserSet)
 		assertResult(expected){parser.parse(input)}
