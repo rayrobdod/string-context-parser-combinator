@@ -85,4 +85,14 @@ final case class Failure[Pos](
 ) extends Result[Nothing, Pos, Nothing] {
 	private[stringContextParserCombinator]
 	def or(other:Failure[Pos]):Failure[Pos] = new Failure(this.expecting ++ other.expecting, this.isCut | other.isCut)
+
+	def isPositionGt(other:Pos)(implicit ev1:Ordering[Pos]):Boolean = this.expecting match {
+		case ExpectingSet.NonEmpty(position, _) if ev1.gt(position, other) => {
+			true
+		}
+		case _ => {
+			// Treat ExpecitngSet.Empty as it its position is equal to any other position
+			false
+		}
+	}
 }
