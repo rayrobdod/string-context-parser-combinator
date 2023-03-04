@@ -4,10 +4,10 @@ package parsers
 import scala.collection.immutable.Set
 
 object TestUtilities {
-	val EmptyExpecting = Set.empty[Expecting[StubPosition]]
+	val EmptyExpecting = ExpectingSet.empty[StubPosition]
 	def SinglePartInput(str:String, pos:Int) = new Input[Nothing, StubPosition](((str, StubPosition(pos))) :: Nil, Nil)
-	def SingleExpecting(msg:String, pos:Int) = Set(Expecting(ExpectingDescription(msg), StubPosition(pos)))
-	def RepeatedExpecting(msg:String, pos:Range) = pos.flatMap(x => SingleExpecting(msg, x)).toSet
+	def SingleExpecting(msg:String, pos:Int) = ExpectingSet(Expecting(ExpectingDescription(msg), StubPosition(pos)))
+	def RepeatedExpecting(msg:String, pos:Range) = ExpectingSet.fromSpecific(pos.map(x => Expecting(ExpectingDescription(msg), StubPosition(x))))
 
 
 	implicit class ParserExtras[Expr, A](val self:Parser[Expr, A]) extends AnyVal {

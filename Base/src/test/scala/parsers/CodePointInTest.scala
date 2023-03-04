@@ -13,7 +13,7 @@ final class CodepointInTest extends AnyFunSpec {
 	import CodepointInTest._
 	def InputPart(str:String, pos:Int) = ((str, StubPosition(pos)))
 
-	def expectSuccess(head:CodePoint, restOfSet:Set[CodePoint], tail:(List[(String, StubPosition)], List[(Expr, StubPosition)]), expecting:Set[Expecting[StubPosition]]) = {
+	def expectSuccess(head:CodePoint, restOfSet:Set[CodePoint], tail:(List[(String, StubPosition)], List[(Expr, StubPosition)]), expecting:ExpectingSet[StubPosition]) = {
 		val input = new Input(((s"${head}${tail._1.head._1}", tail._1.head._2 + (if (head.value < 0x10000) {-1} else {-2}))) :: tail._1.tail, tail._2)
 		val parserSet = restOfSet + head
 		val expected = Success(
@@ -28,7 +28,7 @@ final class CodepointInTest extends AnyFunSpec {
 
 	def expectFailure(parserSet:Set[CodePoint], input:Input[Expr, StubPosition]) = {
 		val expected = Failure(
-			Set(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position)),
+			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position)),
 			Cut.False
 		)
 		val parser = CodePointIn(parserSet)

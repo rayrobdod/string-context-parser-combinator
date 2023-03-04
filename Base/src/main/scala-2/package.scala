@@ -63,10 +63,15 @@ package object stringContextParserCombinator {
 
 	private[stringContextParserCombinator]
 	def reportFailure(c:Context)(failure:Failure[Position.Impl]):Nothing = {
-		val remainingPosition = failure.expecting.map(_.position).max
-		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
-
-		remainingPosition.errorAndAbort(c)(s"Expected ${expectingDescription}")
+		failure.expecting match {
+			case ExpectingSet.Empty() => {
+				c.abort(c.enclosingPosition, "Parsing failed")
+			}
+			case ExpectingSet.NonEmpty(position, descriptions) => {
+				val descriptions2 = descriptions.mkString("Expected ", " or ", "")
+				position.errorAndAbort(c)(descriptions2)
+			}
+		}
 	}
 }
 

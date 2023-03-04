@@ -12,10 +12,16 @@ import scala.quoted.Varargs
  * A library for implementing StringContext methods via Parser Combinators
  */
 package object stringContextParserCombinator {
-	private[this] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
-		val remainingPosition = failure.expecting.map(_.position).max
-		val expectingDescription = failure.expecting.filter(_.position == remainingPosition).map(_.description).mkString(" or ")
-		remainingPosition.errorAndAbort(s"Expected ${expectingDescription}")
+	private[stringContextParserCombinator] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
+		failure.expecting match {
+			case ExpectingSet.Empty() => {
+				scala.quoted.quotes.reflect.report.errorAndAbort("Parsing failed")
+			}
+			case ExpectingSet.NonEmpty(position, descriptions) => {
+				val descriptions2 = descriptions.mkString("Expected ", " or ", "")
+				position.errorAndAbort(descriptions2)
+			}
+		}
 	}
 }
 

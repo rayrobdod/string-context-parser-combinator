@@ -5,7 +5,7 @@ private[stringContextParserCombinator]
 final class FlatMap[Expr, A, Z](
 	left:Parser[Expr, A], right:Function1[A, com.rayrobdod.stringContextParserCombinator.Parser[Expr, Z]]
 ) extends Parser[Expr, Z] {
-	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 		left.parse(input) match {
 			case successLeft@Success(_,_) => successLeft.flatMap({case Success1(leftValue, leftRemaining, leftExpecting, leftCut) =>
 				right(leftValue).impl.parse(leftRemaining) match {

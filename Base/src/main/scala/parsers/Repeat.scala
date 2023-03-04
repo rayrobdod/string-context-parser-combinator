@@ -14,7 +14,7 @@ final class Repeat[Expr, A, Z](
 	require(max >= 1)
 	require(max >= min)
 
-	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
+	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 		Repeat.parse0(input, inner, min, max, delimiter, strategy, true) match {
 			case f:Failure[Pos] => f
 			case s:Success[ExprZ, Pos, List[A]] => s.mapValues({parts =>
@@ -28,7 +28,7 @@ final class Repeat[Expr, A, Z](
 
 private[stringContextParserCombinator]
 object Repeat {
-	private def parse0[Expr, Pos, A](
+	private def parse0[Expr, Pos : Ordering, A](
 		input:Input[Expr, Pos],
 		inner:Parser[Expr, A],
 		min:Int,
@@ -37,7 +37,7 @@ object Repeat {
 		strategy:RepeatStrategy,
 		isFirst:Boolean
 	):Result[Expr, Pos, List[A]] = {
-		(if (isFirst) {Success((), input, Set.empty[Expecting[Pos]], Cut.False)} else {delimiter.parse(input)}) match {
+		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos], Cut.False)} else {delimiter.parse(input)}) match {
 			case Failure(expectingDelimiter, cutDelimiter) => {
 				if (min != 0 || cutDelimiter.toBoolean) {
 					Failure(expectingDelimiter, cutDelimiter)
@@ -86,9 +86,9 @@ object Repeat {
 									if (min == 0 && !successCWithValA.choicesHead.isCut.toBoolean && strategy != RepeatStrategy.Possessive) {
 										if (strategy == RepeatStrategy.Greedy) {
 											successCWithValA :+
-												Success1(Nil, input, Set.empty, Cut.False)
+												Success1(Nil, input, ExpectingSet.empty, Cut.False)
 										} else {
-											Success1(Nil, input, Set.empty[Expecting[Pos]], Cut.False) +: successCWithValA
+											Success1(Nil, input, ExpectingSet.empty[Pos], Cut.False) +: successCWithValA
 										}
 									} else {
 										successCWithValA

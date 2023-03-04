@@ -4,7 +4,7 @@ package com.rayrobdod.stringContextParserCombinator
  * The input to a [[Parser]]
  */
 private[stringContextParserCombinator]
-final class Input[+Expr, Pos : Position](
+final class Input[+Expr, Pos : Position : Ordering](
 	private val parts:List[(String, Pos)],
 	private val args:List[(Expr, Pos)]
 ) {
@@ -32,7 +32,7 @@ final class Input[+Expr, Pos : Position](
 		expecting: ExpectingDescription
 	):Result[Expr, Pos, A] = {
 		val expectingPosition = Expecting(expecting, this.position)
-		val expectingPositionSet = Set(expectingPosition)
+		val expectingPositionSet = ExpectingSet(expectingPosition)
 		def failure = Failure(expectingPositionSet, Cut.False)
 		if (parts.head._1.isEmpty) {
 			if (args.nonEmpty) {

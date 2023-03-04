@@ -24,7 +24,7 @@ object Lifted {
 		Quotes,
 	):Parser[Expr[_], Z] = {
 		new Parser[Expr[_], Z] {
-			def parse[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos]):Result[ExprZ, Pos, Z] = {
+			def parse[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				input.consume(
 					_ => None,
 					arg => (Some(arg)

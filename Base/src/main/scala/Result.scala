@@ -1,7 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.collection.immutable.Set
-
 /**
  * The result of a parse
  */
@@ -20,7 +18,7 @@ private[stringContextParserCombinator]
 final case class Success1[+Expr, Pos, +A](
 	val value:A,
 	val remaining:Input[Expr, Pos],
-	val expecting:Set[Expecting[Pos]],
+	val expecting:ExpectingSet[Pos],
 	val isCut:Cut
 ) {
 	private[stringContextParserCombinator]
@@ -31,7 +29,7 @@ final case class Success1[+Expr, Pos, +A](
  * The result of a successful parse
  */
 private[stringContextParserCombinator]
-final case class Success[+Expr, Pos, +A](
+final case class Success[+Expr, Pos : Ordering, +A](
 	choicesHead:Success1[Expr, Pos, A],
 	choicesTail:List[Success1[Expr, Pos, A]] = Nil
 ) extends Result[Expr, Pos, A] {
@@ -53,7 +51,7 @@ final case class Success[+Expr, Pos, +A](
 		if (successes.nonEmpty) {
 			Success(successes.head, successes.tail)
 		} else {
-			Failure(failures.flatMap(_.expecting).toSet, failures.map(_.isCut).foldLeft[Cut](Cut.False)(_ | _))
+			Failure(failures.map(_.expecting).foldLeft[ExpectingSet[Pos]](ExpectingSet.empty)(_ ++ _), failures.map(_.isCut).foldLeft[Cut](Cut.False)(_ | _))
 		}
 	}
 
@@ -65,10 +63,10 @@ final case class Success[+Expr, Pos, +A](
 private[stringContextParserCombinator]
 object Success {
 	private[stringContextParserCombinator]
-	def apply[Expr, Pos, A](
+	def apply[Expr, Pos : Ordering, A](
 		value:A,
 		remaining:Input[Expr, Pos],
-		expecting:Set[Expecting[Pos]],
+		expecting:ExpectingSet[Pos],
 		isCut:Cut
 	):Success[Expr, Pos, A] = Success(Success1(value, remaining, expecting, isCut))
 }
@@ -82,7 +80,7 @@ object Success {
  */
 private[stringContextParserCombinator]
 final case class Failure[Pos](
-	val expecting:Set[Expecting[Pos]],
+	val expecting:ExpectingSet[Pos],
 	val isCut:Cut
 ) extends Result[Nothing, Pos, Nothing] {
 	private[stringContextParserCombinator]

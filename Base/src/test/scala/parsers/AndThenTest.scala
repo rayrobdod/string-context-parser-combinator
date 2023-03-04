@@ -34,7 +34,7 @@ final class AndThenTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 101)
 
 			val leftParser = new ConstFailure(leftExpect, Cut.False)
-			val rightParser = new ConstSuccess(new Object, new Input[Nothing, StubPosition](("wxyz", StubPosition(13)) :: Nil, Nil), Set.empty, Cut.False)
+			val rightParser = new ConstSuccess(new Object, new Input[Nothing, StubPosition](("wxyz", StubPosition(13)) :: Nil, Nil), EmptyExpecting, Cut.False)
 
 			val expected = Failure(leftExpect, Cut.False)
 

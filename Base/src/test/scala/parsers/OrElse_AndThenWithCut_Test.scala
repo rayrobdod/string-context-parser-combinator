@@ -52,8 +52,8 @@ final class OrElse_AndThenWithCut_Test extends AnyFunSpec {
 		}
 		it ("(Success ~/ Success ~ Failure) | (Whatever)   is still cut ") {
 			val initialInput = SinglePartInput("1234", 42)
-			val leftLeftParser = new ConstSuccess(new Object, SinglePartInput("leftleft", 0), Set.empty, Cut.False)
-			val leftMiddleParser = new ConstSuccess(new Object, SinglePartInput("leftmiddle", 0), Set.empty, Cut.False)
+			val leftLeftParser = new ConstSuccess(new Object, SinglePartInput("leftleft", 0), EmptyExpecting, Cut.False)
+			val leftMiddleParser = new ConstSuccess(new Object, SinglePartInput("leftmiddle", 0), EmptyExpecting, Cut.False)
 			val leftRightParser = new ConstFailure(SimpleExpecting("LeftRight"), Cut.False)
 			val rightParser = new ConstSuccess(new Object, SinglePartInput("rightleft", 0), SimpleExpecting("RightLeft"), Cut.False)
 
