@@ -252,7 +252,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
 val p1:Parser[Unit] = ???
 
 //}
-((p1:Parser[Unit]).optionally()):Parser[Option[Unit]]
+((p1:Parser[Unit]).optionally()):Parser[Unit]
 ```
 
 The interface consists of two methods, the `some` method called if there was a value, and `none` method called if there
