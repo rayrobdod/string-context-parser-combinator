@@ -80,9 +80,14 @@ private[stringContextParserCombinator]
 final case class Failure[Pos](
 	val expecting:ExpectingSet[Pos]
 ) extends Result[Nothing, Pos, Nothing] {
+	/** Returns a failure that expects either the members this expects or an element that other expects */
 	private[stringContextParserCombinator]
 	def or(other:Failure[Pos]):Failure[Pos] = new Failure(this.expecting ++ other.expecting)
 
+	/** Returns a failure that expects either the members this expects or an element from the additional set */
+	def or(additional:ExpectingSet[Pos]):Failure[Pos] = new Failure(this.expecting ++ additional)
+
+	/** Returns true if this position is greater than the provided position */
 	def isPositionGt(other:Pos)(implicit ev1:Ordering[Pos]):Boolean = this.expecting match {
 		case ExpectingSet.NonEmpty(position, _) if ev1.gt(position, other) => {
 			true

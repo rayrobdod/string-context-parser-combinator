@@ -15,9 +15,7 @@ final class AndThen[Expr, A, B, Z](
 					restB,
 					expectingA ++ expectingB
 				)})
-				case Failure(expectingB) => Failure(
-					expectingA ++ expectingB
-				)
+				case failureB:Failure[Pos] => failureB or expectingA
 			}})
 			case failure:Failure[Pos] => failure
 		}

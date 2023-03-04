@@ -10,7 +10,7 @@ final class Opaque[Expr, A](
 		val descriptionPosition = ExpectingSet(Expecting(description, input.position))
 		backing.parse(input) match {
 			case success:Success[ExprZ, Pos, A] => success.map({case Success1(value, rest, _) => Success1(value, rest, descriptionPosition)})
-			case Failure(_) => Failure(descriptionPosition)
+			case _:Failure[Pos] => Failure(descriptionPosition)
 		}
 	}
 }

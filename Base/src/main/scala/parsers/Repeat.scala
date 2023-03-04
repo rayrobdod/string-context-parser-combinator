@@ -49,7 +49,7 @@ object Repeat {
 				inner.parse(restDelimiter) match {
 					case failureA:Failure[Pos] => {
 						if (min != 0 || failureA.isPositionGt(restDelimiter.position)) {
-							Failure(expectingDelimiter ++ failureA.expecting)
+							failureA or expectingDelimiter
 						} else {
 							Success(Nil, input, expectingDelimiter ++ failureA.expecting)
 						}
@@ -78,7 +78,7 @@ object Repeat {
 							}
 						} else {
 							parse0(restA, inner, math.max(0, min - 1), max - 1, delimiter, strategy, false) match {
-								case Failure(expectingC) => Failure(expectingA ++ expectingDelimiter ++ expectingC)
+								case failureC:Failure[Pos] => failureC or (expectingA ++ expectingDelimiter)
 								case successC:Success[Expr, Pos, List[A]] => {
 									val successCWithValA = successC.map({case Success1(valueC, restC, expectingC) =>
 										Success1(valueA :: valueC, restC, expectingA ++ expectingDelimiter ++ expectingC)

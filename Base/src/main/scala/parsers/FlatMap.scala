@@ -12,7 +12,7 @@ final class FlatMap[Expr, A, Z](
 					case successRight:Success[ExprZ, Pos, Z] => successRight.map({case Success1(rightValue, rightRemaining, rightExpecting) =>
 						Success1(rightValue, rightRemaining, leftExpecting ++ rightExpecting)
 					})
-					case Failure(rightExpecting) => Failure(leftExpecting ++ rightExpecting)
+					case rightFailure:Failure[Pos] => rightFailure or leftExpecting
 				}
 			})
 			case failure:Failure[Pos] => failure
