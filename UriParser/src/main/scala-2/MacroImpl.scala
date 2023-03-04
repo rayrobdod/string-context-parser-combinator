@@ -94,7 +94,7 @@ object MacroImpl {
 		val HostP:Parser[c.Expr[String]] = {
 			val label:Parser[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
 			val topLabel:Parser[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
-			val LiteralName:Parser[c.Expr[String]] = ((label andThen CodePointIn(".")).repeat() andThen topLabel).map(constExpr)
+			val LiteralName:Parser[c.Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).map(constExpr)
 			val LiteralIpv4:Parser[c.Expr[String]] = {
 				val Segment:Parser[String] = (
 					IsString("0").map(_ => "0") orElse
@@ -239,7 +239,7 @@ object MacroImpl {
 			IsString(":") flatMap
 			({scheme:c.Expr[String] =>
 				(IsString("//") andThen
-					(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(constNullExpr)) andThen
+					(UserInfoP andThen IsString("@")).attempt.optionally().map(_.getOrElse(constNullExpr)) andThen
 					HostPortP andThen
 					AbsPathExprP.optionally().map(_.getOrElse(constNullExpr)) andThen
 					QueryP andThen

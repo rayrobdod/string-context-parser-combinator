@@ -38,26 +38,26 @@ object Repeat {
 		isFirst:Boolean
 	):Result[Expr, Pos, List[A]] = {
 		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos], Cut.False)} else {delimiter.parse(input)}) match {
-			case Failure(expectingDelimiter, cutDelimiter) => {
-				if (min != 0 || cutDelimiter.toBoolean) {
-					Failure(expectingDelimiter, cutDelimiter)
+			case failureDelimiter:Failure[Pos] => {
+				if (min != 0 || failureDelimiter.isPositionGt(input.position)) {
+					failureDelimiter
 				} else {
-					Success(Nil, input, expectingDelimiter, cutDelimiter)
+					Success(Nil, input, failureDelimiter.expecting, failureDelimiter.isCut)
 				}
 			}
 			case successDelimiter:Success[Expr, Pos, Unit] => successDelimiter.flatMap[Expr, List[A]]({case Success1((), restDelimiter, expectingDelimiter, cutDelimiter) =>
 				inner.parse(restDelimiter) match {
-					case Failure(expectingA, cutA) => {
-						if (min != 0 || cutDelimiter.toBoolean || cutA.toBoolean) {
-							Failure(expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+					case failureA:Failure[Pos] => {
+						if (min != 0 || failureA.isPositionGt(restDelimiter.position)) {
+							Failure(expectingDelimiter ++ failureA.expecting, cutDelimiter | failureA.isCut)
 						} else {
-							Success(Nil, input, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
+							Success(Nil, input, expectingDelimiter ++ failureA.expecting, cutDelimiter | failureA.isCut)
 						}
 					}
 					case successA:Success[Expr, Pos, A] => successA.flatMap[Expr, List[A]]({case Success1(valueA, restA, expectingA, cutA) =>
 						if (max == 1 || restA == input) {
 							// `restA == input` means quit if inner did not consume any input
-							if (min != 0 || cutA.toBoolean || strategy == RepeatStrategy.Possessive) {
+							if (min != 0 || strategy == RepeatStrategy.Possessive) {
 								Success(valueA :: Nil, restA, expectingDelimiter ++ expectingA, cutDelimiter | cutA)
 							} else {
 								if (strategy == RepeatStrategy.Greedy) {

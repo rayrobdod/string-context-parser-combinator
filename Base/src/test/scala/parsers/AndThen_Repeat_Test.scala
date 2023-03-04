@@ -51,11 +51,11 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			val parser = left.repeat(strategy = Greedy) andThen right
 			assertResult(expected){parser.parse(initialInput)}
 		}
-		it ("If the repeat has a failed cut, then the result matches that failure") {
-			val left = new ConstFailure(SingleExpecting("left", 5), Cut.True)
+		it ("If the repeat has consumed input, then the result matches that failure") {
+			val left = new ConstFailure(SingleExpecting("left", 10005), Cut.True)
 			val right = new ConstFailure(SingleExpecting("right", 100), Cut.False)
 			val expected = Failure(
-				SingleExpecting("left", 5),
+				SingleExpecting("left", 10005),
 				Cut.True
 			)
 
@@ -198,21 +198,6 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
-		}
-		it ("does not backtrack across a cut") {
-			val initialInput = SinglePartInput("abcd", 42)
-
-			val leftLeft = new ConstSuccess("XXX", SinglePartInput("leftLeft", 8), SingleExpecting("leftLeft", 4), Cut.False)
-			val leftRight = new ConstFailure(SingleExpecting("leftRight", 8), Cut.False)
-			val right = new ConstSuccess("XXX", SinglePartInput("right", 12), SingleExpecting("right", 12), Cut.False)
-
-			val expected = Failure(
-				SingleExpecting("leftRight", 8),
-				Cut.True
-			)
-
-			val parser = (leftLeft andThenWithCut leftRight).repeat(strategy = Greedy) andThen right
 			assertResult(expected){parser.parse(initialInput)}
 		}
 		it ("unexpected right with any repeat and delimiter fails and shows delimiter and right as options") {

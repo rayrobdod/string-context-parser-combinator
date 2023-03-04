@@ -684,7 +684,7 @@ final class RepeatTest extends AnyFunSpec {
 			assertResult(expected){parser.parse(initialInput)}
 		}
 
-		describe("`(a ~/ b ~ c)*`") {
+		describe("`(a ~ b ~ c)*`") {
 			val childParser = (CharIn("a")
 				andThenWithCut CharIn("b")
 				andThen CharIn("c"))
