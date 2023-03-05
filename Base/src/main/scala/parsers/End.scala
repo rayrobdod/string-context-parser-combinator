@@ -6,9 +6,9 @@ final class End extends Parser[Any, Unit] {
 	override def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Unit] = {
 		val expecting = Expecting(description, input.position)
 		if (input.isEmpty) {
-			Success((), input, ExpectingSet(expecting), Cut.False)
+			Success((), input, ExpectingSet(expecting))
 		} else {
-			Failure(ExpectingSet(expecting), Cut.False)
+			Failure(ExpectingSet(expecting))
 		}
 	}
 

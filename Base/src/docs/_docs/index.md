@@ -19,11 +19,11 @@ def eval(head:Expr[Int], tail:Seq[(Char, Expr[Int])])(using Quotes):Expr[Int] = 
 
 def numberLiteral(using Quotes):Parser[Expr[Int]] = CharIn('0' to '9').repeat(1).map({x => Expr[Int](x.toInt)})
 def numberProvided(using Quotes):Parser[Expr[Int]] = OfType[Int]
-def parens(using Quotes):Parser[Expr[Int]] = DelayedConstruction(() => IsString("(") andThenWithCut addSub andThen IsString(")"))
+def parens(using Quotes):Parser[Expr[Int]] = DelayedConstruction(() => IsString("(") andThen addSub andThen IsString(")"))
 def factor(using Quotes):Parser[Expr[Int]] = numberLiteral orElse numberProvided orElse parens
 
-def divMul(using Quotes):Parser[Expr[Int]] = (factor andThen (CharIn("*/") andThenWithCut factor).repeat()).map(eval _)
-def addSub(using Quotes):Parser[Expr[Int]] = (divMul andThen (CharIn("+-") andThenWithCut divMul).repeat()).map(eval _)
+def divMul(using Quotes):Parser[Expr[Int]] = (factor andThen (CharIn("*/") andThen factor).repeat()).map(eval _)
+def addSub(using Quotes):Parser[Expr[Int]] = (divMul andThen (CharIn("+-") andThen divMul).repeat()).map(eval _)
 def expr(using Quotes):Parser[Expr[Int]] = addSub andThen End
 
 def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.parse(sc, args)

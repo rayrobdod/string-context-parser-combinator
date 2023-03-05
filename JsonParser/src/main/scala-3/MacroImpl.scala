@@ -118,7 +118,7 @@ object MacroImpl {
 		).map(jstringExprToStringExpr _)
 		val Content:Parser[Expr[String]] = (LiftedV orElse JCharsI).repeat(strategy = RepeatStrategy.Possessive)
 			.map(strs => concatenateStrings(strs))
-		(DelimiterP andThenWithCut Content andThen DelimiterP)
+		(DelimiterP andThen Content andThen DelimiterP)
 	}
 
 	private def JStringP(using Quotes):Parser[Expr[JString]] = {
@@ -143,7 +143,7 @@ object MacroImpl {
 		)
 		val LiteralPresplice:Parser[List[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]]] = (
 			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
-			Prefix andThenWithCut (SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive) andThen Suffix)
+			Prefix andThen (SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive) andThen Suffix)
 		)
 
 		LiteralPresplice
@@ -182,7 +182,7 @@ object MacroImpl {
 		val SplicableValue:Parser[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]] = (
 			(KeyValueV andThen WhitespaceP)
 				.map(x => Left(x)) orElse
-			(KeyV andThen Separator andThenWithCut ValueP)
+			(KeyV andThen Separator andThen ValueP)
 				.map(x => {val (k, v) = x; '{ Tuple2.apply($k, $v) }})
 				.map(x => Left(x)) orElse
 			(IsString("..") andThen ObjectV2 andThen WhitespaceP)
@@ -190,7 +190,7 @@ object MacroImpl {
 		)
 		val LiteralPresplice:Parser[List[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]]] = (
 			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
-			Prefix andThenWithCut (SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive) andThen Suffix)
+			Prefix andThen (SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive) andThen Suffix)
 		)
 
 		LiteralPresplice

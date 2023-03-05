@@ -10,7 +10,6 @@ import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Se
 /** Adds symbolic methods to Parsers */
 private[datetime] class ParserWithOps[U, A](val backing:Parser[U, A]) extends AnyVal {
 	def ~[B, Z](rhs:Parser[U, B])(implicit ev:typeclass.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-	def ~/[B, Z](rhs:Parser[U, B])(implicit ev:typeclass.Sequenced[A,B,Z]) = backing.andThenWithCut(rhs)(ev)
 	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
 	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typeclass.Repeated[A, Z]) = backing.repeat(min, max)(ev)
 	def opt[Z](implicit ev:typeclass.Optionally[A, Z]) = backing.optionally()(ev)
@@ -84,7 +83,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	}
 
 	private[this] def YearMonthP:Parser[c.Expr[YearMonth]] = {
-		val PartsP:Parser[c.Expr[YearMonth]] = (YearP ~ "-" ~/ MonthP)
+		val PartsP:Parser[c.Expr[YearMonth]] = (YearP ~ "-" ~ MonthP)
 		val VariableP:Parser[c.Expr[YearMonth]] = OfType[YearMonth]
 		VariableP | PartsP
 	}
@@ -141,7 +140,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 
 	private[this] def LocalTimeP:Parser[c.Expr[LocalTime]] = {
 		import c.universe.Quasiquote
-		val LiteralP:Parser[c.Expr[LocalTime]] = (HourP ~ ":" ~/ MinuteP ~ (":" ~/ SecondP ~ ("." ~/ NanoP).opt).opt)
+		val LiteralP:Parser[c.Expr[LocalTime]] = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
 			.map({hmsn =>
 				val constZero = c.Expr(c.universe.Literal(c.universe.Constant(0)))
 				val (hm, sn) = hmsn
@@ -156,7 +155,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	}
 
 	private[this] def LocalDateTimeP:Parser[c.Expr[LocalDateTime]] = {
-		(LocalDateP ~ "T" ~/ LocalTimeP)
+		(LocalDateP ~ "T" ~ LocalTimeP)
 	}
 
 	private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"

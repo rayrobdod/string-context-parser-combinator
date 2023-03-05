@@ -59,7 +59,7 @@ object MacroImpl {
 	private def HostP(using Quotes):Parser[Expr[String]] = {
 		val label:Parser[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
 		val topLabel:Parser[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
-		val LiteralName:Parser[Expr[String]] = ((label andThen CodePointIn(".")).repeat() andThen topLabel).map(Expr.apply _)
+		val LiteralName:Parser[Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).map(Expr.apply _)
 		val LiteralIpv4:Parser[Expr[String]] = {
 			val Segment:Parser[String] = (
 				IsString("0").map(_ => "0") orElse
@@ -79,7 +79,7 @@ object MacroImpl {
 			val SegmentColon:Parser[String] = Segment andThen CodePointIn(":")
 
 			val Regex:Parser[String] = CodePointIn("[") andThen (
-				(CodePointIn(":") andThen (ColonSegment.repeat(1, 7) orElse CodePointIn(":").map(_.toString))) orElse
+				(CodePointIn(":") andThen (ColonSegment.repeat(1, 7).attempt orElse CodePointIn(":").map(_.toString))) orElse
 				(SegmentColon andThen (
 					(ColonSegment andThen ColonSegment.repeat(0, 6)) orElse
 					(SegmentColon andThen (
@@ -128,7 +128,7 @@ object MacroImpl {
 		SockAddr orElse Literal
 	}
 	private def ServerP(using Quotes):Parser[(Expr[String], (Expr[String], Expr[Int]))] =
-		(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(nullExpr)) andThen HostPortP
+		(UserInfoP andThen IsString("@")).attempt.optionally().map(_.getOrElse(nullExpr)) andThen HostPortP
 
 	private def OpaquePartP(using Quotes):Parser[Expr[String]] = {
 		val Variable:Parser[Expr[String]] = OfType[String]
@@ -180,7 +180,7 @@ object MacroImpl {
 			(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
 				.map(xs => concatenateStrings(xs))
 		}
-		Mapping orElse Arbitrary
+		Mapping.attempt orElse Arbitrary
 	}
 	private def QueryP(using Quotes):Parser[Expr[String|Null]] = (IsString("?") andThen FragmentOrQueryString).optionally().map(_.getOrElse(nullExpr))
 	private def FragmentP(using Quotes):Parser[Expr[String|Null]] = (IsString("#") andThen FragmentOrQueryString).optionally().map(_.getOrElse(nullExpr))
@@ -219,8 +219,7 @@ object MacroImpl {
 		IsString(":") flatMap
 		({(scheme:Expr[String]) =>
 			(IsString("//") andThen
-				(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(nullExpr)) andThen
-				HostPortP andThen
+				ServerP andThen
 				AbsPathExprP.optionally().map(_.getOrElse(nullExpr)) andThen
 				QueryP andThen
 				FragmentP
@@ -232,8 +231,8 @@ object MacroImpl {
 	}
 
 	private def RelativeUriP(using Quotes):Parser[Expr[URI]] = {
-		((NetPathP
-			orElse AbsPathExprP.map(x => (noServer, x))
+		((NetPathP.attempt
+			orElse AbsPathExprP.map(x => (noServer, x)).attempt
 			orElse RelPathP.map(x => (noServer, Expr.apply(x)))
 			andThen QueryP
 			andThen FragmentP
@@ -244,13 +243,13 @@ object MacroImpl {
 	}
 
 	private def ResolvedUriP(using Quotes):Parser[Expr[URI]] = {
-		(OfType[URI] andThen RelativeUriP)map({params =>
+		(OfType[URI] andThen RelativeUriP).map({params =>
 			val (base, resolvant) = params
 			'{ $base.resolve($resolvant) }
 		})
 	}
 
-	private def Aggregate(using Quotes):Parser[Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End
+	private def Aggregate(using Quotes):Parser[Expr[URI]] = (ResolvedUriP.attempt orElse AbsoluteUriP.attempt orElse RelativeUriP) andThen End
 
 	def stringContext_uri(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[URI] = {
 		Aggregate.parse(sc, args)

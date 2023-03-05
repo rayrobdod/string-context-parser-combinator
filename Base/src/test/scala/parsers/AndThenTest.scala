@@ -16,14 +16,13 @@ final class AndThenTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 101)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect, Cut.False)
-			val rightParser = new ConstSuccess(rightResult, endInput, rightExpect, Cut.False)
+			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect)
+			val rightParser = new ConstSuccess(rightResult, endInput, rightExpect)
 
 			val expected = Success[Nothing, StubPosition, (Object, Object)](
 				(leftResult, rightResult),
 				endInput,
-				leftExpect ++ rightExpect,
-				Cut.False
+				leftExpect ++ rightExpect
 			)
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -33,10 +32,10 @@ final class AndThenTest extends AnyFunSpec {
 
 			val leftExpect = SingleExpecting("Left", 101)
 
-			val leftParser = new ConstFailure(leftExpect, Cut.False)
-			val rightParser = new ConstSuccess(new Object, new Input[Nothing, StubPosition](("wxyz", StubPosition(13)) :: Nil, Nil), EmptyExpecting, Cut.False)
+			val leftParser = new ConstFailure(leftExpect)
+			val rightParser = new ConstSuccess(new Object, new Input[Nothing, StubPosition](("wxyz", StubPosition(13)) :: Nil, Nil), EmptyExpecting)
 
-			val expected = Failure(leftExpect, Cut.False)
+			val expected = Failure(leftExpect)
 
 			val parser = leftParser andThen rightParser
 			assertResult(expected){parser.parse(initialInput)}
@@ -49,12 +48,11 @@ final class AndThenTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 101)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect, Cut.False)
-			val rightParser = new ConstFailure(rightExpect, Cut.False)
+			val leftParser = new ConstSuccess(leftResult, middleInput, leftExpect)
+			val rightParser = new ConstFailure(rightExpect)
 
 			val expected = Failure(
-				leftExpect ++ rightExpect,
-				Cut.False
+				leftExpect ++ rightExpect
 			)
 
 			val parser = leftParser andThen rightParser

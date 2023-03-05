@@ -11,8 +11,7 @@ final class PassFailTest extends AnyFunSpec {
 			val expected = Success(
 				(),
 				input,
-				EmptyExpecting,
-				Cut.False
+				EmptyExpecting
 			)
 			assertResult(expected)(Pass.parse(input))
 		}
@@ -22,8 +21,7 @@ final class PassFailTest extends AnyFunSpec {
 			val input = SinglePartInput("expect", 42)
 			val description = "description"
 			val expected = Failure(
-				SingleExpecting(description, 42),
-				Cut.False
+				SingleExpecting(description, 42)
 			)
 			assertResult(expected)(Fail(ExpectingDescription(description)).parse(input))
 		}

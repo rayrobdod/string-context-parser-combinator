@@ -89,10 +89,10 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		val input = new Input[Expr, Position.Impl](strings2, args2)
 
 		impl.parse(input) match {
-			case s@Success(_, _) => {
+			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
-			case f@Failure(_, _) => {
+			case f:Failure[Position.Impl] => {
 				reportFailure(f)
 			}
 		}
@@ -128,6 +128,12 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	def opaque(description:String):Parser[Expr, A] =
 		new Parser(new parsers.Opaque(this.impl, ExpectingDescription(description)))
 
+	/**
+	 * Returns a parser which invokes this parser, but rewinds the input after a failed parse
+	 * @group Combinator
+	 */
+	def attempt:Parser[Expr, A] =
+		new Parser(new parsers.Attempt(this.impl))
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -141,20 +147,10 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		new Parser(new parsers.AndThen(this.impl, rhs.impl, ev))
 
 	/**
-	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
-	 * If the second parser fails, the error is marked so that prior
-	 * `orElse` parsers will not try other branches.
-	 *
-	 * @tparam Z the result parser's parsed value type
-	 * @param rhs the parser to call after this one
-	 * @param ev A descriptor of how to combine two values into one value
-	 * @group Combinator
-	 */
-	def andThenWithCut[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
-		new Parser(new parsers.AndThenWithCut(this.impl, rhs.impl, ev))
-
-	/**
-	 * Returns a parser which invokes this parser, and if this parser fails tries the other parser, and returns the first successful result
+	 * Returns a parser which invokes this parser, and then:
+	 *   * If this parser run succeeded, return this parsers's success
+	 *   * If this parser failed and consumed input, return this parser's failure
+	 *   * If this parser failed but did not consume input, run the other parser and return the other parser's result
 	 *
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one

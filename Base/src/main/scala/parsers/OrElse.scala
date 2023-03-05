@@ -9,15 +9,19 @@ final class OrElse[Expr, A, B, Z](
 ) extends Parser[Expr, Z] {
 	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 		left.parse(input) match {
-			case result:Success[ExprZ, Pos, A] => result.mapValues(combiner.left _)
-			case Failure(expectingLeft, Cut.False) => right.parse(input) match {
-				case result:Success[ExprZ, Pos, B] => result.mapValues(combiner.right _)
-				case Failure(expectingRight, Cut.False) => {
-					Failure(expectingLeft ++ expectingRight, Cut.False)
+			case leftSuccess:Success[ExprZ, Pos, A] => leftSuccess.mapValues(combiner.left _)
+			case leftFailure:Failure[Pos] => {
+				if (leftFailure.isPositionGt(input.position)) {
+					// consumed input; don't try the other branch
+					leftFailure
+				} else {
+					// assume that ExpectingSet.Empty means no input consumed
+					right.parse(input) match {
+						case rightSuccess:Success[ExprZ, Pos, B] => rightSuccess.mapValues(combiner.right _)
+						case rightFailure:Failure[Pos] => leftFailure or rightFailure
+					}
 				}
-				case failure@Failure(_, Cut.True) => failure
 			}
-			case failure@Failure(_, Cut.True) => failure
 		}
 	}
 }

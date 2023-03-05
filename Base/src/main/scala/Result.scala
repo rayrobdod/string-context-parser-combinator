@@ -18,11 +18,10 @@ private[stringContextParserCombinator]
 final case class Success1[+Expr, Pos, +A](
 	val value:A,
 	val remaining:Input[Expr, Pos],
-	val expecting:ExpectingSet[Pos],
-	val isCut:Cut
+	val expecting:ExpectingSet[Pos]
 ) {
 	private[stringContextParserCombinator]
-	def map[Z](fn:A => Z):Success1[Expr, Pos, Z] = Success1(fn(value), remaining, expecting, isCut)
+	def map[Z](fn:A => Z):Success1[Expr, Pos, Z] = Success1(fn(value), remaining, expecting)
 }
 
 /**
@@ -51,7 +50,7 @@ final case class Success[+Expr, Pos : Ordering, +A](
 		if (successes.nonEmpty) {
 			Success(successes.head, successes.tail)
 		} else {
-			Failure(failures.map(_.expecting).foldLeft[ExpectingSet[Pos]](ExpectingSet.empty)(_ ++ _), failures.map(_.isCut).foldLeft[Cut](Cut.False)(_ | _))
+			Failure(failures.map(_.expecting).foldLeft[ExpectingSet[Pos]](ExpectingSet.empty)(_ ++ _))
 		}
 	}
 
@@ -66,9 +65,8 @@ object Success {
 	def apply[Expr, Pos : Ordering, A](
 		value:A,
 		remaining:Input[Expr, Pos],
-		expecting:ExpectingSet[Pos],
-		isCut:Cut
-	):Success[Expr, Pos, A] = Success(Success1(value, remaining, expecting, isCut))
+		expecting:ExpectingSet[Pos]
+	):Success[Expr, Pos, A] = Success(Success1(value, remaining, expecting))
 }
 
 /**
@@ -80,9 +78,32 @@ object Success {
  */
 private[stringContextParserCombinator]
 final case class Failure[Pos](
-	val expecting:ExpectingSet[Pos],
-	val isCut:Cut
+	val position:Option[Pos],
+	val expecting:ExpectingSet[Pos]
 ) extends Result[Nothing, Pos, Nothing] {
+	/** Returns a failure that expects either the members this expects or an element that other expects */
 	private[stringContextParserCombinator]
-	def or(other:Failure[Pos]):Failure[Pos] = new Failure(this.expecting ++ other.expecting, this.isCut | other.isCut)
+	def or(other:Failure[Pos])(implicit ev1:Ordering[Pos]):Failure[Pos] = {
+		import Ordering.Implicits.infixOrderingOps
+		val newPos = this.position.zip(other.position).map(ab => ab._1 max ab._2).headOption
+		new Failure(newPos, this.expecting ++ other.expecting)
+	}
+
+	/** Returns a failure that expects either the members this expects or an element from the additional set */
+	def or(additional:ExpectingSet[Pos]):Failure[Pos] = new Failure(this.position, this.expecting ++ additional)
+
+	/** Returns true if this position is greater than the provided position */
+	def isPositionGt(other:Pos)(implicit ev1:Ordering[Pos]):Boolean = this.position match {
+		// Treat No Position as it its position is equal to any other position
+		case None => true
+		case Some(position) => ev1.gt(position, other)
+	}
+}
+
+private[stringContextParserCombinator]
+object Failure {
+	def apply[Pos](expecting:ExpectingSet[Pos]):Failure[Pos] = expecting match {
+		case ExpectingSet.NonEmpty(pos, _) => new Failure(Option(pos), expecting)
+		case _:ExpectingSet.Empty[Pos] => new Failure(Option.empty, expecting)
+	}
 }

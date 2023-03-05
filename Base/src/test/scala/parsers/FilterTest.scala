@@ -9,7 +9,7 @@ final class FilterTest extends AnyFunSpec {
 	describe ("Filter") {
 		it ("if base parser fails, parser passes through the failure") {
 			val initialInput = SinglePartInput("expect", 42)
-			val expected = Failure(SingleExpecting("Left", 102), Cut.False)
+			val expected = Failure(SingleExpecting("Left", 102))
 			val parser = new ConstResult(expected).filter({(x:Any) => false}, "false")
 			assertResult(expected){parser.parse(initialInput)}
 		}
@@ -20,15 +20,13 @@ final class FilterTest extends AnyFunSpec {
 				Success1(
 					"one",
 					SinglePartInput("expectOne", 42),
-					SingleExpecting("One", 42),
-					Cut.True
+					SingleExpecting("One", 42)
 				),
 				List(
 					Success1(
 						"two",
 						SinglePartInput("expectTwo", 42),
-						SingleExpecting("Two", 42),
-						Cut.False
+						SingleExpecting("Two", 42)
 					)
 				)
 			)
@@ -42,21 +40,18 @@ final class FilterTest extends AnyFunSpec {
 				Success1(
 					"one",
 					SinglePartInput("expectOne", 42),
-					SingleExpecting("One", 42),
-					Cut.True
+					SingleExpecting("One", 42)
 				),
 				List(
 					Success1(
 						"two",
 						SinglePartInput("expectTwo", 42),
-						SingleExpecting("Two", 42),
-						Cut.False
+						SingleExpecting("Two", 42)
 					)
 				)
 			)
 			val expected = Failure(
-				SingleExpecting("One where false", 42) ++ SingleExpecting("Two where false", 42),
-				Cut.True
+				SingleExpecting("One where false", 42) ++ SingleExpecting("Two where false", 42)
 			)
 			val parser = new ConstResult(leftResult).filter(x => false, "false")
 			assertResult(expected){parser.parse(initialInput)}
@@ -68,15 +63,13 @@ final class FilterTest extends AnyFunSpec {
 				Success1(
 					"one",
 					SinglePartInput("expectOne", 42),
-					SingleExpecting("One", 42),
-					Cut.True
+					SingleExpecting("One", 42)
 				),
 				List(
 					Success1(
 						"two",
 						SinglePartInput("expectTwo", 42),
-						SingleExpecting("Two", 42),
-						Cut.False
+						SingleExpecting("Two", 42)
 					)
 				)
 			)
@@ -84,8 +77,7 @@ final class FilterTest extends AnyFunSpec {
 				Success1(
 					"two",
 					SinglePartInput("expectTwo", 42),
-					SingleExpecting("Two", 42),
-					Cut.False
+					SingleExpecting("Two", 42)
 				),
 				List()
 			)

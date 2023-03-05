@@ -149,7 +149,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		).map(x => c.universe.reify(x.splice.values))
 		val Content:Parser[c.Expr[String]] = (LiftedV orElse JCharsI).repeat(strategy = RepeatStrategy.Possessive)
 			.map(strs => concatenateStrings(strs))
-		(DelimiterP andThenWithCut Content andThen DelimiterP)
+		(DelimiterP andThen Content andThen DelimiterP)
 	}
 
 	private[this] val JStringP:Parser[c.Expr[JString]] = {
@@ -169,12 +169,12 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 		val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = {
 			val value = ValueP
-			val array = (IsString("..") andThenWithCut LiftedArrayV andThen WhitespaceP)
+			val array = (IsString("..") andThen LiftedArrayV andThen WhitespaceP)
 			value.orElse(array)(typeclass.Eithered.discriminatedUnion)
 		}
 		val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
 			Prefix
-				andThenWithCut SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
+				andThen SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
 				andThen Suffix
 		)
 
@@ -210,14 +210,14 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 		val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = {
 			val keyValue = (KeyValueV andThen WhitespaceP)
-			val keyThenValue = (KeyV andThen Separator andThenWithCut ValueP)
+			val keyThenValue = (KeyV andThen Separator andThen ValueP)
 				.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
-			val mapping = (IsString("..") andThenWithCut ObjectV andThen WhitespaceP)
+			val mapping = (IsString("..") andThen ObjectV andThen WhitespaceP)
 			keyValue.orElse(keyThenValue).orElse(mapping)(typeclass.Eithered.discriminatedUnion)
 		}
 		val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
 			Prefix
-				andThenWithCut SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
+				andThen SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
 				andThen Suffix
 		)
 

@@ -19,8 +19,7 @@ final class CodepointInTest extends AnyFunSpec {
 		val expected = Success(
 			head,
 			new Input(tail._1, tail._2),
-			expecting,
-			Cut.False
+			expecting
 		)
 		val parser = CodePointIn(parserSet)
 		assertResult(expected){parser.parse(input)}
@@ -28,8 +27,7 @@ final class CodepointInTest extends AnyFunSpec {
 
 	def expectFailure(parserSet:Set[CodePoint], input:Input[Expr, StubPosition]) = {
 		val expected = Failure(
-			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position)),
-			Cut.False
+			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position))
 		)
 		val parser = CodePointIn(parserSet)
 		assertResult(expected){parser.parse(input)}

@@ -94,7 +94,7 @@ object MacroImpl {
 		val HostP:Parser[c.Expr[String]] = {
 			val label:Parser[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
 			val topLabel:Parser[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
-			val LiteralName:Parser[c.Expr[String]] = ((label andThen CodePointIn(".")).repeat() andThen topLabel).map(constExpr)
+			val LiteralName:Parser[c.Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).map(constExpr).opaque("HostName")
 			val LiteralIpv4:Parser[c.Expr[String]] = {
 				val Segment:Parser[String] = (
 					IsString("0").map(_ => "0") orElse
@@ -114,7 +114,7 @@ object MacroImpl {
 				val SegmentColon:Parser[String] = Segment andThen CodePointIn(":")
 
 				val Regex:Parser[String] = CodePointIn("[") andThen (
-					(CodePointIn(":") andThen (ColonSegment.repeat(1, 7) orElse CodePointIn(":").map(_.toString))) orElse
+					(CodePointIn(":") andThen (ColonSegment.repeat(1, 7).attempt orElse CodePointIn(":").map(_.toString))) orElse
 					(SegmentColon andThen (
 						(ColonSegment andThen ColonSegment.repeat(0, 6)) orElse
 						(SegmentColon andThen (
@@ -147,6 +147,7 @@ object MacroImpl {
 			val Literal:Parser[c.Expr[Int]] = DigitChar.repeat(1)
 				.map({x => java.lang.Integer.parseInt(x)})
 				.map({x => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
+				.opaque("Port")
 			val LiteralEmpty:Parser[c.Expr[Int]] = IsString("").map({_ => constNegOneExpr})
 			val Variable:Parser[c.Expr[Int]] = OfType[Int]
 			Variable orElse Literal orElse LiteralEmpty
@@ -163,7 +164,7 @@ object MacroImpl {
 			SockAddr orElse Literal
 		}
 		val ServerP:Parser[(c.Expr[String], (c.Expr[String], c.Expr[Int]))] =
-			(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(constNullExpr)) andThen HostPortP
+			(UserInfoP andThen IsString("@")).attempt.optionally().map(_.getOrElse(constNullExpr)) andThen HostPortP
 
 		val OpaquePartP:Parser[c.Expr[String]] = {
 			val Variable:Parser[c.Expr[String]] = OfType[String]
@@ -219,7 +220,7 @@ object MacroImpl {
 				(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
 					.map(xs => concatenateStrings(c)(xs))
 			}
-			Mapping orElse Arbitrary
+			Mapping.attempt orElse Arbitrary
 		}
 		val QueryP:Parser[c.Expr[String]] = (IsString("?") andThen FragmentOrQueryString).optionally().map(_.getOrElse(constNullExpr))
 		val FragmentP:Parser[c.Expr[String]] = (IsString("#") andThen FragmentOrQueryString).optionally().map(_.getOrElse(constNullExpr))
@@ -239,8 +240,7 @@ object MacroImpl {
 			IsString(":") flatMap
 			({scheme:c.Expr[String] =>
 				(IsString("//") andThen
-					(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(constNullExpr)) andThen
-					HostPortP andThen
+					ServerP andThen
 					AbsPathExprP.optionally().map(_.getOrElse(constNullExpr)) andThen
 					QueryP andThen
 					FragmentP
@@ -266,13 +266,12 @@ object MacroImpl {
 						)
 					""")
 				})
-			}) andThen
-			End
+			})
 		}
 
 		val RelativeUriP:Parser[c.Expr[URI]] = {
-			((NetPathP
-				orElse AbsPathExprP.map(x => (noServer, x))
+			((NetPathP.attempt
+				orElse AbsPathExprP.map(x => (noServer, x)).attempt
 				orElse RelPathP.map(x => (noServer, constExpr(x)))
 				andThen QueryP
 				andThen FragmentP
@@ -299,7 +298,7 @@ object MacroImpl {
 			})
 		}
 
-		val Aggregate:Parser[c.Expr[URI]] = (ResolvedUriP orElse AbsoluteUriP orElse RelativeUriP) andThen End
+		val Aggregate:Parser[c.Expr[URI]] = (ResolvedUriP.attempt orElse AbsoluteUriP.attempt orElse RelativeUriP) andThen End
 
 		val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.uri.package.UriStringContext"
 		Aggregate.parse(c)(extensionClassName)(args.toList)

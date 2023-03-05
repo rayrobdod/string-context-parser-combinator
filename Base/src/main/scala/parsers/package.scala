@@ -201,13 +201,13 @@ package object parsers {
 	/** A parser that consumes no input and always succeeds */
 	private[stringContextParserCombinator]
 	def Pass:Parser[Any, Unit] = new Parser[Any, Unit] {
-		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Unit] = Success((), input, ExpectingSet.empty, Cut.False)
+		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Unit] = Success((), input, ExpectingSet.empty)
 	}
 
 	/** A parser that consumes no input and always fails */
 	private[stringContextParserCombinator]
 	def Fail(desc:ExpectingDescription):Parser[Any, Nothing] = new Parser[Any, Nothing] {
-		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Nothing] = Failure(ExpectingSet(Expecting(desc, input.position)), Cut.False)
+		def parse[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Nothing] = Failure(ExpectingSet(Expecting(desc, input.position)))
 	}
 
 	private[stringContextParserCombinator]
