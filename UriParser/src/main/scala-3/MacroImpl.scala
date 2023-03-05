@@ -128,7 +128,7 @@ object MacroImpl {
 		SockAddr orElse Literal
 	}
 	private def ServerP(using Quotes):Parser[(Expr[String], (Expr[String], Expr[Int]))] =
-		(UserInfoP andThen IsString("@")).optionally().map(_.getOrElse(nullExpr)) andThen HostPortP
+		(UserInfoP andThen IsString("@")).attempt.optionally().map(_.getOrElse(nullExpr)) andThen HostPortP
 
 	private def OpaquePartP(using Quotes):Parser[Expr[String]] = {
 		val Variable:Parser[Expr[String]] = OfType[String]
@@ -219,8 +219,7 @@ object MacroImpl {
 		IsString(":") flatMap
 		({(scheme:Expr[String]) =>
 			(IsString("//") andThen
-				(UserInfoP andThen IsString("@")).attempt.optionally().map(_.getOrElse(nullExpr)) andThen
-				HostPortP andThen
+				ServerP andThen
 				AbsPathExprP.optionally().map(_.getOrElse(nullExpr)) andThen
 				QueryP andThen
 				FragmentP
