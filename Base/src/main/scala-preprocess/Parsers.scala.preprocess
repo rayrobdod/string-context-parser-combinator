@@ -36,10 +36,18 @@ import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
  *
  * @groupname Part String-Part
  * @groupprio Part 100
+ * @groupname PartAsChar String-Part as Char
+ * @groupprio PartAsChar 110
+ * @groupname PartAsCodepoint String-Part as Codepoint
+ * @groupprio PartAsCodepoint 120
  * @groupname Arg Argument-Part
- * @groupprio Arg 110
+ * @groupprio Arg 200
  * @groupname Constant Constant
  * @groupprio Constant 300
+ * @groupname Position Position
+ * @groupprio Position 400
+ * @groupname Misc Miscellaneous
+ * @groupprio Misc 999
  */
 #if scala=2.x
 trait Parsers {
@@ -54,56 +62,56 @@ object Parsers {
 
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
-	 * @group Part
+	 * @group PartAsChar
 	 */
 	def CharIn(str:Set[Char]):Parser[Char] =
 		new Parser(parsers.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
-	 * @group Part
+	 * @group PartAsChar
 	 */
 	def CharIn(str:Seq[Char]):Parser[Char] =
 		new Parser(parsers.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
-	 * @group Part
+	 * @group PartAsChar
 	 */
 	def CharIn(str:String):Parser[Char] =
 		new Parser(parsers.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
-	 * @group Part
+	 * @group PartAsChar
 	 */
 	def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] =
 		new Parser(parsers.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
-	 * @group Part
+	 * @group PartAsCodepoint
 	 */
 	def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] =
 		new Parser(parsers.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
-	 * @group Part
+	 * @group PartAsCodepoint
 	 */
 	def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] =
 		new Parser(parsers.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
-	 * @group Part
+	 * @group PartAsCodepoint
 	 */
 	def CodePointIn(str:String):Parser[CodePoint] =
 		new Parser(parsers.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
-	 * @group Part
+	 * @group PartAsCodepoint
 	 */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] =
 		new Parser(parsers.CodePointWhere(fn))
@@ -157,12 +165,14 @@ object Parsers {
 
 	/**
 	 * A parser that succeeds iff the input is empty
+	 * @group Position
 	 */
 	def End:Parser[Unit] =
 		new Parser(new parsers.End())
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
+	 * @group Misc
 	 */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
 		new Parser(new parsers.DelayedConstruction(fn))

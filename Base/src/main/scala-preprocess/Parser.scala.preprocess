@@ -12,8 +12,20 @@ import scala.reflect.macros.blackbox.Context
  *
  * @groupname Parse parse
  * @groupprio Parse 100
- * @groupname Combinator Combinators
- * @groupprio Combinator 3010
+ * @groupname Map Result Changing Combinators
+ * @groupprio Map 1010
+ * @groupname Sequence Sequencing Combinators
+ * @groupprio Sequence 1020
+ * @groupname Branch Branching Combinators
+ * @groupprio Branch 1030
+ * @groupname Filter Filtering Combinators
+ * @groupprio Filter 1040
+ * @groupname Repeat Repeating Combinators
+ * @groupprio Repeat 1050
+ * @groupname ErrorPlus Error Enriching Combinators
+ * @groupprio ErrorPlus 1060
+ * @groupname Misc Other Combinators
+ * @groupprio Misc 1999
  */
 final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[stringContextParserCombinator] val impl: parsers.Parser[Expr, A]) {
 #if scala=2.x
@@ -101,21 +113,21 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
-	 * @group Combinator
+	 * @group Map
 	 */
 	def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
 		new Parser(new parsers.Map(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
-	 * @group Combinator
+	 * @group Sequence
 	 */
 	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Parser[ExprZ, Z]]):Parser[ExprZ, Z] =
 		new Parser(new parsers.FlatMap(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
-	 * @group Combinator
+	 * @group Filter
 	 */
 	def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
 		new Parser(new parsers.Filter(this.impl, predicate, ExpectingDescription(description)))
@@ -123,14 +135,15 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 
 	/**
 	 * Returns a parser which invokes this parser, but has the given description upon failure
-	 * @group Combinator
+	 * @group ErrorPlus
 	 */
 	def opaque(description:String):Parser[Expr, A] =
 		new Parser(new parsers.Opaque(this.impl, ExpectingDescription(description)))
 
 	/**
-	 * Returns a parser which invokes this parser, but rewinds the input after a failed parse
-	 * @group Combinator
+	 * Returns a parser which invokes this parser,
+	 * but treats the result of a failed parse as if it does not consume input
+	 * @group Misc
 	 */
 	def attempt:Parser[Expr, A] =
 		new Parser(new parsers.Attempt(this.impl))
@@ -141,7 +154,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to combine two values into one value
-	 * @group Combinator
+	 * @group Sequence
 	 */
 	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 		new Parser(new parsers.AndThen(this.impl, rhs.impl, ev))
@@ -155,7 +168,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one
 	 * @param ev A descriptor of how to treat either value as one value
-	 * @group Combinator
+	 * @group Branch
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Parser[ExprZ, Z] =
 		new Parser(new parsers.OrElse(this.impl, rhs.impl, ev))
@@ -169,7 +182,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @param delimiter a parser describing separators between each repeat. Defaults to a parser that always succeeds and consumes no input.
 	 * @param strategy whether the repeat will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to combine the repeated values into one value
-	 * @group Combinator
+	 * @group Repeat
 	 */
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
@@ -186,7 +199,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @tparam Z the result parser's parsed value type
 	 * @param strategy whether the optionally will attempt to match as much or as little as possible, and whether it will backtrack. Default is [[RepeatStrategy.Possessive]]
 	 * @param ev A descriptor of how to mark present or absent values
-	 * @group Combinator
+	 * @group Repeat
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
