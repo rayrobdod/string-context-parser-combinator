@@ -149,6 +149,3 @@ lazy val uri = (projectMatrix in file("UriParser"))
 
 autoScalaLibrary := false
 publish / skip := true
-enablePlugins(GhpagesPlugin)
-ghpagesSynchLocal / mappings := (base.jvm(scala30Ver) / Compile / packageDoc / mappings).value
-ghpagesCommitOptions := Seq("-m", s"Render of ${git.gitHeadCommit.value.get}")
