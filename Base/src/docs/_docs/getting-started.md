@@ -32,7 +32,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
   val anyChar = CharWhere(_ => true)
 
-  val result = anyChar.parse(sc, args)
+  val result = anyChar.interpolate(sc, args)
   // `result` is a `Char`. Stringify the result and wrap it to fit the required shape.
   Expr(s"$result")
 }
@@ -60,7 +60,7 @@ def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Strin
   val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat()
 
-  val result = anyChars.parse(sc, args)
+  val result = anyChars.interpolate(sc, args)
   // `result` is a `String`. wrap it to fit the required shape.
   Expr(s"$result")
 }
@@ -89,7 +89,7 @@ def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Strin
   val anyChar = CharWhere(_ => true)
   val anyChars = anyChar.repeat(1).map(str => Expr(str))
 
-  anyChars.parse(sc, args)
+  anyChars.interpolate(sc, args)
 }
 ```
 
@@ -110,7 +110,7 @@ import com.rayrobdod.stringContextParserCombinator.Parsers._
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
   val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
 
-  anyArg.parse(sc, args)
+  anyArg.interpolate(sc, args)
 }
 ```
 
@@ -137,7 +137,7 @@ def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Strin
   val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
   val segment = anyChars orElse anyArg
 
-  segment.parse(sc, args)
+  segment.interpolate(sc, args)
 }
 ```
 
@@ -165,7 +165,7 @@ def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Strin
   val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
   val segment = anyChars orElse anyArg
 
-  segment.parse(sc, args)
+  segment.interpolate(sc, args)
 }
 ```
 
@@ -195,7 +195,7 @@ def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Strin
   val segments = segment.repeat().map(strExprs => '{${Expr.ofList(strExprs)}.mkString})
   // concatenation using a StringBuilder instead of List::mkString is left as an exercise for the reader
 
-  segment.parse(sc, args)
+  segment.interpolate(sc, args)
 }
 ```
 

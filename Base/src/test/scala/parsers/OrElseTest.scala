@@ -25,7 +25,7 @@ final class OrElseTest extends AnyFunSpec {
 				leftExpect
 			)
 			val parser = leftParser orElse rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it("`Advanced | Whatever` returns that failure") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -42,7 +42,7 @@ final class OrElseTest extends AnyFunSpec {
 				leftExpect
 			)
 			val parser = leftParser orElse rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it("`NonConsume | Success` returns that success") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -61,7 +61,7 @@ final class OrElseTest extends AnyFunSpec {
 				rightExpect
 			)
 			val parser = new OrElse[Nothing, Object, Object, Object](leftParser, rightParser, implicitly)
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it("`NonConsume | Advanced` returns a failure that mentions only the cut branch") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -76,7 +76,7 @@ final class OrElseTest extends AnyFunSpec {
 				rightExpect
 			)
 			val parser = leftParser orElse rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it("`NonConsume | NonConsume` returns a failure that mentions both branches") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -91,7 +91,7 @@ final class OrElseTest extends AnyFunSpec {
 				leftExpect ++ rightExpect
 			)
 			val parser = leftParser orElse rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 	}
 }

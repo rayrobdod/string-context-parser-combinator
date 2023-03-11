@@ -161,14 +161,14 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
 
 	def stringContext_localdate(args:c.Expr[Any]*):c.Expr[LocalDate] = {
-		(LocalDateP ~ End).parse(c)(extensionClassName)(args.toList)
+		(LocalDateP ~ End).interpolate(c)(extensionClassName)(args.toList)
 	}
 
 	def stringContext_localtime(args:c.Expr[Any]*):c.Expr[LocalTime] = {
-		(LocalTimeP ~ End).parse(c)(extensionClassName)(args.toList)
+		(LocalTimeP ~ End).interpolate(c)(extensionClassName)(args.toList)
 	}
 
 	def stringContext_localdatetime(args:c.Expr[Any]*):c.Expr[LocalDateTime] = {
-		(LocalDateTimeP ~ End).parse(c)(extensionClassName)(args.toList)
+		(LocalDateTimeP ~ End).interpolate(c)(extensionClassName)(args.toList)
 	}
 }

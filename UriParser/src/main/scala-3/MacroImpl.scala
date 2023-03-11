@@ -252,6 +252,6 @@ object MacroImpl {
 	private def Aggregate(using Quotes):Parser[Expr[URI]] = (ResolvedUriP.attempt orElse AbsoluteUriP.attempt orElse RelativeUriP) andThen End
 
 	def stringContext_uri(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[URI] = {
-		Aggregate.parse(sc, args)
+		Aggregate.interpolate(sc, args)
 	}
 }

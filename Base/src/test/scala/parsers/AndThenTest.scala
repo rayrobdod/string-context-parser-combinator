@@ -25,7 +25,7 @@ final class AndThenTest extends AnyFunSpec {
 				leftExpect ++ rightExpect
 			)
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("if the first child is failure, then forwards that failure") {
 			val initialInput = new Input[Nothing, StubPosition](("1234", StubPosition(42)) :: Nil, Nil)
@@ -38,7 +38,7 @@ final class AndThenTest extends AnyFunSpec {
 			val expected = Failure(leftExpect)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("if the first child is success and second child is failure, then reports a failure that includes the first child in the trace") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -56,7 +56,7 @@ final class AndThenTest extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 	}
 }

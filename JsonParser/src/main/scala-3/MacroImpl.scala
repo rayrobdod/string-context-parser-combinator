@@ -212,6 +212,6 @@ object MacroImpl {
 	private def Aggregate(using Quotes) = (WhitespaceP andThen ValueP andThen End)
 
 	def stringContext_json(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[JValue] = {
-		Aggregate.parse(sc, args)
+		Aggregate.interpolate(sc, args)
 	}
 }

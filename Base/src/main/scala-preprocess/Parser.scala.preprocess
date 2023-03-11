@@ -36,7 +36,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * {{{
 	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
 	 *   val myParser:Parser[Expr[Result]] = ???
-	 *   myParser.parse(c)("package.ValueStringContext")(args)
+	 *   myParser.interpolate(c)("package.ValueStringContext")(args)
 	 * }
 	 *
 	 * implicit final class ValueStringContext(val sc:scala.StringContext) extends AnyVal {
@@ -45,7 +45,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * }}}
 	 * @group Parse
 	 */
-	final def parse(c:Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
+	final def interpolate(c:Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
 		val StringContextApply = stringContextApply(c)
 
@@ -62,7 +62,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 
 		val input = new Input[Expr, Position.Impl](strings, args.toList.map(arg => (ev(arg), Position(arg.tree.pos))))
 
-		impl.parse(input) match {
+		impl.interpolate(input) match {
 			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
@@ -80,7 +80,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * def valueImpl(sc:Expr[scala.StringContext],
 	 *         args:Expr[Seq[Any]])(using Quotes):Expr[Result] = {
 	 *   val myParser:Parser[Expr[Result]] = ???
-	 *   myParser.parse(sc, args)
+	 *   myParser.interpolate(sc, args)
 	 * }
 	 *
 	 * extension (inline sc:scala.StringContext)
@@ -89,7 +89,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * ```
 	 * @group Parse
 	 */
-	final def parse(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
+	final def interpolate(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
 		import scala.quoted.{Expr => _, _}
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
@@ -100,7 +100,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 
 		val input = new Input[Expr, Position.Impl](strings2, args2)
 
-		impl.parse(input) match {
+		impl.interpolate(input) match {
 			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}

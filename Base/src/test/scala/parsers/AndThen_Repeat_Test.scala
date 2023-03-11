@@ -24,7 +24,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = left.repeat(strategy = Greedy) andThen right
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("If the repeat is permissibly empty, and right fails with cut, then fails and shows the cut as expected") {
 			val left = new ConstFailure(SingleExpecting("left", 5))
@@ -34,7 +34,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = left.repeat(strategy = Greedy) andThen right
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("If the repeat is permissibly empty, and right succeeds, then result is success") {
 			val left = new ConstFailure(SingleExpecting("left", 5))
@@ -46,7 +46,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = left.repeat(strategy = Greedy) andThen right
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("If the repeat has consumed input, then the result matches that failure") {
 			val left = new ConstFailure(SingleExpecting("left", 10005))
@@ -56,7 +56,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = left.repeat(strategy = Greedy) andThen right
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("missing right with any repeat fails and shows both inputs as options") {
 			val initialInput = SinglePartInput("a", 42)
@@ -69,7 +69,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("unexpected right with any repeat fails and shows both inputs as options") {
 			val initialInput = SinglePartInput("ac", 42)
@@ -82,7 +82,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("input too short for repeat") {
 			val initialInput = SinglePartInput("a", 42)
@@ -94,7 +94,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("input too long for repeat") {
 			val initialInput = SinglePartInput("aaaaaaaa", 42)
@@ -108,7 +108,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("pattern.repeat(Greedy) andThen subset") {
 			val initialInput = SinglePartInput("aa", 42)
@@ -134,7 +134,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("pattern.repeat andThen subset twice") {
 			val initialInput = SinglePartInput("aaa", 42)
@@ -167,7 +167,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("pattern.repeat(Possessive) andThen subset fails") {
 			val initialInput = SinglePartInput("aa", 42)
@@ -184,7 +184,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("unexpected right with any repeat and delimiter fails and shows delimiter and right as options") {
 			val initialInput = SinglePartInput("az", 42)
@@ -199,7 +199,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("successful with delimiter") {
 			val initialInput = SinglePartInput("abac", 42)
@@ -217,7 +217,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 			)
 
 			val parser = leftParser andThen rightParser
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("right associative variant of \"'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
 			val initialInput = SinglePartInput("[a:a]", 42)
@@ -231,7 +231,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 					SingleExpecting("\"[\"",42)
 			)
 
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
 			val initialInput = SinglePartInput("[a:a]", 42)
@@ -245,7 +245,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 					SingleExpecting("\"[\"",42)
 			)
 
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 	}
 }

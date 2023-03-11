@@ -12,7 +12,7 @@ object Lifted {
 		)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]
 	):Parser[c.Expr[_], Z] = {
 		new Parser[c.Expr[_], Z] {
-			override def parse[ExprZ <: c.Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+			override def interpolate[ExprZ <: c.Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				input.consume(
 					_ => None,
 					liftee => {

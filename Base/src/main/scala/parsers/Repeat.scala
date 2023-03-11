@@ -14,7 +14,7 @@ final class Repeat[Expr, A, Z](
 	require(max >= 1)
 	require(max >= min)
 
-	def parse[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 		Repeat.parse0(input, inner, min, max, delimiter, strategy, true) match {
 			case f:Failure[Pos] => f
 			case s:Success[ExprZ, Pos, List[A]] => s.mapValues({parts =>
@@ -37,7 +37,7 @@ object Repeat {
 		strategy:RepeatStrategy,
 		isFirst:Boolean
 	):Result[Expr, Pos, List[A]] = {
-		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos])} else {delimiter.parse(input)}) match {
+		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos])} else {delimiter.interpolate(input)}) match {
 			case failureDelimiter:Failure[Pos] => {
 				if (min != 0 || failureDelimiter.isPositionGt(input.position)) {
 					failureDelimiter
@@ -46,7 +46,7 @@ object Repeat {
 				}
 			}
 			case successDelimiter:Success[Expr, Pos, Unit] => successDelimiter.flatMap[Expr, List[A]]({case Success1((), restDelimiter, expectingDelimiter) =>
-				inner.parse(restDelimiter) match {
+				inner.interpolate(restDelimiter) match {
 					case failureA:Failure[Pos] => {
 						if (min != 0 || failureA.isPositionGt(restDelimiter.position)) {
 							failureA or expectingDelimiter

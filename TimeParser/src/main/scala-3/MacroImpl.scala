@@ -159,14 +159,14 @@ object MacroImpl {
 	}
 
 	def stringContext_localdate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDate] = {
-		(this.LocalDateP ~ Parsers.End).parse(sc, args)
+		(this.LocalDateP ~ Parsers.End).interpolate(sc, args)
 	}
 
 	def stringContext_localtime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalTime] = {
-		(this.LocalTimeP ~ Parsers.End).parse(sc, args)
+		(this.LocalTimeP ~ Parsers.End).interpolate(sc, args)
 	}
 
 	def stringContext_localdatetime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDateTime] = {
-		(this.LocalDateTimeP ~ Parsers.End).parse(sc, args)
+		(this.LocalDateTimeP ~ Parsers.End).interpolate(sc, args)
 	}
 }

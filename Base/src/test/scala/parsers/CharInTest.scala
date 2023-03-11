@@ -22,7 +22,7 @@ final class CharInTest extends AnyFunSpec {
 			expecting
 		)
 		val parser = CharIn(parserSet)
-		assertResult(expected){parser.parse(input)}
+		assertResult(expected){parser.interpolate(input)}
 	}
 
 	def expectFailure(parserSet:Set[Char], input:Input[Expr, StubPosition]) = {
@@ -30,14 +30,14 @@ final class CharInTest extends AnyFunSpec {
 			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CharIn(\"", "", "\")")), input.position))
 		)
 		val parser = CharIn(parserSet)
-		assertResult(expected){parser.parse(input)}
+		assertResult(expected){parser.interpolate(input)}
 	}
 
 	describe("CharIn") {
-		it ("Fails to parse an empty input") {
+		it ("Fails to interpolate an empty input") {
 			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: Nil, Nil))
 		}
-		it ("Fails to parse when next value is an Arg") {
+		it ("Fails to interpolate when next value is an Arg") {
 			expectFailure(Set('1', '2', '3'), new Input(InputPart("", 1) :: InputPart("More", 1) :: Nil, (Expr("Arg"), StubPosition(101)) :: Nil))
 		}
 		it ("1 | 1") {

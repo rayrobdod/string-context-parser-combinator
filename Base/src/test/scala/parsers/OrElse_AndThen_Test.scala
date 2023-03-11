@@ -19,7 +19,7 @@ final class OrElse_AndThen_Test extends AnyFunSpec {
 				leftLeftParser.expecting ++ rightLeftParser.expecting
 			)
 			val parser = (leftLeftParser andThen leftRightParser) orElse (rightLeftParser andThen rightRightParser)
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("Success ~ Failure | Failure ") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -32,7 +32,7 @@ final class OrElse_AndThen_Test extends AnyFunSpec {
 				leftLeftParser.expecting ++ leftRightParser.expecting ++ rightLeftParser.expecting
 			)
 			val parser = (leftLeftParser andThen leftRightParser) orElse (rightLeftParser andThen rightRightParser)
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it ("Success ~ Failure | Success ~ Failure ") {
 			val initialInput = SinglePartInput("1234", 42)
@@ -45,7 +45,7 @@ final class OrElse_AndThen_Test extends AnyFunSpec {
 				leftLeftParser.expecting ++ leftRightParser.expecting ++ rightLeftParser.expecting ++ rightRightParser.expecting
 			)
 			val parser = (leftLeftParser andThen leftRightParser) orElse (rightLeftParser andThen rightRightParser)
-			assertResult(expected){parser.parse(initialInput)}
+			assertResult(expected){parser.interpolate(initialInput)}
 		}
 	}
 }

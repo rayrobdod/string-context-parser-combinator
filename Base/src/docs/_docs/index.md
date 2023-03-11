@@ -26,7 +26,7 @@ def divMul(using Quotes):Parser[Expr[Int]] = (factor andThen (CharIn("*/") andTh
 def addSub(using Quotes):Parser[Expr[Int]] = (divMul andThen (CharIn("+-") andThen divMul).repeat()).map(eval _)
 def expr(using Quotes):Parser[Expr[Int]] = addSub andThen End
 
-def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.parse(sc, args)
+def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.interpolate(sc, args)
 ```
 
 ```scala sc:nocompile
@@ -50,5 +50,5 @@ scala> math"1+A"
 # Entry Points
 
 Create leaf parsers using the methods in [[the Parsers object|com.rayrobdod.stringContextParserCombinator.Parsers$]],
-combine and manipulate them with the methods in [[com.rayrobdod.stringContextParserCombinator.Parser]], then parse
-using the [[Parser.parse|com.rayrobdod.stringContextParserCombinator.Parser#parse-fffff934]] method
+combine and manipulate them with the methods in [[com.rayrobdod.stringContextParserCombinator.Parser]], then interpolate
+using the [[Parser.interpolate|com.rayrobdod.stringContextParserCombinator.Parser#interpolate-fffff934]] method

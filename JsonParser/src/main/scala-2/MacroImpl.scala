@@ -243,6 +243,6 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 	def stringContext_json(args:c.Expr[Any]*):c.Expr[JValue] = {
 		val className = "com.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"
-		Aggregate.parse(c)(className)(args.toList)
+		Aggregate.interpolate(c)(className)(args.toList)
 	}
 }
