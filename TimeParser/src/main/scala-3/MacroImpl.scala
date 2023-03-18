@@ -11,7 +11,7 @@ import com.rayrobdod.stringContextParserCombinatorExample.datetime.ExprConversio
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given
 
 object MacroImpl {
-	private given Conversion[String, Parsers.Parser[Unit]] = Parsers.IsString(_)
+	private given Conversion[String, Parser.Parser[Unit]] = Parser.IsString(_)
 
 	private given given_Sequenced_Expr_YearMonth(using Quotes):typeclass.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
 		def aggregate(left:Expr[Year], right:Expr[Month]):Expr[YearMonth] = (left, right) match {
@@ -57,7 +57,7 @@ object MacroImpl {
 
 
 
-	import com.rayrobdod.stringContextParserCombinator.Parsers._
+	import com.rayrobdod.stringContextParserCombinator.Parser._
 
 	private val digit:Parser[Digit] = CharIn('0' to '9')
 		.map(Digit.apply _)
@@ -159,14 +159,14 @@ object MacroImpl {
 	}
 
 	def stringContext_localdate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDate] = {
-		(this.LocalDateP ~ Parsers.End).interpolate(sc, args)
+		(this.LocalDateP ~ End).interpolate(sc, args)
 	}
 
 	def stringContext_localtime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalTime] = {
-		(this.LocalTimeP ~ Parsers.End).interpolate(sc, args)
+		(this.LocalTimeP ~ End).interpolate(sc, args)
 	}
 
 	def stringContext_localdatetime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDateTime] = {
-		(this.LocalDateTimeP ~ Parsers.End).interpolate(sc, args)
+		(this.LocalDateTimeP ~ End).interpolate(sc, args)
 	}
 }

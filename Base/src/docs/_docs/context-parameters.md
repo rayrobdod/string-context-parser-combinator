@@ -25,7 +25,7 @@ The fallback given sequenced places the two items in a tuple.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 class A {}
 class B {}
 val p1:Parser[A] = ???
@@ -40,7 +40,7 @@ used, the unit value is dropped, leaving the other value in tact. If both values
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 class A {}
 val u1:Parser[Unit] = ???
 val u2:Parser[Unit] = ???
@@ -59,7 +59,7 @@ Below is example of defining and using a custom Sequenced.
 ```scala
 import java.time._
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
 val dateParser:Parser[LocalDate] = ???
 val timeParser:Parser[LocalTime] = ???
@@ -84,7 +84,7 @@ parser of that type.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
@@ -103,7 +103,7 @@ non-unit case is wrapped in a `scala.Some`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 class A {}
 val p1:Parser[Unit] = ???
 val p2:Parser[Unit] = ???
@@ -119,7 +119,7 @@ in a `scala.Either`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
@@ -142,7 +142,7 @@ import java.io.File
 import java.net.URI
 import java.util.UUID
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 val uuidParser:Parser[UUID] = ???
 val fileParser:Parser[File] = ???
@@ -166,7 +166,7 @@ The fallback given Repeated places the items in a `scala.Seq`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 class A {}
 val p1:Parser[A] = ???
 
@@ -182,7 +182,7 @@ repeated `CodePoint` values into a `String`.
 ```scala
 //{
 import com.rayrobdod.stringContextParserCombinator.CodePoint
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 val unitParser:Parser[Unit] = ???
 val charParser:Parser[Char] = ???
 val codePointParser:Parser[CodePoint] = ???
@@ -202,7 +202,7 @@ Below is example of providing and using custom Repeated.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Repeated
 
 //}
@@ -236,7 +236,7 @@ the empty value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 class A {}
 val p1:Parser[A] = ???
 
@@ -248,7 +248,7 @@ The `Unit`-handling Optionally value doesn't wrap a present `()` in an Option, a
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers.Parser
+import com.rayrobdod.stringContextParserCombinator.Parser.Parser
 val p1:Parser[Unit] = ???
 
 //}
@@ -263,7 +263,7 @@ a default value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Optionally
 val stringParser:Parser[String] = ???
 

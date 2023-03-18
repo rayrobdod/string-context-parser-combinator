@@ -1,5 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 
+import scala.quoted.*
+import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
+
 /**
  * Parts of [[Parser]] that use types specific to scala 3
  */
@@ -45,4 +48,32 @@ trait VersionSpecificParser[-Expr, +A] {
 			}
 		}
 	}
+}
+
+private[stringContextParserCombinator]
+trait VersionSpecificParserModule extends Parser.ScopedParsers {
+}
+
+private[stringContextParserCombinator]
+trait VersionSpecificScopedParsers {
+	/** The expr type of the created parsers */
+	type ParserExpr = quoted.Expr[_]
+	/** The parser type, with the input parameter concretized */
+	type Parser[A] = SCParser[ParserExpr, A]
+
+	/**
+	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
+	 * @group Arg
+	 */
+	def OfType[A](using Type[A], Quotes):Parser[quoted.Expr[A]] =
+		new Parser(new internal.OfType[A])
+
+	/**
+	 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
+	 *
+	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+	 * @group Arg
+	 */
+	def Lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using Type[Lifter], Quotes):Parser[Z] =
+		new Parser(internal.Lifted(lift, ExpectingDescription(description)))
 }

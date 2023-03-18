@@ -1,5 +1,8 @@
 package com.rayrobdod.stringContextParserCombinator
 
+import scala.collection.immutable.Set
+import scala.collection.immutable.Seq
+
 /**
  * Parses an interpolated string expression into some value
  *
@@ -122,4 +125,125 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (
 		implicit ev:typeclass.Optionally[A, Z]
 	):Parser[Expr, Z] =
 		new Parser(internal.Optionally(this.impl, strategy, ev))
+}
+
+object Parser extends VersionSpecificParserModule {
+	/**
+	 * A trait that provides Parser factory methods that conform to a particular input Expr type parameter.
+	 *
+	 * In scala 3, the Parser companion object directly extends this trait,
+	 * and as such this would generally by calling methods directly on Parser.
+	 * However, since in scala 2 the Expr depends on a particular instance of `blackbox.Context`,
+	 * the Parser companion object instead has a `scoped` method that takes a Context and returns a ScopedParsers for that particular Context.
+	 *
+	 * @groupname Part String-Part
+	 * @groupprio Part 100
+	 * @groupname PartAsChar String-Part as Char
+	 * @groupprio PartAsChar 110
+	 * @groupname PartAsCodepoint String-Part as Codepoint
+	 * @groupprio PartAsCodepoint 120
+	 * @groupname Arg Argument-Part
+	 * @groupprio Arg 200
+	 * @groupname Constant Constant
+	 * @groupprio Constant 300
+	 * @groupname Position Position
+	 * @groupprio Position 400
+	 * @groupname Misc Miscellaneous
+	 * @groupprio Misc 999
+	 */
+	trait ScopedParsers extends VersionSpecificScopedParsers {
+		// Requires that VersionSpecificScopedParsers defines a
+		// `type Parser[A] = Parser[???, A]`
+
+		/**
+		 * Succeeds if the next character is a member of the given Set; captures that character
+		 * @group PartAsChar
+		 */
+		def CharIn(str:Set[Char]):Parser[Char] =
+			new Parser(internal.CharIn(str))
+
+		/**
+		 * Succeeds if the next character is a member of the given Seq; captures that character
+		 * @group PartAsChar
+		 */
+		def CharIn(str:Seq[Char]):Parser[Char] =
+			new Parser(internal.CharIn(str))
+
+		/**
+		 * Succeeds if the next character is a member of the given String; captures that character
+		 * @group PartAsChar
+		 */
+		def CharIn(str:String):Parser[Char] =
+			new Parser(internal.CharIn(scala.Predef.wrapString(str)))
+
+		/**
+		 * Succeeds if the next character matches the given predicate; captures that character
+		 * @group PartAsChar
+		 */
+		def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] =
+			new Parser(internal.CharWhere(fn))
+
+		/**
+		 * Succeeds if the next codepoint is a member of the given Set; captures that code point
+		 * @group PartAsCodepoint
+		 */
+		def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] =
+			new Parser(internal.CodePointIn(str))
+
+		/**
+		 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
+		 * @group PartAsCodepoint
+		 */
+		def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] =
+			new Parser(internal.CodePointIn(str))
+
+		/**
+		 * Succeeds if the next codepoint is a member of the given string; captures that code point
+		 * @group PartAsCodepoint
+		 */
+		def CodePointIn(str:String):Parser[CodePoint] =
+			new Parser(internal.CodePointIn(str))
+
+		/**
+		 * Succeeds if the next codepoint matches the given predicate; captures that code point
+		 * @group PartAsCodepoint
+		 */
+		def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] =
+			new Parser(internal.CodePointWhere(fn))
+
+		/**
+		 * Succeeds if the next set of characters in the input is equal to the given string
+		 * @group Part
+		 */
+		def IsString(str:String):Parser[Unit] =
+			new Parser(internal.IsString(str))
+
+		/**
+		 * A parser that consumes no input and always succeeds
+		 * @group Constant
+		 */
+		def Pass:Parser[Unit] =
+			new Parser(new internal.Pass)
+
+		/**
+		 * A parser that always reports a failure
+		 * @group Constant
+		 */
+		def Fail(message:String):Parser[Nothing] =
+			new Parser(new internal.Fail(ExpectingDescription(message)))
+
+		/**
+		 * A parser that succeeds iff the input is empty
+		 * @group Position
+		 */
+		def End:Parser[Unit] =
+			new Parser(new internal.End())
+
+		/**
+		 * Indirectly refers to a parser, to allow for mutual-recursion
+		 * @group Misc
+		 */
+		def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
+			new Parser(new internal.DelayedConstruction(fn))
+	}
 }

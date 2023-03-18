@@ -50,7 +50,7 @@ object MacroImpl {
 	}
 
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
-		val LeafParsers = Parsers(c)
+		val LeafParsers = Parser.scoped(c)
 		import LeafParsers._
 		import c.universe.Quasiquote
 

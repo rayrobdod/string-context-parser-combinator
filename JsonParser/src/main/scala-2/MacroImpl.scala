@@ -84,7 +84,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 	}
 
-	private[this] val LeafParsers = Parsers(c)
+	private[this] val LeafParsers = Parser.scoped(c)
 	import LeafParsers._
 
 	private[this] def CharFlatCollect[A](pf: PartialFunction[Char, Parser[A]]):Parser[A] = CharWhere(pf.isDefinedAt).flatMap(pf.apply)

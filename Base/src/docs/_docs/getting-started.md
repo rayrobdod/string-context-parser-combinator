@@ -27,7 +27,7 @@ since it has to return an `Expr[_]` since it is a macro), we will force the resu
 
 ```scala
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
   val anyChar = CharWhere(_ => true)
@@ -53,7 +53,7 @@ operand is a `Parser[Char]`, the result is a `Parser[String]`.
 ```scala
 //{
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
@@ -82,7 +82,7 @@ to the parser.
 ```scala
 //{
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
@@ -104,7 +104,7 @@ we want to match any Expr, we will use `OfType[Any]`. The result of running this
 ```scala
 //{
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
@@ -128,7 +128,7 @@ orElse operator are `Parser[Expr[String]]`, the result of the operator will also
 ```scala
 //{
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
@@ -156,7 +156,7 @@ processed string starts with an arg, then `anyChars` will not consider a run of 
 ```scala
 //{
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
@@ -184,7 +184,7 @@ can map a `Seq[Expr[String]]` to an `Expr[String]`, using that mapping will give
 ```scala
 //{
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Parsers._
+import com.rayrobdod.stringContextParserCombinator.Parser._
 //}
 
 def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {

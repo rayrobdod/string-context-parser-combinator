@@ -18,7 +18,7 @@ object MacroImpl {
 		}
 	}
 
-	import com.rayrobdod.stringContextParserCombinator.Parsers._
+	import com.rayrobdod.stringContextParserCombinator.Parser._
 	private def parseByteHex(x:(Char, Char)):Int = java.lang.Integer.parseInt(s"${x._1}${x._2}", 16)
 
 

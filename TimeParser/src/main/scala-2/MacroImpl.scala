@@ -3,7 +3,7 @@ package com.rayrobdod.stringContextParserCombinatorExample.datetime
 import java.time._
 import scala.Predef.charWrapper
 import scala.reflect.macros.blackbox.Context
-import com.rayrobdod.stringContextParserCombinator.{Parsers => scpcParsers, _}
+import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
 
@@ -20,7 +20,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		def unapply(input:scala.reflect.api.Universe#Name):Option[String] = Option(input.decodedName.toString)
 	}
 
-	private[this] val leafParsers = scpcParsers(c)
+	private[this] val leafParsers = Parser.scoped(c)
 	import leafParsers._
 	private[this] val timeLiftables = TimeLiftables(c)
 	import timeLiftables._
