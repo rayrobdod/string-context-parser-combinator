@@ -198,25 +198,13 @@ package object internal {
 		ExpectingDescription("s/" + reg.toString + "/")
 	)
 
-	/** A parser that consumes no input and always succeeds */
-	private[stringContextParserCombinator]
-	def Pass:Parser[Any, Unit] = new Parser[Any, Unit] {
-		def interpolate[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Unit] = Success((), input, ExpectingSet.empty)
-	}
-
-	/** A parser that consumes no input and always fails */
-	private[stringContextParserCombinator]
-	def Fail(desc:ExpectingDescription):Parser[Any, Nothing] = new Parser[Any, Nothing] {
-		def interpolate[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Nothing] = Failure(ExpectingSet(Expecting(desc, input.position)))
-	}
-
 	private[stringContextParserCombinator]
 	def Optionally[Expr, A, Z](
 		backing:Parser[Expr, A],
 		strategy:RepeatStrategy,
 		ev:typeclass.Optionally[A, Z]
 	):Parser[Expr, Z] = {
-		new Repeat(backing, 0, 1, Pass, strategy, new typeclass.Repeated[A, Z] {
+		new Repeat(backing, 0, 1, new Pass, strategy, new typeclass.Repeated[A, Z] {
 			final class Box[BoxType](var value:BoxType)
 			type Acc = Box[Z]
 			def init():Acc = new Box(ev.none)

@@ -78,14 +78,14 @@ trait VersionIndependentParsers {
 	 * @group Constant
 	 */
 	def Pass:Parser[Unit] =
-		new Parser(internal.Pass)
+		new Parser(new internal.Pass)
 
 	/**
 	 * A parser that always reports a failure
 	 * @group Constant
 	 */
 	def Fail(message:String):Parser[Nothing] =
-		new Parser(internal.Fail(ExpectingDescription(message)))
+		new Parser(new internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty

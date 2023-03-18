@@ -13,7 +13,7 @@ final class PassFailTest extends AnyFunSpec {
 				input,
 				EmptyExpecting
 			)
-			assertResult(expected)(Pass.interpolate(input))
+			assertResult(expected)(new Pass().interpolate(input))
 		}
 	}
 	describe ("Fail") {
@@ -23,7 +23,7 @@ final class PassFailTest extends AnyFunSpec {
 			val expected = Failure(
 				SingleExpecting(description, 42)
 			)
-			assertResult(expected)(Fail(ExpectingDescription(description)).interpolate(input))
+			assertResult(expected)(new Fail(ExpectingDescription(description)).interpolate(input))
 		}
 	}
 }

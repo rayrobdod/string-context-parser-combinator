@@ -32,7 +32,7 @@ object TestUtilities {
 		def repeat[ExprZ <: Expr, Z](
 			min:Int = 0,
 			max:Int = Integer.MAX_VALUE,
-			delimiter:Parser[ExprZ, Unit] = internal.Pass,
+			delimiter:Parser[ExprZ, Unit] = new internal.Pass,
 			strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 			implicit ev:typeclass.Repeated[A, Z]
 		):Parser[ExprZ, Z] = new Repeat(self, min, max, delimiter, strategy, ev)

@@ -499,7 +499,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`<pass>*` does not hang indefinitely") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = Pass
+			val childParser = new Pass
 
 			val expected = Success[Nothing, StubPosition, Unit](
 				Success1(

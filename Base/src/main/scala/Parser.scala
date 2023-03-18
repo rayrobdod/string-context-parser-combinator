@@ -103,7 +103,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Parser[ExprZ, Unit] = new Parser(internal.Pass),
+		delimiter:Parser[ExprZ, Unit] = new Parser[ExprZ, Unit](new internal.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typeclass.Repeated[A, Z]
 	):Parser[ExprZ, Z] =
