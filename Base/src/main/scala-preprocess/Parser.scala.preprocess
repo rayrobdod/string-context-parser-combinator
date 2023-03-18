@@ -27,7 +27,7 @@ import scala.reflect.macros.blackbox.Context
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[stringContextParserCombinator] val impl: parsers.Parser[Expr, A]) {
+final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[stringContextParserCombinator] val impl: internal.Parser[Expr, A]) {
 #if scala=2.x
 	/**
 	 * Parses a StringContext and its arguments into a value
@@ -116,21 +116,21 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @group Map
 	 */
 	def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
-		new Parser(new parsers.Map(this.impl, fn))
+		new Parser(new internal.Map(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
 	 * @group Sequence
 	 */
 	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Parser[ExprZ, Z]]):Parser[ExprZ, Z] =
-		new Parser(new parsers.FlatMap(this.impl, fn))
+		new Parser(new internal.FlatMap(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
 	 * @group Filter
 	 */
 	def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
-		new Parser(new parsers.Filter(this.impl, predicate, ExpectingDescription(description)))
+		new Parser(new internal.Filter(this.impl, predicate, ExpectingDescription(description)))
 
 
 	/**
@@ -138,7 +138,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @group ErrorPlus
 	 */
 	def opaque(description:String):Parser[Expr, A] =
-		new Parser(new parsers.Opaque(this.impl, ExpectingDescription(description)))
+		new Parser(new internal.Opaque(this.impl, ExpectingDescription(description)))
 
 	/**
 	 * Returns a parser which invokes this parser,
@@ -146,7 +146,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @group Misc
 	 */
 	def attempt:Parser[Expr, A] =
-		new Parser(new parsers.Attempt(this.impl))
+		new Parser(new internal.Attempt(this.impl))
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -157,11 +157,11 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @group Sequence
 	 */
 	def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
-		new Parser(new parsers.AndThen(this.impl, rhs.impl, ev))
+		new Parser(new internal.AndThen(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
-	 *   * If this parser run succeeded, return this parsers's success
+	 *   * If this parser run succeeded, return this internal's success
 	 *   * If this parser failed and consumed input, return this parser's failure
 	 *   * If this parser failed but did not consume input, run the other parser and return the other parser's result
 	 *
@@ -171,7 +171,7 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	 * @group Branch
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Parser[ExprZ, Z] =
-		new Parser(new parsers.OrElse(this.impl, rhs.impl, ev))
+		new Parser(new internal.OrElse(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -187,11 +187,11 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Parser[ExprZ, Unit] = new Parser(parsers.Pass),
+		delimiter:Parser[ExprZ, Unit] = new Parser(internal.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typeclass.Repeated[A, Z]
 	):Parser[ExprZ, Z] =
-		new Parser(new parsers.Repeat(this.impl, min, max, delimiter.impl, strategy, ev))
+		new Parser(new internal.Repeat(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
 	 * Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed
@@ -205,5 +205,5 @@ final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[st
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typeclass.Optionally[A, Z]
 	):Parser[Expr, Z] =
-		new Parser(parsers.Optionally(this.impl, strategy, ev))
+		new Parser(internal.Optionally(this.impl, strategy, ev))
 }

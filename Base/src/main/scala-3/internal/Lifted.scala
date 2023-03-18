@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package parsers
+package internal
 
 import scala.language.higherKinds
 import scala.quoted.Expr

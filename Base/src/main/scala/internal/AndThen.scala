@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package parsers
+package internal
 
 private[stringContextParserCombinator]
 final class AndThen[Expr, A, B, Z](

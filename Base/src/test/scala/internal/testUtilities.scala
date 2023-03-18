@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package parsers
+package internal
 
 import scala.collection.immutable.Set
 
@@ -18,10 +18,10 @@ object TestUtilities {
 			new FlatMap(self, fn.andThen(new com.rayrobdod.stringContextParserCombinator.Parser(_)))
 
 		def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
-			new parsers.Filter(self, predicate, ExpectingDescription(description))
+			new internal.Filter(self, predicate, ExpectingDescription(description))
 
 		def opaque(description:String):Parser[Expr, A] =
-			new parsers.Opaque(self, ExpectingDescription(description))
+			new internal.Opaque(self, ExpectingDescription(description))
 
 		def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
 			new AndThen(self, rhs, ev)
@@ -32,7 +32,7 @@ object TestUtilities {
 		def repeat[ExprZ <: Expr, Z](
 			min:Int = 0,
 			max:Int = Integer.MAX_VALUE,
-			delimiter:Parser[ExprZ, Unit] = parsers.Pass,
+			delimiter:Parser[ExprZ, Unit] = internal.Pass,
 			strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 			implicit ev:typeclass.Repeated[A, Z]
 		):Parser[ExprZ, Z] = new Repeat(self, min, max, delimiter, strategy, ev)

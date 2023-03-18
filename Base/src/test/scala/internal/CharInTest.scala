@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package parsers
+package internal
 
 import scala.collection.immutable.Set
 import org.scalatest.funspec.AnyFunSpec

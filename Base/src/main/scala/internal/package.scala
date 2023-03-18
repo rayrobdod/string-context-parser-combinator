@@ -2,9 +2,9 @@ package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.{Seq, Set}
 
-package parsers {
+package internal {
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
-	private[parsers] final class PartsParser[+A](
+	private[internal] final class PartsParser[+A](
 		partsFn:String => Option[(A, Int)],
 		expecting: ExpectingDescription
 	) extends Parser[Any, A] {
@@ -18,7 +18,7 @@ package parsers {
 	}
 }
 
-package object parsers {
+package object internal {
 
 	/**
 	 * Returns a string representing the given code point, possibly represented

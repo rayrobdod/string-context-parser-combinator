@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package parsers
+package internal
 
 import org.scalatest.funspec.AnyFunSpec
 import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._

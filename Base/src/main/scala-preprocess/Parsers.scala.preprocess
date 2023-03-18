@@ -65,63 +65,63 @@ object Parsers {
 	 * @group PartAsChar
 	 */
 	def CharIn(str:Set[Char]):Parser[Char] =
-		new Parser(parsers.CharIn(str))
+		new Parser(internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
 	def CharIn(str:Seq[Char]):Parser[Char] =
-		new Parser(parsers.CharIn(str))
+		new Parser(internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
 	def CharIn(str:String):Parser[Char] =
-		new Parser(parsers.CharIn(scala.Predef.wrapString(str)))
+		new Parser(internal.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
 	def CharWhere(fn:Function1[Char, Boolean]):Parser[Char] =
-		new Parser(parsers.CharWhere(fn))
+		new Parser(internal.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
 	def CodePointIn(str:Set[CodePoint]):Parser[CodePoint] =
-		new Parser(parsers.CodePointIn(str))
+		new Parser(internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
 	def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint] =
-		new Parser(parsers.CodePointIn(str))
+		new Parser(internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
 	def CodePointIn(str:String):Parser[CodePoint] =
-		new Parser(parsers.CodePointIn(str))
+		new Parser(internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
 	def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint] =
-		new Parser(parsers.CodePointWhere(fn))
+		new Parser(internal.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
 	def IsString(str:String):Parser[Unit] =
-		new Parser(parsers.IsString(str))
+		new Parser(internal.IsString(str))
 
 	/**
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
@@ -129,10 +129,10 @@ object Parsers {
 	 */
 #if scala=2.x
 	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] =
-		new Parser(new parsers.OfType[ctx.type, A](tpe))
+		new Parser(new internal.OfType[ctx.type, A](tpe))
 #else /* scala=2 */
 	def OfType[A](using Type[A], Quotes):Parser[Expr[A]] =
-		new Parser(new parsers.OfType[A])
+		new Parser(new internal.OfType[A])
 #endif /* scala=2 */
 
 	/**
@@ -143,10 +143,10 @@ object Parsers {
 	 */
 #if scala=2.x
 	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Parser[Z] =
-		new Parser(parsers.Lifted(ctx)(lift, ExpectingDescription(description)))
+		new Parser(internal.Lifted(ctx)(lift, ExpectingDescription(description)))
 #else /* scala=2 */
 	def Lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using Type[Lifter], Quotes):Parser[Z] =
-		new Parser(parsers.Lifted(lift, ExpectingDescription(description)))
+		new Parser(internal.Lifted(lift, ExpectingDescription(description)))
 #endif /* scala=2 */
 
 	/**
@@ -154,28 +154,28 @@ object Parsers {
 	 * @group Constant
 	 */
 	def Pass:Parser[Unit] =
-		new Parser(parsers.Pass)
+		new Parser(internal.Pass)
 
 	/**
 	 * A parser that always reports a failure
 	 * @group Constant
 	 */
 	def Fail(message:String):Parser[Nothing] =
-		new Parser(parsers.Fail(ExpectingDescription(message)))
+		new Parser(internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
 	def End:Parser[Unit] =
-		new Parser(new parsers.End())
+		new Parser(new internal.End())
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
 	def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
-		new Parser(new parsers.DelayedConstruction(fn))
+		new Parser(new internal.DelayedConstruction(fn))
 }
 
 #if scala=2.x

@@ -1,5 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
-package parsers
+package internal
 
 private[stringContextParserCombinator]
 final class Repeat[Expr, A, Z](
