@@ -5,6 +5,9 @@ package com.rayrobdod.stringContextParserCombinator
  */
 private[stringContextParserCombinator]
 sealed trait Result[+Expr, Pos, +A] {
+	/** Map the values contained in a successful result. Returns a failure as-is */
+	private[stringContextParserCombinator]
+	def mapValues[Z](fn:A => Z):Result[Expr, Pos, Z]
 }
 
 /**
@@ -81,6 +84,9 @@ final case class Failure[Pos](
 	val position:Option[Pos],
 	val expecting:ExpectingSet[Pos]
 ) extends Result[Nothing, Pos, Nothing] {
+	private[stringContextParserCombinator]
+	def mapValues[Z](fn:Nothing => Z):Result[Nothing, Pos, Z] = this
+
 	/** Returns a failure that expects either the members this expects or an element that other expects */
 	private[stringContextParserCombinator]
 	def or(other:Failure[Pos])(implicit ev1:Ordering[Pos]):Failure[Pos] = {

@@ -15,14 +15,11 @@ final class Repeat[Expr, A, Z](
 	require(max >= min)
 
 	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
-		Repeat.parse0(input, inner, min, max, delimiter, strategy, true) match {
-			case f:Failure[Pos] => f
-			case s:Success[ExprZ, Pos, List[A]] => s.mapValues({parts =>
-				val acc = ev.init()
-				parts.foreach(part => ev.append(acc, part))
-				ev.result(acc)
-			})
-		}
+		Repeat.parse0(input, inner, min, max, delimiter, strategy, true).mapValues({parts =>
+			val acc = ev.init()
+			parts.foreach(part => ev.append(acc, part))
+			ev.result(acc)
+		})
 	}
 }
 
