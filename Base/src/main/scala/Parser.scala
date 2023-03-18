@@ -1,9 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
 
-#if scala=2.x
-import scala.reflect.macros.blackbox.Context
-#endif
-
 /**
  * Parses an interpolated string expression into some value
  *
@@ -27,89 +23,9 @@ import scala.reflect.macros.blackbox.Context
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Parser[-Expr, +A] private[stringContextParserCombinator] (private[stringContextParserCombinator] val impl: internal.Parser[Expr, A]) {
-#if scala=2.x
-	/**
-	 * Parses a StringContext and its arguments into a value
-	 *
-	 * @example
-	 * {{{
-	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
-	 *   val myParser:Parser[Expr[Result]] = ???
-	 *   myParser.interpolate(c)("package.ValueStringContext")(args)
-	 * }
-	 *
-	 * implicit final class ValueStringContext(val sc:scala.StringContext) extends AnyVal {
-	 *   def value(args:Any*):Result = macro valueImpl
-	 * }
-	 * }}}
-	 * @group Parse
-	 */
-	final def interpolate(c:Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
-		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
-		val StringContextApply = stringContextApply(c)
-
-		import c.universe.ApplyTag
-		val strings = c.prefix.tree.duplicate match {
-			case c.universe.Apply(
-				ExtensionClassSelectChain(),
-				List(StringContextApply(strings))
-			) => {
-				strings.map({x => (c.eval(x), Position(x.tree.pos))})
-			}
-			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
-		}
-
-		val input = new Input[Expr, Position.Impl](strings, args.toList.map(arg => (ev(arg), Position(arg.tree.pos))))
-
-		impl.interpolate(input) match {
-			case s:Success[_, _, _] => {
-				s.choicesHead.value
-			}
-			case f:Failure[Position.Impl] => {
-				reportFailure(c)(f)
-			}
-		}
-	}
-#else
-	/**
-	 * Parses a StringContext and its arguments into a value
-	 *
-	 * @example
-	 * ```
-	 * def valueImpl(sc:Expr[scala.StringContext],
-	 *         args:Expr[Seq[Any]])(using Quotes):Expr[Result] = {
-	 *   val myParser:Parser[Expr[Result]] = ???
-	 *   myParser.interpolate(sc, args)
-	 * }
-	 *
-	 * extension (inline sc:scala.StringContext)
-	 *	  inline def value(inline args:Any*):Result =
-	 *	    ${valueImpl('sc, 'args)}
-	 * ```
-	 * @group Parse
-	 */
-	final def interpolate(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
-		import scala.quoted.{Expr => _, _}
-		val strings = sc match {
-			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
-			case _ => scala.quoted.quotes.reflect.report.errorAndAbort(s"Do not know how to process this tree", sc)
-		}
-		val strings2 = strings.map(x => ((x.valueOrAbort, Position(x)))).toList
-		val args2 = Varargs.unapply(args).get.toList.map(arg => (ev(arg), Position(arg)))
-
-		val input = new Input[Expr, Position.Impl](strings2, args2)
-
-		impl.interpolate(input) match {
-			case s:Success[_, _, _] => {
-				s.choicesHead.value
-			}
-			case f:Failure[Position.Impl] => {
-				reportFailure(f)
-			}
-		}
-	}
-#endif
+final class Parser[-Expr, +A] private[stringContextParserCombinator] (
+		protected[stringContextParserCombinator] override val impl: internal.Parser[Expr, A]
+) extends VersionSpecificParser[Expr, A] {
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
