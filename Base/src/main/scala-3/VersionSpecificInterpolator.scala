@@ -80,7 +80,7 @@ trait VersionSpecificInterpolatorModule extends ExprIndependentInterpolators[Any
 				with ExprIndependentInterpolators[quoted.Expr[Any]]
 				with LiftedInterpolator {
 			override def DelayedConstruction[A](fn:Function0[SCInterpolator[quoted.Expr[Any], A]]):SCInterpolator[quoted.Expr[Any], A] =
-				new SCInterpolator(new internal.DelayedConstruction(fn))
+				new SCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 			override def OfType[A](implicit tpe: Type[A]): SCInterpolator[Expr[Any], Expr[A]] =
 				new SCInterpolator(new internal.OfType[A])

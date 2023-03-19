@@ -60,7 +60,7 @@ final class OrElseTest extends AnyFunSpec {
 				rightEndInput,
 				rightExpect
 			)
-			val parser = new OrElse[Nothing, Object, Object, Object](leftParser, rightParser, implicitly)
+			val parser = OrElse.interpolator[Nothing, Object, Object, Object](leftParser, rightParser, implicitly)
 			assertResult(expected){parser.interpolate(initialInput)}
 		}
 		it("`NonConsume | Advanced` returns a failure that mentions only the cut branch") {

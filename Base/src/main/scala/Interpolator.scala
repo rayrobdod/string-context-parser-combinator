@@ -80,7 +80,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Map
 	 */
 	def map[Z](fn:Function1[A, Z]):Interpolator[Expr, Z] =
-		new Interpolator(new internal.Map(this.impl, fn))
+		new Interpolator(internal.Map.interpolator(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then maps a successful result by lifting the
@@ -100,14 +100,14 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 */
 	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Interpolator[ExprZ, Z]]):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.FlatMap(this.impl, fn))
+		new Interpolator(internal.FlatMap.interpolator(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
 	 * @group Filter
 	 */
 	def filter(predicate:Function1[A, Boolean], description:String):Interpolator[Expr, A] =
-		new Interpolator(new internal.Filter(this.impl, predicate, ExpectingDescription(description)))
+		new Interpolator(internal.Filter.interpolator(this.impl, predicate, ExpectingDescription(description)))
 
 
 	/**
@@ -115,7 +115,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group ErrorPlus
 	 */
 	def opaque(description:String):Interpolator[Expr, A] =
-		new Interpolator(new internal.Opaque(this.impl, ExpectingDescription(description)))
+		new Interpolator(internal.Opaque.interpolator(this.impl, ExpectingDescription(description)))
 
 	/**
 	 * Returns a parser which invokes this parser,
@@ -123,7 +123,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Misc
 	 */
 	def attempt:Interpolator[Expr, A] =
-		new Interpolator(new internal.Attempt(this.impl))
+		new Interpolator(internal.Attempt.interpolator(this.impl))
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -134,7 +134,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 */
 	def andThen[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.AndThen(this.impl, rhs.impl, ev))
+		new Interpolator(internal.AndThen.interpolator(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
@@ -148,7 +148,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Branch
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.OrElse(this.impl, rhs.impl, ev))
+		new Interpolator(internal.OrElse.interpolator(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -168,7 +168,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typeclass.Repeated[A, Z]
 	):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.Repeat(this.impl, min, max, delimiter.impl, strategy, ev))
+		new Interpolator(internal.Repeat.interpolator(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
 	 * Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed
@@ -212,7 +212,7 @@ object Interpolator
 	 * @group Misc
 	 */
 	def DelayedConstruction[Expr, A](fn:Function0[SCInterpolator[Expr, A]]):SCInterpolator[Expr, A] =
-		new SCInterpolator(new internal.DelayedConstruction(fn))
+		new SCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 	/**
 	 * A trait that provides Interpolator factory methods that conform to a particular
@@ -335,7 +335,7 @@ object Interpolator
 	def idInterpolators: Interpolators[Id, IdToExpr, Class] = {
 		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
 			override def DelayedConstruction[A](fn:Function0[SCInterpolator[Any, A]]):SCInterpolator[Any, A] =
-				new SCInterpolator(new internal.DelayedConstruction(fn))
+				new SCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 			override def OfType[A](implicit tpe: Class[A]): Interpolator[A] =
 				new Interpolator(new internal.OfClass(tpe))

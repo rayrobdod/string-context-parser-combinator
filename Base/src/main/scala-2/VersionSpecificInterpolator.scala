@@ -84,7 +84,7 @@ trait VersionSpecificInterpolatorModule {
 				with ExprIndependentInterpolators[c.Expr[Any]]
 				with LiftedInterpolator[c.type] {
 			def DelayedConstruction[A](fn:Function0[Interpolator[A]]):Interpolator[A] =
-				new Interpolator[A](new internal.DelayedConstruction(fn))
+				new Interpolator[A](internal.DelayedConstruction.interpolator(fn))
 
 			override def OfType[A](implicit tpe: c.TypeTag[A]): Interpolator[c.Expr[A]] =
 				new Interpolator[c.Expr[A]](new internal.OfType[c.type, A](tpe))

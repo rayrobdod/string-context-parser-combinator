@@ -2,39 +2,48 @@ package com.rayrobdod.stringContextParserCombinator
 package internal
 
 private[stringContextParserCombinator]
-final class Repeat[Expr, A, Z](
-	inner:Interpolator[Expr, A],
-	min:Int,
-	max:Int,
-	delimiter:Interpolator[Expr, Unit],
-	strategy:RepeatStrategy,
-	ev:typeclass.Repeated[A, Z]
-) extends Interpolator[Expr, Z] {
-	require(min >= 0)
-	require(max >= 1)
-	require(max >= min)
-
-	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
-		Repeat.parse0(input, inner, min, max, delimiter, strategy, true).mapValues({parts =>
-			val acc = ev.init()
-			parts.foreach(part => ev.append(acc, part))
-			ev.result(acc)
-		})
-	}
-}
-
-private[stringContextParserCombinator]
 object Repeat {
-	private def parse0[Expr, Pos : Ordering, A](
-		input:Input[Expr, Pos],
+	def interpolator[Expr, A, Z](
 		inner:Interpolator[Expr, A],
 		min:Int,
 		max:Int,
 		delimiter:Interpolator[Expr, Unit],
 		strategy:RepeatStrategy,
-		isFirst:Boolean
+		ev:typeclass.Repeated[A, Z]
+	):Interpolator[Expr, Z] = {
+		require(min >= 0)
+		require(max >= 1)
+		require(max >= min)
+
+		new Interpolator[Expr, Z] {
+			def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+				Repeat.parse(
+					{(x:Input[ExprZ, Pos]) => inner.interpolate(x)},
+					min,
+					max,
+					{(x:Input[ExprZ, Pos]) => delimiter.interpolate(x)},
+					strategy,
+					true,
+					input
+				).mapValues({parts =>
+					val acc = ev.init()
+					parts.foreach(part => ev.append(acc, part))
+					ev.result(acc)
+				})
+			}
+		}
+	}
+
+	private def parse[Expr, Pos : Ordering, A](
+		useInner: Input[Expr, Pos] => Result[Expr, Pos, A],
+		min:Int,
+		max:Int,
+		useDelimiter: Input[Expr, Pos] => Result[Expr, Pos, Unit],
+		strategy:RepeatStrategy,
+		isFirst:Boolean,
+		input:Input[Expr, Pos]
 	):Result[Expr, Pos, List[A]] = {
-		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos])} else {delimiter.interpolate(input)}) match {
+		(if (isFirst) {Success((), input, ExpectingSet.empty[Pos])} else {useDelimiter(input)}) match {
 			case failureDelimiter:Failure[Pos] => {
 				if (min != 0 || failureDelimiter.isPositionGt(input.position)) {
 					failureDelimiter
@@ -43,7 +52,7 @@ object Repeat {
 				}
 			}
 			case successDelimiter:Success[Expr, Pos, Unit] => successDelimiter.flatMap[Expr, List[A]]({case Success1((), restDelimiter, expectingDelimiter) =>
-				inner.interpolate(restDelimiter) match {
+				useInner(restDelimiter) match {
 					case failureA:Failure[Pos] => {
 						if (min != 0 || failureA.isPositionGt(restDelimiter.position)) {
 							failureA or expectingDelimiter
@@ -74,7 +83,7 @@ object Repeat {
 								}
 							}
 						} else {
-							parse0(restA, inner, math.max(0, min - 1), max - 1, delimiter, strategy, false) match {
+							parse(useInner, math.max(0, min - 1), max - 1, useDelimiter, strategy, false, restA) match {
 								case failureC:Failure[Pos] => failureC or (expectingA ++ expectingDelimiter)
 								case successC:Success[Expr, Pos, List[A]] => {
 									val successCWithValA = successC.map({case Success1(valueC, restC, expectingC) =>

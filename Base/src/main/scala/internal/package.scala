@@ -204,7 +204,7 @@ package object internal {
 		strategy:RepeatStrategy,
 		ev:typeclass.Optionally[A, Z]
 	):Interpolator[Expr, Z] = {
-		new Repeat(backing, 0, 1, new Pass, strategy, new typeclass.Repeated[A, Z] {
+		Repeat.interpolator(backing, 0, 1, new Pass, strategy, new typeclass.Repeated[A, Z] {
 			final class Box[BoxType](var value:BoxType)
 			type Acc = Box[Z]
 			def init():Acc = new Box(ev.none)
