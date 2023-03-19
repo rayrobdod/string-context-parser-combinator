@@ -3,10 +3,10 @@ package internal
 
 private[stringContextParserCombinator]
 final class OrElse[Expr, A, B, Z](
-	left:Parser[Expr, A],
-	right:Parser[Expr, B],
+	left:Interpolator[Expr, A],
+	right:Interpolator[Expr, B],
 	combiner:typeclass.Eithered[A, B, Z]
-) extends Parser[Expr, Z] {
+) extends Interpolator[Expr, Z] {
 	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 		left.interpolate(input) match {
 			case leftSuccess:Success[ExprZ, Pos, A] => leftSuccess.mapValues(combiner.left _)

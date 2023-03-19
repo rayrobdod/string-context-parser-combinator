@@ -3,10 +3,10 @@ package internal
 
 private[stringContextParserCombinator]
 final class Filter[Expr, A](
-	backing:Parser[Expr, A],
+	backing:Interpolator[Expr, A],
 	predicate:Function1[A, Boolean],
 	predicateDescription:ExpectingDescription
-) extends Parser[Expr, A] {
+) extends Interpolator[Expr, A] {
 	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 		backing.interpolate(input) match {
 			case Success(choicesHead, choicesTail) => {

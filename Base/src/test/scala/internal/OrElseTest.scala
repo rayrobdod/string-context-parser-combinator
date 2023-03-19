@@ -52,8 +52,8 @@ final class OrElseTest extends AnyFunSpec {
 			val leftExpect = SingleExpecting("Left", 42)
 			val rightExpect = SingleExpecting("Right", 102)
 
-			val leftParser:Parser[Nothing, Object] = new ConstFailure(leftExpect)
-			val rightParser:Parser[Nothing, Object] = new ConstSuccess(rightResult, rightEndInput, rightExpect)
+			val leftParser:Interpolator[Nothing, Object] = new ConstFailure(leftExpect)
+			val rightParser:Interpolator[Nothing, Object] = new ConstSuccess(rightResult, rightEndInput, rightExpect)
 
 			val expected = Success[Nothing, StubPosition, Object](
 				rightResult,

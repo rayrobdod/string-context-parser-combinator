@@ -7,7 +7,7 @@ import scala.reflect.macros.blackbox.Context
 private[stringContextParserCombinator]
 final class OfType[Ctx <: Context with Singleton, A](
 	tpetag:Ctx#TypeTag[A]
-) extends Parser[Ctx#Expr[_], Ctx#Expr[A]] {
+) extends Interpolator[Ctx#Expr[_], Ctx#Expr[A]] {
 	private val expecting = ExpectingDescription(s"OfType(${tpetag.tpe})")
 
 	def interpolate[ExprZ <: Ctx#Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Ctx#Expr[A]] = {

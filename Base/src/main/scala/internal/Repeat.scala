@@ -3,13 +3,13 @@ package internal
 
 private[stringContextParserCombinator]
 final class Repeat[Expr, A, Z](
-	inner:Parser[Expr, A],
+	inner:Interpolator[Expr, A],
 	min:Int,
 	max:Int,
-	delimiter:Parser[Expr, Unit],
+	delimiter:Interpolator[Expr, Unit],
 	strategy:RepeatStrategy,
 	ev:typeclass.Repeated[A, Z]
-) extends Parser[Expr, Z] {
+) extends Interpolator[Expr, Z] {
 	require(min >= 0)
 	require(max >= 1)
 	require(max >= min)
@@ -27,10 +27,10 @@ private[stringContextParserCombinator]
 object Repeat {
 	private def parse0[Expr, Pos : Ordering, A](
 		input:Input[Expr, Pos],
-		inner:Parser[Expr, A],
+		inner:Interpolator[Expr, A],
 		min:Int,
 		max:Int,
-		delimiter:Parser[Expr, Unit],
+		delimiter:Interpolator[Expr, Unit],
 		strategy:RepeatStrategy,
 		isFirst:Boolean
 	):Result[Expr, Pos, List[A]] = {

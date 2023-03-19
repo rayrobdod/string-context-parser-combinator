@@ -5,7 +5,7 @@ import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 
 /**
- * A library for implementing StringContext methods via Parser Combinators
+ * A library for implementing StringContext methods via Interpolator Combinators
  */
 package object stringContextParserCombinator {
 	private[stringContextParserCombinator]
@@ -80,7 +80,7 @@ package stringContextParserCombinator {
 	private[stringContextParserCombinator] trait Extractor0[A] {def unapply(a:A):Boolean}
 	/** An object that can be a pattern-match pattern */
 	private[stringContextParserCombinator] trait Extractor[A,Z] {def unapply(a:A):Option[Z]}
-	/** Support for [[Parser.ScopedParsers.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
+	/** Support for [[Interpolator.ScopedInterpolators.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
 
 

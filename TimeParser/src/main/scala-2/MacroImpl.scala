@@ -8,9 +8,9 @@ import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_R
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
 
 /** Adds symbolic methods to Parsers */
-private[datetime] class ParserWithOps[U, A](val backing:Parser[U, A]) extends AnyVal {
-	def ~[B, Z](rhs:Parser[U, B])(implicit ev:typeclass.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
-	def |[Z >: A](rhs:Parser[U, Z]) = backing.orElse(rhs)
+private[datetime] class ParserWithOps[U, A](val backing:Interpolator[U, A]) extends AnyVal {
+	def ~[B, Z](rhs:Interpolator[U, B])(implicit ev:typeclass.Sequenced[A,B,Z]) = backing.andThen(rhs)(ev)
+	def |[Z >: A](rhs:Interpolator[U, Z]) = backing.orElse(rhs)
 	def rep[Z](min:Int = 0, max:Int = Integer.MAX_VALUE)(implicit ev:typeclass.Repeated[A, Z]) = backing.repeat(min, max)(ev)
 	def opt[Z](implicit ev:typeclass.Optionally[A, Z]) = backing.optionally()(ev)
 }
@@ -20,7 +20,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		def unapply(input:scala.reflect.api.Universe#Name):Option[String] = Option(input.decodedName.toString)
 	}
 
-	private[this] val leafParsers = Parser.scoped(c)
+	private[this] val leafParsers = Interpolator.scoped(c)
 	import leafParsers._
 	private[this] val timeLiftables = TimeLiftables(c)
 	import timeLiftables._
@@ -28,8 +28,8 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	import timeUnliftables._
 
 	import scala.language.implicitConversions
-	private[this] implicit def str2parser(str:String):Parser[Unit] = IsString(str)
-	private[this] implicit def parserWithOps[A](psr:Parser[A]) = new ParserWithOps[c.Expr[_], A](psr)
+	private[this] implicit def str2parser(str:String):Interpolator[Unit] = IsString(str)
+	private[this] implicit def parserWithOps[A](psr:Interpolator[A]) = new ParserWithOps[c.Expr[_], A](psr)
 	private[this] implicit def str2parserWithOps(str:String) = parserWithOps(str2parser(str))
 
 
@@ -54,42 +54,42 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		}
 	}
 
-	private[this] val digit:Parser[Digit] = CharIn('0' to '9').map(Digit.apply _).opaque("AsciiDigit")
-	private[this] val sign:Parser[Sign] = CharIn("-+").opt.map({x => new Sign(x != Some('-'))})
+	private[this] val digit:Interpolator[Digit] = CharIn('0' to '9').map(Digit.apply _).opaque("AsciiDigit")
+	private[this] val sign:Interpolator[Sign] = CharIn("-+").opt.map({x => new Sign(x != Some('-'))})
 
 	private[this] def Int2Digits(min:Int, max:Int) = (digit.rep(2, 2))
 		.map(_.value)
 		.filter(x => min <= x && x <= max, f"${min}%02d <= $$value <= ${max}%02d")
 		.opaque(f"${min}%02d <= $$value <= ${max}%02d")
 
-	private[this] def YearP:Parser[c.Expr[Year]] = {
-		val LiteralP:Parser[c.Expr[Year]] = {
+	private[this] def YearP:Interpolator[c.Expr[Year]] = {
+		val LiteralP:Interpolator[c.Expr[Year]] = {
 			(sign ~ digit.rep(1, 9))
 				.opaque("\"-999999999\"-\"999999999\"")
 				.map({x => c.Expr[Year](liftYear(Year.of(x)))})
 		}
-		val VariableP:Parser[c.Expr[Year]] = OfType[Year]
+		val VariableP:Interpolator[c.Expr[Year]] = OfType[Year]
 		VariableP | LiteralP
 	}
 
-	private[this] def MonthP:Parser[c.Expr[Month]] = {
-		val LiteralP:Parser[c.Expr[Month]] = {
+	private[this] def MonthP:Interpolator[c.Expr[Month]] = {
+		val LiteralP:Interpolator[c.Expr[Month]] = {
 			Int2Digits(1, 12)
 				.map(Month.of _)
 				.map({x => c.Expr[Month](liftMonth(x))})
 		}
-		val VariableP:Parser[c.Expr[Month]] = OfType[Month]
+		val VariableP:Interpolator[c.Expr[Month]] = OfType[Month]
 		VariableP | LiteralP
 	}
 
-	private[this] def YearMonthP:Parser[c.Expr[YearMonth]] = {
-		val PartsP:Parser[c.Expr[YearMonth]] = (YearP ~ "-" ~ MonthP)
-		val VariableP:Parser[c.Expr[YearMonth]] = OfType[YearMonth]
+	private[this] def YearMonthP:Interpolator[c.Expr[YearMonth]] = {
+		val PartsP:Interpolator[c.Expr[YearMonth]] = (YearP ~ "-" ~ MonthP)
+		val VariableP:Interpolator[c.Expr[YearMonth]] = OfType[YearMonth]
 		VariableP | PartsP
 	}
 
-	private[this] def LocalDateP:Parser[c.Expr[LocalDate]] = {
-		val YearMonthVariantP:Parser[c.Expr[LocalDate]] = (YearMonthP ~ "-").flatMap({ymExpr =>
+	private[this] def LocalDateP:Interpolator[c.Expr[LocalDate]] = {
+		val YearMonthVariantP:Interpolator[c.Expr[LocalDate]] = (YearMonthP ~ "-").flatMap({ymExpr =>
 			import c.universe._
 			ymExpr match {
 				case Expr(`unliftYearMonth`(ym)) => {
@@ -107,29 +107,29 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 				}
 			}
 		})
-		val VariableP:Parser[c.Expr[LocalDate]] = OfType[LocalDate]
+		val VariableP:Interpolator[c.Expr[LocalDate]] = OfType[LocalDate]
 		VariableP | YearMonthVariantP
 	}
 
-	private[this] def HourP:Parser[c.Expr[Int]] = {
-		val LiteralP:Parser[c.Expr[Int]] = {
+	private[this] def HourP:Interpolator[c.Expr[Int]] = {
+		val LiteralP:Interpolator[c.Expr[Int]] = {
 			Int2Digits(0, 23)
 				.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 		}
 		LiteralP
 	}
 
-	private[this] def MinuteP:Parser[c.Expr[Int]] = {
-		val LiteralP:Parser[c.Expr[Int]] = {
+	private[this] def MinuteP:Interpolator[c.Expr[Int]] = {
+		val LiteralP:Interpolator[c.Expr[Int]] = {
 			Int2Digits(0, 59)
 				.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
 		}
 		LiteralP
 	}
 
-	private[this] def SecondP:Parser[c.Expr[Int]] = MinuteP
+	private[this] def SecondP:Interpolator[c.Expr[Int]] = MinuteP
 
-	private[this] def NanoP:Parser[c.Expr[Int]] = {
+	private[this] def NanoP:Interpolator[c.Expr[Int]] = {
 		val LiteralP = CharIn('0' to '9').rep(1, 9)
 			.map(x => s"${x}000000000".substring(0, 9))
 			.map(Integer.parseInt _)
@@ -138,9 +138,9 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		LiteralP
 	}
 
-	private[this] def LocalTimeP:Parser[c.Expr[LocalTime]] = {
+	private[this] def LocalTimeP:Interpolator[c.Expr[LocalTime]] = {
 		import c.universe.Quasiquote
-		val LiteralP:Parser[c.Expr[LocalTime]] = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
+		val LiteralP:Interpolator[c.Expr[LocalTime]] = (HourP ~ ":" ~ MinuteP ~ (":" ~ SecondP ~ ("." ~ NanoP).opt).opt)
 			.map({hmsn =>
 				val constZero = c.Expr(c.universe.Literal(c.universe.Constant(0)))
 				val (hm, sn) = hmsn
@@ -150,11 +150,11 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 
 				c.Expr[LocalTime](q"java.time.LocalTime.of($hour, $minute, $second, $nano)")
 			})
-		val VariableP:Parser[c.Expr[LocalTime]] = OfType[LocalTime]
+		val VariableP:Interpolator[c.Expr[LocalTime]] = OfType[LocalTime]
 		VariableP | LiteralP
 	}
 
-	private[this] def LocalDateTimeP:Parser[c.Expr[LocalDateTime]] = {
+	private[this] def LocalDateTimeP:Interpolator[c.Expr[LocalDateTime]] = {
 		(LocalDateP ~ "T" ~ LocalTimeP)
 	}
 

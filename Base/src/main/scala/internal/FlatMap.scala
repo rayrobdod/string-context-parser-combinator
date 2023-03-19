@@ -3,8 +3,8 @@ package internal
 
 private[stringContextParserCombinator]
 final class FlatMap[Expr, A, Z](
-	left:Parser[Expr, A], right:Function1[A, com.rayrobdod.stringContextParserCombinator.Parser[Expr, Z]]
-) extends Parser[Expr, Z] {
+	left:Interpolator[Expr, A], right:Function1[A, com.rayrobdod.stringContextParserCombinator.Interpolator[Expr, Z]]
+) extends Interpolator[Expr, Z] {
 	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 		left.interpolate(input) match {
 			case successLeft:Success[ExprZ, Pos, A] => successLeft.flatMap({case Success1(leftValue, leftRemaining, leftExpecting) =>

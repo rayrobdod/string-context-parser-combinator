@@ -22,8 +22,8 @@ object Lifted {
 		)(using
 		Type[Lifter],
 		Quotes,
-	):Parser[Expr[_], Z] = {
-		new Parser[Expr[_], Z] {
+	):Interpolator[Expr[_], Z] = {
+		new Interpolator[Expr[_], Z] {
 			def interpolate[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				input.consume(
 					_ => None,

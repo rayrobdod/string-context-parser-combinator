@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 package internal
 
 private[stringContextParserCombinator]
-final class End extends Parser[Any, Unit] {
+final class End extends Interpolator[Any, Unit] {
 	override def interpolate[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Unit] = {
 		val expecting = Expecting(description, input.position)
 		if (input.isEmpty) {

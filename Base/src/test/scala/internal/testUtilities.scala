@@ -10,31 +10,31 @@ object TestUtilities {
 	def RepeatedExpecting(msg:String, pos:Range) = ExpectingSet.fromSpecific(pos.map(x => Expecting(ExpectingDescription(msg), StubPosition(x))))
 
 
-	implicit class ParserExtras[Expr, A](val self:Parser[Expr, A]) extends AnyVal {
-		def map[Z](fn:Function1[A, Z]):Parser[Expr, Z] =
+	implicit class ParserExtras[Expr, A](val self:Interpolator[Expr, A]) extends AnyVal {
+		def map[Z](fn:Function1[A, Z]):Interpolator[Expr, Z] =
 			new Map(self, fn)
 
-		def flatMap[Z](fn:Function1[A, Parser[Expr, Z]]):Parser[Expr, Z] =
-			new FlatMap(self, fn.andThen(new com.rayrobdod.stringContextParserCombinator.Parser(_)))
+		def flatMap[Z](fn:Function1[A, Interpolator[Expr, Z]]):Interpolator[Expr, Z] =
+			new FlatMap(self, fn.andThen(new com.rayrobdod.stringContextParserCombinator.Interpolator(_)))
 
-		def filter(predicate:Function1[A, Boolean], description:String):Parser[Expr, A] =
+		def filter(predicate:Function1[A, Boolean], description:String):Interpolator[Expr, A] =
 			new internal.Filter(self, predicate, ExpectingDescription(description))
 
-		def opaque(description:String):Parser[Expr, A] =
+		def opaque(description:String):Interpolator[Expr, A] =
 			new internal.Opaque(self, ExpectingDescription(description))
 
-		def andThen[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Parser[ExprZ, Z] =
+		def andThen[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
 			new AndThen(self, rhs, ev)
 
-		def orElse[ExprZ <: Expr, B, Z](rhs:Parser[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Parser[ExprZ, Z] =
+		def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
 			new OrElse(self, rhs, ev)
 
 		def repeat[ExprZ <: Expr, Z](
 			min:Int = 0,
 			max:Int = Integer.MAX_VALUE,
-			delimiter:Parser[ExprZ, Unit] = new internal.Pass,
+			delimiter:Interpolator[ExprZ, Unit] = new internal.Pass,
 			strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 			implicit ev:typeclass.Repeated[A, Z]
-		):Parser[ExprZ, Z] = new Repeat(self, min, max, delimiter, strategy, ev)
+		):Interpolator[ExprZ, Z] = new Repeat(self, min, max, delimiter, strategy, ev)
 	}
 }

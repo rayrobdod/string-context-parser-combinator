@@ -3,9 +3,9 @@ package internal
 
 private[stringContextParserCombinator]
 final class Opaque[Expr, A](
-	backing:Parser[Expr, A],
+	backing:Interpolator[Expr, A],
 	description:ExpectingDescription
-) extends Parser[Expr, A] {
+) extends Interpolator[Expr, A] {
 	def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 		val descriptionPosition = ExpectingSet(Expecting(description, input.position))
 		backing.interpolate(input) match {

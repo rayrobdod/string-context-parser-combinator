@@ -1,15 +1,15 @@
 package com.rayrobdod.stringContextParserCombinator
 
 import scala.reflect.macros.blackbox.Context
-import com.rayrobdod.stringContextParserCombinator.{Parser => SCParser}
+import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCInterpolator}
 
 /**
- * Parts of [[Parser]] that use types specific to scala 2
+ * Parts of [[Interpolator]] that use types specific to scala 2
  */
 private[stringContextParserCombinator]
-trait VersionSpecificParser[-Expr, +A] {
+trait VersionSpecificInterpolator[-Expr, +A] {
 	protected[stringContextParserCombinator]
-	def impl: internal.Parser[Expr, A]
+	def impl: internal.Interpolator[Expr, A]
 
 	/**
 	 * Parses a StringContext and its arguments into a value
@@ -17,7 +17,7 @@ trait VersionSpecificParser[-Expr, +A] {
 	 * @example
 	 * {{{
 	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
-	 *   val myParser:Parser[Expr[Result]] = ???
+	 *   val myParser:Interpolator[Expr[Result]] = ???
 	 *   myParser.interpolate(c)("package.ValueStringContext")(args)
 	 * }
 	 *
@@ -74,33 +74,33 @@ trait VersionSpecificParser[-Expr, +A] {
 }
 
 private[stringContextParserCombinator]
-trait VersionSpecificParserModule {
+trait VersionSpecificInterpolatorModule {
 	/**
-	 * Create a ScopedParsers for the provided Context
+	 * Create a ScopedInterpolators for the provided Context
 	 */
-	def scoped(c:Context):Parser.ScopedParsers {
+	def scoped(c:Context):Interpolator.ScopedInterpolators {
 		type Context = c.type
-	} = new Parser.ScopedParsers {
+	} = new Interpolator.ScopedInterpolators {
 		type Context = c.type
 		override val ctx:Context = c
 	}
 }
 
 private[stringContextParserCombinator]
-trait VersionSpecificScopedParsers {
+trait VersionSpecificScopedInterpolators {
 	type Context <: scala.reflect.macros.blackbox.Context
 	val ctx:Context
 	/** The expr type of the created parsers */
-	type ParserExpr = ctx.Expr[_]
+	type InterpolatorExpr = ctx.Expr[_]
 	/** The parser type, with the input parameter concretized */
-	type Parser[A] = SCParser[ParserExpr, A]
+	type Interpolator[A] = SCInterpolator[InterpolatorExpr, A]
 
 	/**
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 	 * @group Arg
 	 */
-	def OfType[A](implicit tpe:ctx.TypeTag[A]):Parser[ctx.Expr[A]] =
-		new SCParser(new internal.OfType[ctx.type, A](tpe))
+	def OfType[A](implicit tpe:ctx.TypeTag[A]):Interpolator[ctx.Expr[A]] =
+		new SCInterpolator(new internal.OfType[ctx.type, A](tpe))
 
 	/**
 	 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
@@ -108,6 +108,6 @@ trait VersionSpecificScopedParsers {
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 * @group Arg
 	 */
-	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Parser[Z] =
-		new SCParser(internal.Lifted(ctx)(lift, ExpectingDescription(description)))
+	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Interpolator[Z] =
+		new SCInterpolator(internal.Lifted(ctx)(lift, ExpectingDescription(description)))
 }

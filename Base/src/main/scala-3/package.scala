@@ -9,7 +9,7 @@ import scala.quoted.Type
 import scala.quoted.Varargs
 
 /**
- * A library for implementing StringContext methods via Parser Combinators
+ * A library for implementing StringContext methods via Interpolator Combinators
  */
 package object stringContextParserCombinator {
 	private[stringContextParserCombinator] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
@@ -26,7 +26,7 @@ package object stringContextParserCombinator {
 }
 
 package stringContextParserCombinator {
-	/** Support for [[Parser.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
+	/** Support for [[Interpolator.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[-CC[_], +Z] {def apply[A](lifter:Expr[CC[A]], elem:Expr[A])(using Type[A], Quotes):Z}
 
 

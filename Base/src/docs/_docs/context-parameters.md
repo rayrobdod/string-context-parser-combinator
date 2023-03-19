@@ -2,7 +2,7 @@
 title: Context Parameters
 ---
 
-The [[Parser|com.rayrobdod.stringContextParserCombinator.Parser]] methods
+The [[Interpolator|com.rayrobdod.stringContextParserCombinator.Interpolator]] methods
 `andThen`, `orElse`, `repeat` and `optionally` each take a context parameter which describes how to
 combine the results of the aggregate parser's components. Each of these types reside in
 [[com.rayrobdod.stringContextParserCombinator.typeclass]]. Each of these four types' companion object defines one
@@ -25,14 +25,14 @@ The fallback given sequenced places the two items in a tuple.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
 class B {}
-val p1:Parser[A] = ???
-val p2:Parser[B] = ???
+val p1:Interpolator[A] = ???
+val p2:Interpolator[B] = ???
 
 //}
-((p1:Parser[A]) andThen (p2:Parser[B])):Parser[(A, B)]
+((p1:Interpolator[A]) andThen (p2:Interpolator[B])):Interpolator[(A, B)]
 ```
 
 This library provides `Sequenced` values that handle the case where one value or the other is a `Unit`. When these are
@@ -40,16 +40,16 @@ used, the unit value is dropped, leaving the other value in tact. If both values
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
-val u1:Parser[Unit] = ???
-val u2:Parser[Unit] = ???
-val p1:Parser[A] = ???
+val u1:Interpolator[Unit] = ???
+val u2:Interpolator[Unit] = ???
+val p1:Interpolator[A] = ???
 
 //}
-((u1:Parser[Unit]) andThen (u2:Parser[Unit])):Parser[Unit]
-((p1:Parser[A]   ) andThen (u2:Parser[Unit])):Parser[A]
-((u1:Parser[Unit]) andThen (p1:Parser[A]   )):Parser[A]
+((u1:Interpolator[Unit]) andThen (u2:Interpolator[Unit])):Interpolator[Unit]
+((p1:Interpolator[A]   ) andThen (u2:Interpolator[Unit])):Interpolator[A]
+((u1:Interpolator[Unit]) andThen (p1:Interpolator[A]   )):Interpolator[A]
 ```
 
 The Sequenced interface consists of a single method which takes the two values as parameters and returns the resulting value.
@@ -59,17 +59,17 @@ Below is example of defining and using a custom Sequenced.
 ```scala
 import java.time._
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser._
+import com.rayrobdod.stringContextParserCombinator.Interpolator._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
-val dateParser:Parser[LocalDate] = ???
-val timeParser:Parser[LocalTime] = ???
+val dateParser:Interpolator[LocalDate] = ???
+val timeParser:Interpolator[LocalTime] = ???
 
 //}
 given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
 	def aggregate(date:LocalDate, time:LocalTime):LocalDateTime = date.atTime(time)
 }
 
-((dateParser:Parser[LocalDate]) andThen IsString("T") andThen (timeParser:Parser[LocalTime])):Parser[LocalDateTime]
+((dateParser:Interpolator[LocalDate]) andThen IsString("T") andThen (timeParser:Interpolator[LocalTime])):Interpolator[LocalDateTime]
 ```
 
 
@@ -84,17 +84,17 @@ parser of that type.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
-val p1:Parser[A] = ???
-val p2:Parser[B] = ???
-val p3:Parser[A] = ???
+val p1:Interpolator[A] = ???
+val p2:Interpolator[B] = ???
+val p3:Interpolator[A] = ???
 
 //}
-((p1:Parser[A]) orElse (p2:Parser[B])):Parser[A | B]
-((p1:Parser[A]) orElse (p3:Parser[A])):Parser[A]
+((p1:Interpolator[A]) orElse (p2:Interpolator[B])):Interpolator[A | B]
+((p1:Interpolator[A]) orElse (p3:Interpolator[A])):Interpolator[A]
 ```
 
 This library provides given `Eithered` values that handle the case where one value or the other is a `Unit`. If both options
@@ -103,15 +103,15 @@ non-unit case is wrapped in a `scala.Some`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
-val p1:Parser[Unit] = ???
-val p2:Parser[Unit] = ???
-val p3:Parser[A] = ???
+val p1:Interpolator[Unit] = ???
+val p2:Interpolator[Unit] = ???
+val p3:Interpolator[A] = ???
 
 //}
-((p1:Parser[Unit]) orElse (p2:Parser[Unit])):Parser[Unit]
-((p3:Parser[A]   ) orElse (p2:Parser[Unit])):Parser[Option[A]]
+((p1:Interpolator[Unit]) orElse (p2:Interpolator[Unit])):Interpolator[Unit]
+((p3:Interpolator[A]   ) orElse (p2:Interpolator[Unit])):Interpolator[Option[A]]
 ```
 
 This library provides a non-given instance of Eithered, named `discriminatedUnion`, that instead places the two values
@@ -119,17 +119,17 @@ in a `scala.Either`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser._
+import com.rayrobdod.stringContextParserCombinator.Interpolator._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
-val p1:Parser[A] = ???
-val p2:Parser[B] = ???
+val p1:Interpolator[A] = ???
+val p2:Interpolator[B] = ???
 
 //}
-val discriminated:Parser[Either[A, B]] = (p1:Parser[A]).orElse(p2:Parser[B])(using Eithered.discriminatedUnion)
+val discriminated:Interpolator[Either[A, B]] = (p1:Interpolator[A]).orElse(p2:Interpolator[B])(using Eithered.discriminatedUnion)
 // in the following, even digits are placed in a Left while odd digits are placed in a Right.
-val evenOdd:Parser[Either[Char, Char]] = CharIn("02468").orElse(CharIn("13579"))(using Eithered.discriminatedUnion)
+val evenOdd:Interpolator[Either[Char, Char]] = CharIn("02468").orElse(CharIn("13579"))(using Eithered.discriminatedUnion)
 ```
 
 The interface consists of two methods, the `left` method called if the first choice succeeded, or `right` if the second
@@ -142,10 +142,10 @@ import java.io.File
 import java.net.URI
 import java.util.UUID
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser._
+import com.rayrobdod.stringContextParserCombinator.Interpolator._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
-val uuidParser:Parser[UUID] = ???
-val fileParser:Parser[File] = ???
+val uuidParser:Interpolator[UUID] = ???
+val fileParser:Interpolator[File] = ???
 
 //}
 given Eithered[File, UUID, URI] with {
@@ -153,7 +153,7 @@ given Eithered[File, UUID, URI] with {
 	def right(id:UUID):URI = new URI("urn", s"uuid:${id}", null)
 }
 
-((fileParser:Parser[File]) orElse (uuidParser:Parser[UUID])):Parser[URI]
+((fileParser:Interpolator[File]) orElse (uuidParser:Interpolator[UUID])):Interpolator[URI]
 ```
 
 
@@ -166,12 +166,12 @@ The fallback given Repeated places the items in a `scala.Seq`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
-val p1:Parser[A] = ???
+val p1:Interpolator[A] = ???
 
 //}
-((p1:Parser[A]).repeat()):Parser[List[A]]
+((p1:Interpolator[A]).repeat()):Interpolator[List[A]]
 ```
 
 A given Repeated is provided which combines repeated `scala.Unit` values into a single `scala.Unit`
@@ -182,15 +182,15 @@ repeated `CodePoint` values into a `String`.
 ```scala
 //{
 import com.rayrobdod.stringContextParserCombinator.CodePoint
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
-val unitParser:Parser[Unit] = ???
-val charParser:Parser[Char] = ???
-val codePointParser:Parser[CodePoint] = ???
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+val unitParser:Interpolator[Unit] = ???
+val charParser:Interpolator[Char] = ???
+val codePointParser:Interpolator[CodePoint] = ???
 
 //}
-(unitParser:Parser[Unit]).repeat():Parser[Unit]
-(charParser:Parser[Char]).repeat():Parser[String]
-(codePointParser:Parser[CodePoint]).repeat():Parser[String]
+(unitParser:Interpolator[Unit]).repeat():Interpolator[Unit]
+(charParser:Interpolator[Char]).repeat():Interpolator[String]
+(codePointParser:Interpolator[CodePoint]).repeat():Interpolator[String]
 ```
 
 When a Repeated is used
@@ -202,7 +202,7 @@ Below is example of providing and using custom Repeated.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser._
+import com.rayrobdod.stringContextParserCombinator.Interpolator._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Repeated
 
 //}
@@ -222,8 +222,8 @@ given Repeated[Digit, Digits] with {
 }
 
 // create the parsers
-val digit:Parser[Digit] = CharIn('0' to '9').map(x => Digit(x - '0'))
-val digits:Parser[Digits] = digit.repeat(1)
+val digit:Interpolator[Digit] = CharIn('0' to '9').map(x => Digit(x - '0'))
+val digits:Interpolator[Digits] = digit.repeat(1)
 ```
 
 ## Optionally
@@ -236,23 +236,23 @@ the empty value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
-val p1:Parser[A] = ???
+val p1:Interpolator[A] = ???
 
 //}
-((p1:Parser[A]).optionally()):Parser[Option[A]]
+((p1:Interpolator[A]).optionally()):Interpolator[Option[A]]
 ```
 
 The `Unit`-handling Optionally value doesn't wrap a present `()` in an Option, and uses `()` as a default value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser.Parser
-val p1:Parser[Unit] = ???
+import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+val p1:Interpolator[Unit] = ???
 
 //}
-((p1:Parser[Unit]).optionally()):Parser[Unit]
+((p1:Interpolator[Unit]).optionally()):Interpolator[Unit]
 ```
 
 The interface consists of two methods, the `some` method called if there was a value, and `none` method called if there
@@ -263,9 +263,9 @@ a default value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Parser._
+import com.rayrobdod.stringContextParserCombinator.Interpolator._
 import com.rayrobdod.stringContextParserCombinator.typeclass.Optionally
-val stringParser:Parser[String] = ???
+val stringParser:Interpolator[String] = ???
 
 //}
 given Optionally[String, String] with {
@@ -273,5 +273,5 @@ given Optionally[String, String] with {
 	def some(s:String):String = s
 }
 
-((stringParser:Parser[String]).optionally()):Parser[String]
+((stringParser:Interpolator[String]).optionally()):Interpolator[String]
 ```
