@@ -24,6 +24,13 @@ trait VersionSpecificParser[-Expr, +A] {
 	 * implicit final class ValueStringContext(val sc:scala.StringContext) extends AnyVal {
 	 *   def value(args:Any*):Result = macro valueImpl
 	 * }
+	 *
+	 * // alternatively
+	 * implicit final class ValueStringContext(val sc:scala.StringContext) {
+	 *   object value {
+	 *     def apply(args:Any*):Result = macro valueImpl
+	 *   }
+	 * }
 	 * }}}
 	 * @group Parse
 	 */
@@ -33,9 +40,20 @@ trait VersionSpecificParser[-Expr, +A] {
 
 		import c.universe.ApplyTag
 		val strings = c.prefix.tree.duplicate match {
+			// for methods on the extension object
 			case c.universe.Apply(
 				ExtensionClassSelectChain(),
 				List(StringContextApply(strings))
+			) => {
+				strings.map({x => (c.eval(x), Position(x.tree.pos))})
+			}
+			// for `apply` methods on an object in the extension object
+			case c.universe.Select(
+				c.universe.Apply(
+					ExtensionClassSelectChain(),
+					List(StringContextApply(strings))
+				),
+				Name(_)
 			) => {
 				strings.map({x => (c.eval(x), Position(x.tree.pos))})
 			}
