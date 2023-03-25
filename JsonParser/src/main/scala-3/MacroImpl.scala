@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample.json
 
-import scala.collection.immutable.{Map, Seq, Vector}
+import scala.collection.immutable.Seq
 import scala.quoted.{Expr, Quotes, Type}
 import org.json4s.{JValue, JNull, JBool, JNumber, JLong, JInt, JDecimal, JString, JArray, JObject}
 import com.rayrobdod.stringContextParserCombinator._
@@ -20,7 +20,7 @@ object MacroImpl {
 	}
 
 	private def assembleCollection[A]
-			(parts:List[Either[Expr[A], Expr[TraversableOnce[A]]]])
+			(parts:List[Either[Expr[A], Expr[List[A]]]])
 			(using Type[A], Quotes)
 	:Expr[List[A]] = {
 		val builder = parts.foldLeft('{ List.newBuilder[A] })({(builder, part) =>
@@ -136,12 +136,12 @@ object MacroImpl {
 		)
 		val LiftedArrayV2 = LiftedArrayV.map(x => '{ $x.arr })
 
-		val SplicableValue:Parser[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]] = (
+		val SplicableValue:Parser[Either[Expr[JValue], Expr[List[JValue]]]] = (
 			ValueP.map(x => Left(x)) orElse
 			(IsString("..") andThen LiftedArrayV2
 				andThen WhitespaceP).map(x => Right(x))
 		)
-		val LiteralPresplice:Parser[List[Either[Expr[JValue], Expr[TraversableOnce[JValue]]]]] = (
+		val LiteralPresplice:Parser[List[Either[Expr[JValue], Expr[List[JValue]]]]] = (
 			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
 			Prefix andThen (SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive) andThen Suffix)
 		)
@@ -179,7 +179,7 @@ object MacroImpl {
 		}
 
 
-		val SplicableValue:Parser[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]] = (
+		val SplicableValue:Parser[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]] = (
 			(KeyValueV andThen WhitespaceP)
 				.map(x => Left(x)) orElse
 			(KeyV andThen Separator andThen ValueP)
@@ -188,7 +188,7 @@ object MacroImpl {
 			(IsString("..") andThen ObjectV2 andThen WhitespaceP)
 				.map(x => Right(x))
 		)
-		val LiteralPresplice:Parser[List[Either[Expr[(String, JValue)], Expr[TraversableOnce[(String, JValue)]]]]] = (
+		val LiteralPresplice:Parser[List[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]]] = (
 			// somehow manages to widen its type to `List[Matchable]` if the order of operations is different
 			Prefix andThen (SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive) andThen Suffix)
 		)

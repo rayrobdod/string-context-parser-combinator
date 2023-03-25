@@ -1,6 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample.json
 
-import scala.collection.immutable.{Map, Seq, Vector}
+import scala.collection.immutable.Seq
 import scala.reflect.macros.blackbox.Context
 import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
 import com.rayrobdod.stringContextParserCombinator._
@@ -44,7 +44,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 	}
 
-	private[this] def assembleCollection[A](parts:List[Either[c.Expr[A], c.Expr[TraversableOnce[A]]]])(implicit builderType: c.universe.TypeTag[scala.collection.mutable.Builder[A, List[A]]]):c.Expr[List[A]] = {
+	private[this] def assembleCollection[A](parts:List[Either[c.Expr[A], c.Expr[List[A]]]])(implicit builderType: c.universe.TypeTag[scala.collection.mutable.Builder[A, List[A]]]):c.Expr[List[A]] = {
 		val builderName = c.freshName(c.universe.TermName("builder"))
 		val builderTypeTree = c.universe.TypeTree(builderType.tpe)
 		val builderExpr = c.Expr(c.universe.Ident(builderName))(builderType)
@@ -165,14 +165,14 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			myLiftFunction[JArray, Lift.Array],
 			"A for Lift[A, JArray]"
 		)
-			.map(x => c.Expr[Vector[JValue]](c.universe.Select(x.tree, c.universe.TermName("arr"))))
+			.map(x => c.Expr[List[JValue]](c.universe.Select(x.tree, c.universe.TermName("arr"))))
 
-		val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]] = {
+		val SplicableValue:Parser[Either[c.Expr[JValue], c.Expr[List[JValue]]]] = {
 			val value = ValueP
 			val array = (IsString("..") andThen LiftedArrayV andThen WhitespaceP)
 			value.orElse(array)(typeclass.Eithered.discriminatedUnion)
 		}
-		val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[TraversableOnce[JValue]]]]] = (
+		val LiteralPresplice:Parser[List[Either[c.Expr[JValue], c.Expr[List[JValue]]]]] = (
 			Prefix
 				andThen SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
 				andThen Suffix
@@ -192,7 +192,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val ObjectV = Lifted[Lift.Object, c.Expr[JObject]](
 			myLiftFunction[JObject, Lift.Object],
 			"A for Lift[A, JObject]"
-		).map(x => c.Expr[Map[String, JValue]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
+		).map(x => c.Expr[List[(String, JValue)]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
 
 		val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
 			myLiftFunction[(java.lang.String, JValue), Lift.KeyValue],
@@ -208,14 +208,14 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			(LiftedV orElse Immediate) andThen WhitespaceP
 		}
 
-		val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]] = {
+		val SplicableValue:Parser[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]] = {
 			val keyValue = (KeyValueV andThen WhitespaceP)
 			val keyThenValue = (KeyV andThen Separator andThen ValueP)
 				.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
 			val mapping = (IsString("..") andThen ObjectV andThen WhitespaceP)
 			keyValue.orElse(keyThenValue).orElse(mapping)(typeclass.Eithered.discriminatedUnion)
 		}
-		val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[TraversableOnce[(String, JValue)]]]]] = (
+		val LiteralPresplice:Parser[List[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]]] = (
 			Prefix
 				andThen SplicableValue.repeat(delimiter = Delim, strategy = RepeatStrategy.Possessive)
 				andThen Suffix
