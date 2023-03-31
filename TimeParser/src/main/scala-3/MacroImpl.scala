@@ -75,7 +75,7 @@ object MacroImpl {
 			(sign ~ digit.rep(1, 9))
 				.opaque("\"-999999999\"-\"999999999\"")
 				.map(Year.of _)
-				.map(Expr.apply _)
+				.mapToExpr
 		}
 		val VariableP:Interpolator[Expr[Year]] = OfType[Year]
 		VariableP | LiteralP
@@ -85,7 +85,7 @@ object MacroImpl {
 		val LiteralP:Interpolator[Expr[Month]] = {
 			Int2Digits(1, 12)
 				.map(Month.of _)
-				.map(Expr.apply _)
+				.mapToExpr
 		}
 		val VariableP:Interpolator[Expr[Month]] = OfType[Month]
 		VariableP | LiteralP
@@ -115,7 +115,7 @@ object MacroImpl {
 	private[this] def HourP(using Quotes):Interpolator[Expr[Int]] = {
 		val LiteralP:Interpolator[Expr[Int]] = {
 			Int2Digits(0, 23)
-				.map(x => Expr(x))
+				.mapToExpr
 		}
 		LiteralP
 	}
@@ -123,7 +123,7 @@ object MacroImpl {
 	private[this] def MinuteP(using Quotes):Interpolator[Expr[Int]] = {
 		val LiteralP:Interpolator[Expr[Int]] = {
 			Int2Digits(0, 59)
-				.map(x => Expr(x))
+				.mapToExpr
 		}
 		LiteralP
 	}
@@ -135,7 +135,7 @@ object MacroImpl {
 			.map(x => s"${x}000000000".substring(0, 9))
 			.map(Integer.parseInt _)
 			.opaque("\"0\"-\"999999999\"")
-			.map(x => Expr(x))
+			.mapToExpr
 		LiteralP
 	}
 

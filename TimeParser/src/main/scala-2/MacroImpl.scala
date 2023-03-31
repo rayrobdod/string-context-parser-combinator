@@ -27,6 +27,8 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	private[this] val timeUnliftables = TimeUnliftables(c)
 	import timeUnliftables._
 
+	private[this] implicit val thisCToExpr = typeclass.ToExprMapping.toExprContext(c)
+
 	import scala.language.implicitConversions
 	private[this] implicit def str2parser(str:String):Interpolator[Unit] = IsString(str)
 	private[this] implicit def parserWithOps[A](psr:Interpolator[A]) = new ParserWithOps[c.Expr[_], A](psr)
@@ -66,7 +68,8 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		val LiteralP:Interpolator[c.Expr[Year]] = {
 			(sign ~ digit.rep(1, 9))
 				.opaque("\"-999999999\"-\"999999999\"")
-				.map({x => c.Expr[Year](liftYear(Year.of(x)))})
+				.map(Year.of _)
+				.mapToExpr
 		}
 		val VariableP:Interpolator[c.Expr[Year]] = OfType[Year]
 		VariableP | LiteralP
@@ -76,7 +79,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		val LiteralP:Interpolator[c.Expr[Month]] = {
 			Int2Digits(1, 12)
 				.map(Month.of _)
-				.map({x => c.Expr[Month](liftMonth(x))})
+				.mapToExpr
 		}
 		val VariableP:Interpolator[c.Expr[Month]] = OfType[Month]
 		VariableP | LiteralP
@@ -114,7 +117,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	private[this] def HourP:Interpolator[c.Expr[Int]] = {
 		val LiteralP:Interpolator[c.Expr[Int]] = {
 			Int2Digits(0, 23)
-				.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
+				.mapToExpr
 		}
 		LiteralP
 	}
@@ -122,7 +125,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 	private[this] def MinuteP:Interpolator[c.Expr[Int]] = {
 		val LiteralP:Interpolator[c.Expr[Int]] = {
 			Int2Digits(0, 59)
-				.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
+				.mapToExpr
 		}
 		LiteralP
 	}
@@ -134,7 +137,7 @@ final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 			.map(x => s"${x}000000000".substring(0, 9))
 			.map(Integer.parseInt _)
 			.opaque("\"0\"-\"999999999\"")
-			.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
+			.mapToExpr
 		LiteralP
 	}
 

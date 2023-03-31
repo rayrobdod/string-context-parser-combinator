@@ -38,6 +38,19 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		new Interpolator(new internal.Map(this.impl, fn))
 
 	/**
+	 * Returns a parser which invokes this parser, then maps a successful result by lifting the
+	 * successful result into an Expr
+	 * @group Map
+	 */
+	def mapToExpr[ExprZ[_], Z >: A, ToExpr[_], Type[_]](
+		implicit mapping:typeclass.ToExprMapping[ExprZ, ToExpr, Type],
+		toExpr:ToExpr[Z],
+		tpe:Type[Z]
+	):Interpolator[Expr, ExprZ[Z]] = {
+		this.map(value => mapping(value, toExpr, tpe))
+	}
+
+	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
 	 * @group Sequence
 	 */

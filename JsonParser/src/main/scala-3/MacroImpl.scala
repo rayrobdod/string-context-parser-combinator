@@ -111,7 +111,7 @@ object MacroImpl {
 			}))
 		)
 		val JCharP:Interpolator[Char] = JCharEscaped orElse JCharImmediate
-		val JCharsI:Interpolator[Expr[String]] = JCharP.repeat(1, strategy = RepeatStrategy.Possessive).map(Expr.apply _)
+		val JCharsI:Interpolator[Expr[String]] = JCharP.repeat(1, strategy = RepeatStrategy.Possessive).mapToExpr
 		val LiftedV:Interpolator[Expr[String]] = Lifted[Lift.String, Expr[JString]](
 			myLiftFunction[JString, Lift.String],
 			"A for Lift[A, JString]"
