@@ -4,7 +4,7 @@ import java.time._
 import org.scalatest.funspec.AnyFunSpec
 import com.rayrobdod.stringContextParserCombinatorExample.datetime._
 
-final class StringContextTest extends AnyFunSpec {
+final class InterpolationMacroTest extends AnyFunSpec {
 	describe("StringContext.localtime") {
 		it ("Accepts a literal midnight") {
 			assertResult(LocalTime.MIDNIGHT)(localtime"00:00")
