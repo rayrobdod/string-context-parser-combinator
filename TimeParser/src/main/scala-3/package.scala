@@ -99,3 +99,11 @@ extension (inline sc:scala.StringContext)
 		${MacroImpl.interpolate_localTime('sc, 'args)}
 	inline def localdatetime(inline args:Any*):LocalDateTime =
 		${MacroImpl.interpolate_localDateTime('sc, 'args)}
+
+extension (sc:scala.StringContext)
+	def localdate2(args:Any*):LocalDate =
+		IdImpl.interpolate_localDate(sc, args*)
+	def localtime2(args:Any*):LocalTime =
+		IdImpl.interpolate_localTime(sc, args*)
+	def localdatetime2(args:Any*):LocalDateTime =
+		IdImpl.interpolate_localDateTime(sc, args*)

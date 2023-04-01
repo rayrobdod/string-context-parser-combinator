@@ -20,4 +20,12 @@ object ToExprMapping {
 			}
 		}
 	}
+
+	def toExprId:ToExprMapping[Id, IdToExpr, Class] = {
+		new ToExprMapping[Id, IdToExpr, Class] {
+			def apply[A](value:A, fn: IdToExpr[A], tpe: Class[A]):Id[A] = {
+				value
+			}
+		}
+	}
 }

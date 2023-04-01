@@ -92,5 +92,18 @@ package object datetime {
 		object localdatetime {
 			def apply(args:Any*):LocalDateTime = macro MacroImpl.interpolate_localDateTime
 		}
+
+
+		object localdate2 {
+			def apply(args:Any*):LocalDate = IdImpl.interpolate_localDate(backing, args:_*)
+		}
+
+		object localtime2 {
+			def apply(args:Any*):LocalTime = IdImpl.interpolate_localTime(backing, args:_*)
+		}
+
+		object localdatetime2 {
+			def apply(args:Any*):LocalDateTime = IdImpl.interpolate_localDateTime(backing, args:_*)
+		}
 	}
 }

@@ -32,6 +32,50 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 ) extends VersionSpecificInterpolator[Expr, A] {
 
 	/**
+	 * Processes an immediate string context and its arguments into a value
+	 * @group Parse
+	 */
+	def interpolate(sc:StringContext, args:List[Any])(implicit ev: Any <:< Expr):A = {
+		implicit val given_Int_Position:Position[Int] = new Position[Int] {
+			def offset(pos:Int, offset:Int):Int = pos + offset
+		}
+
+		val argString = "${}"
+		val strings = sc.parts.foldLeft((List.empty[(String, Int)], 0)){(folding, part) =>
+			val (prevStrings, pos) = folding
+			((part, pos) :: prevStrings, pos + part.size + argString.size)
+		}._1.reverse
+		val argWithPoss = args.zip(strings).map({(argStrPos) =>
+			val (arg, (str, pos)) = argStrPos
+			(ev(arg), pos + str.size)
+		}).toList
+
+		val input = new Input[Expr, Int](strings, argWithPoss)
+
+		impl.interpolate(input) match {
+			case s:Success[_, _, _] => {
+				s.choicesHead.value
+			}
+			case f:Failure[Int] => {
+				val msg = f.expecting match {
+					case ExpectingSet.Empty() => "Parsing Failed"
+					case ExpectingSet.NonEmpty(position, descriptions) => {
+						val exp = descriptions.mkString("Expected ", " or ", "")
+						val instr = sc.parts.mkString(argString)
+						val pointer = (" " * position) + "^"
+
+						s"$exp\n\t$instr\n\t$pointer"
+					}
+				}
+				throw new Exception(msg)
+			}
+		}
+
+	}
+
+
+
+	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
 	 * @group Map
 	 */
@@ -282,6 +326,20 @@ object Interpolator
 		 * @group Arg
 		 */
 		def OfType[A](implicit tpe:Type[A]):Interpolator[Expr[A]]
+	}
+
+	/**
+	 * Returns an Interpolators that can parse raw values
+	 * @group InterpolatorGroup
+	 */
+	def idInterpolators: Interpolators[Id, IdToExpr, Class] = {
+		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
+			override def DelayedConstruction[A](fn:Function0[SCInterpolator[Any, A]]):SCInterpolator[Any, A] =
+				new SCInterpolator(new internal.DelayedConstruction(fn))
+
+			override def OfType[A](implicit tpe: Class[A]): Interpolator[A] =
+				new Interpolator(new internal.OfClass(tpe))
+		}
 	}
 }
 
