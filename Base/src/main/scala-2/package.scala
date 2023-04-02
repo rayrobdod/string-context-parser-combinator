@@ -15,12 +15,12 @@ package object stringContextParserCombinator {
 	type IdToExpr[A] = =:=[A, A]
 
 	private[stringContextParserCombinator]
-	val Name = new Extractor[Universe#Name, String] {
+	val Name = new Unapply.Fixed[Universe#Name, String] {
 		def unapply(input:Universe#Name):Option[String] = Option(input.decodedName.toString)
 	}
 
 	private[stringContextParserCombinator]
-	def stringContextApply(c:Context):Extractor[c.Tree, List[c.Expr[String]]] = new Extractor[c.Tree, List[c.Expr[String]]] {
+	def stringContextApply(c:Context):Unapply.Fixed[c.Tree, List[c.Expr[String]]] = new Unapply.Fixed[c.Tree, List[c.Expr[String]]] {
 		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Option[List[c.Expr[String]]] = tree.duplicate match {
 			case c.universe.Apply(
@@ -38,7 +38,7 @@ package object stringContextParserCombinator {
 	}
 
 	private[stringContextParserCombinator]
-	def selectChain(c:Context, name:String):Extractor0[c.Tree] = new Extractor0[c.Tree] {
+	def selectChain(c:Context, name:String):Unapply.Zero[c.Tree] = new Unapply.Zero[c.Tree] {
 		import c.universe._ // ApplyTag, SelectTag etc.
 		def unapply(tree:c.Tree):Boolean = {
 			if (name.contains(".")) {
@@ -82,10 +82,6 @@ package object stringContextParserCombinator {
 }
 
 package stringContextParserCombinator {
-	/** An object that can be a pattern-match pattern */
-	private[stringContextParserCombinator] trait Extractor0[A] {def unapply(a:A):Boolean}
-	/** An object that can be a pattern-match pattern */
-	private[stringContextParserCombinator] trait Extractor[A,Z] {def unapply(a:A):Option[Z]}
 	/** Support for [[Interpolator.ScopedInterpolators.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
 
