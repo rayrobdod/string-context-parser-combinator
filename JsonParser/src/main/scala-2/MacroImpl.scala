@@ -84,7 +84,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 	}
 
-	private[this] val LeafParsers = Interpolator.scoped(c)
+	private[this] implicit val thisCToExpr = typeclass.ToExprMapping.toExprContext(c)
+	private[this] val LeafParsers = Interpolator.macroInterpolators(c)
 	import LeafParsers._
 
 	private[this] def CharFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] = CharWhere(pf.isDefinedAt).flatMap(pf.apply)
@@ -142,7 +143,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		)
 		val JCharP:Interpolator[Char] = JCharEscaped orElse JCharImmediate
 		val JCharsI:Interpolator[c.Expr[String]] = JCharP.repeat(1, strategy = RepeatStrategy.Possessive)
-			.map(x => c.Expr(c.universe.Literal(c.universe.Constant(x))))
+			.mapToExpr
 		val LiftedV:Interpolator[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
 			myLiftFunction[JString, Lift.String],
 			"A for Lift[A, JString]"

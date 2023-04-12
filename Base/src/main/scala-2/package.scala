@@ -3,11 +3,17 @@ package com.rayrobdod
 import scala.Predef.refArrayOps
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
+import scala.Predef._
 
 /**
  * A library for implementing StringContext methods via Interpolator Combinators
  */
 package object stringContextParserCombinator {
+	/** An identity context - for parsing outside of a macro */
+	type Id[+A] = A
+	/** An identity function for lifting into the identity context */
+	type IdToExpr[A] = =:=[A, A]
+
 	private[stringContextParserCombinator]
 	val Name = new Extractor[Universe#Name, String] {
 		def unapply(input:Universe#Name):Option[String] = Option(input.decodedName.toString)

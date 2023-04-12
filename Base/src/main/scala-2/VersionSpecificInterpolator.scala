@@ -76,38 +76,35 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 private[stringContextParserCombinator]
 trait VersionSpecificInterpolatorModule {
 	/**
-	 * Create a ScopedInterpolators for the provided Context
+	 * Create a Interpolators that can parse Exprs belonging to the specified Context
+	 * @group InterpolatorGroup
 	 */
-	def scoped(c:Context):Interpolator.ScopedInterpolators {
-		type Context = c.type
-	} = new Interpolator.ScopedInterpolators {
-		type Context = c.type
-		override val ctx:Context = c
+	def macroInterpolators(c:Context):Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
+		new Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag]
+				with ExprIndependentInterpolators[c.Expr[Any]]
+				with LiftedInterpolator[c.type] {
+			def DelayedConstruction[A](fn:Function0[Interpolator[A]]):Interpolator[A] =
+				new Interpolator[A](new internal.DelayedConstruction(fn))
+
+			override def OfType[A](implicit tpe: c.TypeTag[A]): Interpolator[c.Expr[A]] =
+				new Interpolator[c.Expr[A]](new internal.OfType[c.type, A](tpe))
+
+			override def Lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]):Interpolator[Z] =
+				new Interpolator[Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
+		}
 	}
-}
-
-private[stringContextParserCombinator]
-trait VersionSpecificScopedInterpolators {
-	type Context <: scala.reflect.macros.blackbox.Context
-	val ctx:Context
-	/** The expr type of the created parsers */
-	type InterpolatorExpr = ctx.Expr[_]
-	/** The parser type, with the input parameter concretized */
-	type Interpolator[A] = SCInterpolator[InterpolatorExpr, A]
 
 	/**
-	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
-	 * @group Arg
-	 */
-	def OfType[A](implicit tpe:ctx.TypeTag[A]):Interpolator[ctx.Expr[A]] =
-		new SCInterpolator(new internal.OfType[ctx.type, A](tpe))
-
-	/**
-	 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 	 *
-	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
-	 * @group Arg
+	 * @group InterpolatorGroup
 	 */
-	def Lifted[Lifter[_], Z](lift:LiftFunction[ctx.type, Lifter, Z], description:String)(implicit lifterTypeTag:ctx.TypeTag[Lifter[_]]):Interpolator[Z] =
-		new SCInterpolator(internal.Lifted(ctx)(lift, ExpectingDescription(description)))
+	trait LiftedInterpolator[C <: Context with Singleton] {
+		/**
+		 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
+		 *
+		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+		 * @group Arg
+		 */
+		def Lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCInterpolator[C#Expr[Any], Z]
+	}
 }

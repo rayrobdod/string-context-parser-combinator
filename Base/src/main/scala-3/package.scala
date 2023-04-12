@@ -28,6 +28,10 @@ package object stringContextParserCombinator {
 package stringContextParserCombinator {
 	/** Support for [[Interpolator.Lifted]]; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[-CC[_], +Z] {def apply[A](lifter:Expr[CC[A]], elem:Expr[A])(using Type[A], Quotes):Z}
+	/** An identity context - for parsing outside of a macro */
+	type Id[+A] = A
+	/** An identity function for lifting into the identity context */
+	type IdToExpr[A] = =:=[A, A]
 
 
 	/*

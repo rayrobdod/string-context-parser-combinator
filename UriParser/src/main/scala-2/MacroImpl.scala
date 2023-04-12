@@ -50,10 +50,11 @@ object MacroImpl {
 	}
 
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
-		val LeafParsers = Interpolator.scoped(c)
+		val LeafParsers = Interpolator.macroInterpolators(c)
 		import LeafParsers._
 		import c.universe.Quasiquote
 
+		implicit val thisCToExpr = typeclass.ToExprMapping.toExprContext(c)
 		val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr(c.universe.Literal(c.universe.Constant(x)))}
 		val constNullExpr:c.Expr[Null] = c.Expr(c.universe.Literal(c.universe.Constant(null)))
 		val constNegOneExpr:c.Expr[Int] = c.Expr(c.universe.Literal(c.universe.Constant(-1)))
@@ -82,19 +83,19 @@ object MacroImpl {
 		val UriChar:Interpolator[CodePoint] = UriNoSlashChar orElse CodePointIn("/")
 
 		val SchemeP:Interpolator[c.Expr[String]] = {
-			val Literal:Interpolator[c.Expr[String]] = (AlphaChar andThen (AlphaNumChar orElse CodePointIn("+-.")).repeat()).map(constExpr)
+			val Literal:Interpolator[c.Expr[String]] = (AlphaChar andThen (AlphaNumChar orElse CodePointIn("+-.")).repeat()).mapToExpr
 			Literal
 		}
 
 		val UserInfoP:Interpolator[c.Expr[String]] = {
-			val Literal:Interpolator[c.Expr[String]] = (UnreservedChar orElse EscapedChar orElse CodePointIn(";:&=+$,")).repeat().map(constExpr)
+			val Literal:Interpolator[c.Expr[String]] = (UnreservedChar orElse EscapedChar orElse CodePointIn(";:&=+$,")).repeat().mapToExpr
 			Literal
 		}
 
 		val HostP:Interpolator[c.Expr[String]] = {
 			val label:Interpolator[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
 			val topLabel:Interpolator[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
-			val LiteralName:Interpolator[c.Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).map(constExpr).opaque("HostName")
+			val LiteralName:Interpolator[c.Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).mapToExpr.opaque("HostName")
 			val LiteralIpv4:Interpolator[c.Expr[String]] = {
 				val Segment:Interpolator[String] = (
 					IsString("0").map(_ => "0") orElse
@@ -106,7 +107,7 @@ object MacroImpl {
 						).optionally()) orElse
 						(CodePointIn("3456789") andThen DigitChar.optionally())
 				)
-				(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).map(constExpr).opaque("IPv4 Address")
+				(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).mapToExpr.opaque("IPv4 Address")
 			}
 			val LiteralIpv6:Interpolator[c.Expr[String]] = {
 				val Segment:Interpolator[String] = HexChar.repeat(1,4)
@@ -135,7 +136,7 @@ object MacroImpl {
 						))
 					))
 				) andThen CodePointIn("]")
-				Regex.map(constExpr).opaque("IPv6 Address")
+				Regex.mapToExpr.opaque("IPv6 Address")
 			}
 			/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 			val VariableInetAddress:Interpolator[c.Expr[String]] = OfType(c.typeTag[java.net.InetAddress])
@@ -168,18 +169,18 @@ object MacroImpl {
 
 		val OpaquePartP:Interpolator[c.Expr[String]] = {
 			val Variable:Interpolator[c.Expr[String]] = OfType[String]
-			val Literal:Interpolator[c.Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).map(constExpr)
+			val Literal:Interpolator[c.Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).mapToExpr
 			(Variable orElse Literal).repeat().map(xs => concatenateStrings(c)(xs))
 		}
 
 
 		/* We don't really care about the structure of the absolute path, so don't bother with the Segments / Segment / Param / ParamC subparsers */
 		val AbsPathP:Interpolator[String] = (CodePointIn("/") andThen (UnreservedChar orElse EscapedChar orElse CodePointIn(":@&=+$,;/")).repeat())
-		val AbsPathExprP:Interpolator[c.Expr[String]] = AbsPathP.map(constExpr)
+		val AbsPathExprP:Interpolator[c.Expr[String]] = AbsPathP.mapToExpr
 
 
 		val FragmentOrQueryString:Interpolator[c.Expr[String]] = {
-			val Arbitrary = (OfType[String] orElse UriChar.repeat(1).map(constExpr))
+			val Arbitrary = (OfType[String] orElse UriChar.repeat(1).mapToExpr)
 				.repeat()
 				.map(xs => concatenateStrings(c)(xs))
 			val Mapping = {
@@ -198,11 +199,11 @@ object MacroImpl {
 					def result(acc:Acc):List[A] = acc.result()
 				}
 				implicit def ListRepeatTypes[A]:typeclass.Repeated[List[A], List[A]] = new ListRepeatTypes[A]
-				val EqualsChar = CodePointIn("=").map(x => constExpr(x.toString))
-				val AndChar = CodePointIn("&").map(x => constExpr(x.toString))
+				val EqualsChar = CodePointIn("=").map(_.toString).mapToExpr
+				val AndChar = CodePointIn("&").map(_.toString).mapToExpr
 
 				val tupleConcatFun = q""" {ab:(String, String) => ab._1 + "=" + ab._2} """
-				val lit:Interpolator[c.Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().map(constExpr)
+				val lit:Interpolator[c.Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().mapToExpr
 				val str:Interpolator[c.Expr[String]] = OfType[String]
 				val str2:Interpolator[c.Expr[String]] = str orElse lit
 				val pair:Interpolator[List[c.Expr[String]]] = OfType(c.typeTag[scala.Tuple2[String, String]])

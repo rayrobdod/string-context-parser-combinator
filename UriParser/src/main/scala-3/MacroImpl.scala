@@ -47,19 +47,19 @@ object MacroImpl {
 	private val UriChar:Interpolator[CodePoint] = UriNoSlashChar orElse CodePointIn("/")
 
 	private def SchemeP(using Quotes):Interpolator[Expr[String]] = {
-		val Literal:Interpolator[Expr[String]] = (AlphaChar andThen (AlphaNumChar orElse CodePointIn("+-.")).repeat()).map(Expr.apply _)
+		val Literal:Interpolator[Expr[String]] = (AlphaChar andThen (AlphaNumChar orElse CodePointIn("+-.")).repeat()).mapToExpr
 		Literal
 	}
 
 	private def UserInfoP(using Quotes):Interpolator[Expr[String]] = {
-		val Literal:Interpolator[Expr[String]] = (UnreservedChar orElse EscapedChar orElse CodePointIn(";:&=+$,")).repeat().map(Expr.apply _)
+		val Literal:Interpolator[Expr[String]] = (UnreservedChar orElse EscapedChar orElse CodePointIn(";:&=+$,")).repeat().mapToExpr
 		Literal
 	}
 
 	private def HostP(using Quotes):Interpolator[Expr[String]] = {
 		val label:Interpolator[String] = AlphaNumChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
 		val topLabel:Interpolator[String] = AlphaChar andThen ((AlphaNumChar orElse CodePointIn("-")).repeat(strategy = Greedy) andThen AlphaNumChar).optionally()
-		val LiteralName:Interpolator[Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).map(Expr.apply _)
+		val LiteralName:Interpolator[Expr[String]] = ((label andThen CodePointIn(".")).attempt.repeat() andThen topLabel).mapToExpr
 		val LiteralIpv4:Interpolator[Expr[String]] = {
 			val Segment:Interpolator[String] = (
 				IsString("0").map(_ => "0") orElse
@@ -71,7 +71,7 @@ object MacroImpl {
 					).optionally()) orElse
 					(CodePointIn("3456789") andThen DigitChar.optionally())
 			)
-			(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).map(Expr.apply _).opaque("IPv4 Address")
+			(Segment andThen (CodePointIn(".") andThen Segment).repeat(3,3)).mapToExpr.opaque("IPv4 Address")
 		}
 		val LiteralIpv6:Interpolator[Expr[String]] = {
 			val Segment:Interpolator[String] = HexChar.repeat(1,4)
@@ -100,7 +100,7 @@ object MacroImpl {
 					))
 				))
 			) andThen CodePointIn("]")
-			Regex.map(Expr.apply _).opaque("IPv6 Address")
+			Regex.mapToExpr.opaque("IPv6 Address")
 		}
 		/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 		val VariableInetAddress:Interpolator[Expr[String]] = OfType[java.net.InetAddress]
@@ -111,7 +111,7 @@ object MacroImpl {
 	private def PortP(using Quotes):Interpolator[Expr[Int]] = {
 		val Literal:Interpolator[Expr[Int]] = DigitChar.repeat(1)
 			.map({x => java.lang.Integer.parseInt(x)})
-			.map(Expr.apply _)
+			.mapToExpr
 		val LiteralEmpty:Interpolator[Expr[Int]] = IsString("").map({_ => Expr.apply(-1)})
 		val Variable:Interpolator[Expr[Int]] = OfType[Int]
 		Variable orElse Literal orElse LiteralEmpty
@@ -132,18 +132,18 @@ object MacroImpl {
 
 	private def OpaquePartP(using Quotes):Interpolator[Expr[String]] = {
 		val Variable:Interpolator[Expr[String]] = OfType[String]
-		val Literal:Interpolator[Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).map(Expr.apply _)
+		val Literal:Interpolator[Expr[String]] = (UriNoSlashChar andThen UriChar.repeat()).mapToExpr
 		(Variable orElse Literal).repeat().map(xs => concatenateStrings(xs))
 	}
 
 
 	/* We don't really care about the structure of the absolute path, so don't bother with the Segments / Segment / Param / ParamC subparsers */
 	private val AbsPathP:Interpolator[String] = (CodePointIn("/") andThen (UnreservedChar orElse EscapedChar orElse CodePointIn(":@&=+$,;/")).repeat())
-	private def AbsPathExprP(using Quotes):Interpolator[Expr[String]] = AbsPathP.map(Expr.apply _)
+	private def AbsPathExprP(using Quotes):Interpolator[Expr[String]] = AbsPathP.mapToExpr
 
 
 	private def FragmentOrQueryString(using Quotes):Interpolator[Expr[String]] = {
-		val Arbitrary = (OfType[String] orElse UriChar.repeat(1).map(Expr.apply _))
+		val Arbitrary = (OfType[String] orElse UriChar.repeat(1).mapToExpr)
 			.repeat()
 			.map(xs => concatenateStrings(xs))
 		val Mapping = {
@@ -162,7 +162,7 @@ object MacroImpl {
 			val AndChar = CodePointIn("&").map(x => Expr.apply(x.toString))
 
 			val tupleConcatFun = '{ {(ab:Tuple2[String, String]) => ab._1 + "=" + ab._2} }
-			val lit:Interpolator[Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().map(Expr.apply _)
+			val lit:Interpolator[Expr[String]] = (EscapedChar orElse UnreservedChar orElse CodePointIn(";?:@+$,")).repeat().mapToExpr
 			val str:Interpolator[Expr[String]] = OfType[String]
 			val str2:Interpolator[Expr[String]] = str orElse lit
 			val pair:Interpolator[List[Expr[String]]] = OfType[scala.Tuple2[String, String]]
