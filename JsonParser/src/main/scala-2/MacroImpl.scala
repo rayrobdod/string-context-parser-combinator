@@ -84,7 +84,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 	}
 
-	private[this] implicit val thisCToExpr = typeclass.ToExprMapping.toExprContext(c)
+	private[this] implicit val thisCToExpr = typeclass.ToExprMapping.forContext(c)
 	private[this] val LeafParsers = Interpolator.macroInterpolators(c)
 	import LeafParsers._
 

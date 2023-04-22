@@ -63,7 +63,7 @@ object MacroImpl {
 			(hour, minute, second, nano) =>
 				'{ LocalTime.of($hour, $minute, $second, $nano) }
 		)(using
-			typeclass.ToExprMapping.toExprQuoted,
+			typeclass.ToExprMapping.forQuoted,
 			implicitly[quoted.Type[Int]],
 			implicitly[quoted.Type[Year]],
 			implicitly[quoted.Type[Month]],

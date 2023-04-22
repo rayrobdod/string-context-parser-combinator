@@ -12,7 +12,7 @@ trait ToExprMapping[Expr[_], ToExpr[_], Type[_]] {
 /** Predefined implicit implementations of ToExprMapping */
 object ToExprMapping {
 	import quoted._
-	given toExprQuoted(using Quotes):ToExprMapping[Expr, ToExpr, Type] = {
+	given forQuoted(using Quotes):ToExprMapping[Expr, ToExpr, Type] = {
 		new ToExprMapping[Expr, ToExpr, Type] {
 			def apply[A](value:A, fn:ToExpr[A], tpe: Type[A]):Expr[A] = {
 				Expr[A](value)(using fn)
@@ -20,7 +20,7 @@ object ToExprMapping {
 		}
 	}
 
-	def toExprId:ToExprMapping[Id, IdToExpr, Class] = {
+	def forId:ToExprMapping[Id, IdToExpr, Class] = {
 		new ToExprMapping[Id, IdToExpr, Class] {
 			def apply[A](value:A, fn: IdToExpr[A], tpe: Class[A]):Id[A] = {
 				value

@@ -19,7 +19,7 @@ package datetime {
 		import timeLiftables._
 		private[this] val timeUnliftables = TimeUnliftables(c)
 		import timeUnliftables._
-		private[this] implicit val thisCToExpr = typeclass.ToExprMapping.toExprContext(c)
+		private[this] implicit val thisCToExpr = typeclass.ToExprMapping.forContext(c)
 
 		import TimeParsers.intTwoDigits
 

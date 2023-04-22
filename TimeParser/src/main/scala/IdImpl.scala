@@ -21,7 +21,7 @@ object IdImpl {
 		(ym) => intTwoDigits(1, ym.lengthOfMonth).map(day => ym.atDay(day)),
 		java.time.LocalTime.of _
 	)(
-		typeclass.ToExprMapping.toExprId,
+		typeclass.ToExprMapping.forId,
 		classOf[Int],
 		classOf[Year],
 		classOf[Month],

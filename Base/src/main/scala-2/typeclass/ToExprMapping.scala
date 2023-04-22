@@ -13,7 +13,7 @@ trait ToExprMapping[Expr[_], ToExpr[_], Type[_]] {
 
 /** Predefined implicit implementations of ToExprMapping */
 object ToExprMapping {
-	def toExprContext(c:Context):ToExprMapping[c.Expr, c.universe.Liftable, c.TypeTag] = {
+	def forContext(c:Context):ToExprMapping[c.Expr, c.universe.Liftable, c.TypeTag] = {
 		new ToExprMapping[c.Expr, c.universe.Liftable, c.TypeTag] {
 			def apply[A](value:A, fn:c.universe.Liftable[A], tpe: c.TypeTag[A]):c.Expr[A] = {
 				c.Expr[A](fn(value))(tpe)
@@ -21,7 +21,7 @@ object ToExprMapping {
 		}
 	}
 
-	def toExprId:ToExprMapping[Id, IdToExpr, Class] = {
+	def forId:ToExprMapping[Id, IdToExpr, Class] = {
 		new ToExprMapping[Id, IdToExpr, Class] {
 			def apply[A](value:A, fn: IdToExpr[A], tpe: Class[A]):Id[A] = {
 				value
