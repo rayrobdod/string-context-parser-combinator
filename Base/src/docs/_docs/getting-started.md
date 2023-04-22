@@ -2,206 +2,309 @@
 title: Getting Started
 ---
 
-For our first parser, we'll implement a string interpolator equivalent to the standard `s` interpolator. To start with,
-we'll create a `s2` StringContext extension, same as we would for any other StringContext extension macro, and the
-scaffold for a method implementing this macro.
+For our first parser, we'll implement a string interpolator equivalent to the standard `s` interpolator.
+That is, an interpolator that builds a string consisting of the concatenation of literal parts and arguments converted to strings using `toString`.
 
-```scala sc:nocompile
-extension (inline sc:StringContext)
-  inline def s2(inline args:Any*):String =
-    ${s2impl('sc, 'args)}
+The crux of parser combinators is creating a parser by combining smaller parsers together,
+so we'll start with a small parser and build up to a parser with the desired properties.
 
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = ???
-```
-
-From here on, every change will be in the macro impl function; we'll iterate on s2impl until we get our final parser.
-
-We'll start by creating a Parser that will match one of any character from the processed string. `CharWhere` is one of
-the leaf parsers that can be used for this; `CharWhere` takes a predicate and a description of the predicate, used for
-error reporting; if the next character passes the predicate, then the CharWhere parser matches the character and
-captures the character. Since we want this parser to match any character, we will use a predicate that always returns
-true.
-
-The result of this parser will be a `Char`, but since we know that we want our macro to return a `Expr[String]` (and
-since it has to return an `Expr[_]` since it is a macro), we will force the result into this shape to test the macro.
+The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|com.rayrobdod.stringContextParserCombinator.Interpolator$#idInterpolators-0]].
+And we're [[defining a new string interpolation|https://docs.scala-lang.org/overviews/core/string-interpolation.html#advanced-usage]].
+So, the scaffolding will look something like:
 
 ```scala
-import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+//{
+type Result
+//}
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true)
-
-  val result = anyChar.interpolate(sc, args)
-  // `result` is a `Char`. Stringify the result and wrap it to fit the required shape.
-  Expr(s"$result")
-}
+extension (sc:StringContext)
+  def prefix(args:Any*):Result =
+    val interpolator:Interpolator[Result] = ???
+    interpolator.interpolate(sc, args)
 ```
 
-```
-s2"Hello" == "H"
-s2"${name}" fails with Expected anyChar
+We'll start by creating a Interpolator that will match one of any character from the processed string.
+[[CharWhere|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.CharWhere]] is one of the leaf parsers that can be used for this;
+`CharWhere` takes a predicate and creates a parser in which,
+if the next character passes the predicate, the parser passes and the character is captured.
+Since we want this parser to match any character,
+we will use a predicate that always returns true.
+
+```scala
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
+extension (sc:StringContext)
+  def s2(args:Any*):Char =
+    val anyChar = CharWhere(_ => true)
+    anyChar.interpolate(sc, args)
+
+s2"Hello" // 'H'
+s2"${1 + 1}" // throws
+s2"" // throws
 ```
 
 Note that the parser matches the first character if there is one. Parsing starts at the start of the processed string.
 
-Using a parser that can match one of any character, we can create a parser that can match a sequence of characters using
-the `repeat` operator. The repeat operator creates a parser that will invoke the operand repeatedly until the operand
-parser fails, and then combine the results of the repeated operand runs into a new value. In this case, since the
-operand is a `Interpolator[Char]`, the result is a `Interpolator[String]`.
+Using this parser that can match one of any character,
+we can create a parser that can match a sequence of characters using the [[repeat|com.rayrobdod.stringContextParserCombinator.Interpolator.repeat]] operator.
+The `repeat` operator creates a parser that will invoke the operand repeatedly until the operand parser fails,
+and then combine the results of the repeated operand runs into a new value.
+Using the default givens, since the operand is a `Interpolator[Char]`, the result is a `Interpolator[String]`.
 
 ```scala
 //{
-import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
 //}
+extension (sc:StringContext)
+  def s2(args:Any*):String =
+    val anyChars = CharWhere(_ => true)
+        .repeat()
+    anyChars.interpolate(sc, args)
 
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true)
-  val anyChars = anyChar.repeat()
-
-  val result = anyChars.interpolate(sc, args)
-  // `result` is a `String`. wrap it to fit the required shape.
-  Expr(s"$result")
-}
+s2"Hello" // "Hello"
+val name = "Mr. Smith"
+s2"Hello ${name}!" // "Hello "
+s2"" // ""
 ```
 
-```
-s2"Hello." == "Hello."
-s2"Hello ${name}!" == "Hello "
-```
-
-Now, we'd like our parser to directly return an `Expr[String]`, instead of returning whatever and requiring us to
-transform it outside of the parser. Especially since after this, we'll be dealing with args that are already `Expr`s.
-
-The map operator takes a `Interpolator[A]` and a mapping `A => B` and will create a parser which will consume the same input
-an the input parser, but will return the result of applying the mapping to the input parser's result. In this case, we
-want `anyChars` to return a `Expr[String]` instead of a `String`, so we will apply a mapping of `String => Expr[String]`
-to the parser.
+Next, lets handle processed string arguments.
+We will set aside `anyChars` for now.
+Of the leaf parsers that handle args, [[OfType|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.OfType]] is the most straightforward.
+`OfType` takes a type argument and type evidence (in this case a Class) and will match and capture any argument that is a subtype of that class.
+So, an `OfType[Int]` would match any argument that is an `Int` or a subclass of `Int`.
+Since we want to match any argument, we will use `OfType[Any]`.
+The result of running this parser is the same as its type parameter, in this case `Any`.
 
 ```scala
 //{
-import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
 //}
+extension (sc:StringContext)
+  def s2(args:Any*):Any =
+    val anyArg = OfType[Any](classOf[Any])
+    anyArg.interpolate(sc, args)
 
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true)
-  val anyChars = anyChar.repeat(1).map(str => Expr(str))
-
-  anyChars.interpolate(sc, args)
-}
+s2"${2 + 2}" // 4
+s2"Hello" // throws: Expected OfType[Object]
 ```
 
-This version is functionally equivalent to the previous version.
+We don't want the result of the interpolator to be an Any here, though; we want the result to be a String.
 
-Next, lets handle processed string arguments. We will set aside `anyChars` for now. Of the leaf parsers that handle
-args, `OfType` is the simplest to use. An `OfType` takes a type parameter and will match any argument of that type and
-return that argument. So, an `OfType[Int]` would match any argument that is an `Expr[Int]` or a subclass of Int. Since
-we want to match any Expr, we will use `OfType[Any]`. The result of running this parser is `Expr[Any]`, but we want an
-`Expr[String]`, so we will map the parser using the `Any.toString` method.
+We can use the [[map|com.rayrobdod.stringContextParserCombinator.Interpolator.map]] operator to convert an interpolator on one type to an interpolator on another type.
 
 ```scala
 //{
-import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
 //}
+extension (sc:StringContext)
+  def s2(args:Any*):String =
+    val anyArg = OfType[Any](classOf[Any])
+        .map(_.toString)
+    anyArg.interpolate(sc, args)
 
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
-
-  anyArg.interpolate(sc, args)
-}
+s2"${2 + 2}" // "4"
+s2"Hello" // throws: Expected OfType[Object]
 ```
 
-```
-s2"${name}" == "Mr. Smith"
-s2"Hello ${name}!" fails with Expected OfType[Any]
-```
+Now that we have one parser that will match a sequence of characters and another that will match an arg,
+we can create a parser that will match either a sequence of characters or an arg by combing the two other parsers using the [[orElse|com.rayrobdod.stringContextParserCombinator.Interpolator.orElse]] operator.
+The `orElse` operator creates a parser that will attempt the left parser,
+passing the result of left parser if the result was a success,
+otherwise attempting the right parser and passing that result.
 
-Now that we have one parser that will match a sequence of characters and another that will match an arg, we can create a
-parser that will match either a sequence of characters or an arg by combing the two other parsers using the `orElse`
-operator. The `orElse` operator creates a parser that will attempt the left parser, passing the result of left parser if
-the result was a success, otherwise attempting the right parser and passing that result. Since both arguments to the
-orElse operator are `Interpolator[Expr[String]]`, the result of the operator will also be a `Interpolator[Expr[String]]`
+Using the default givens, since both arguments to the orElse operator are `Interpolator[String]`,
+the result of the operator will also be a `Interpolator[String]`
 
 ```scala
 //{
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
+//}
+extension (sc:StringContext)
+  def s2(args:Any*):String =
+    val anyChars = CharWhere(_ => true)
+        .repeat()
+    val anyArg = OfType[Any](classOf[Any])
+        .map(_.toString)
+    val segment = anyChars orElse anyArg
+    segment.interpolate(sc, args)
+
+s2"2 + 2 = ${2 + 2}" // "2 + 2 = "
+s2"${2 + 2}" // ""
+```
+
+Oh, the parser didn't do quite what we wanted.
+Here, the parser saw that the processed string started with zero characters and considered that to be a match of the `anyChars` branch.
+To fix this, we are going to modify the `repeat` call in `anyChars`.
+`repeat` has several optional arguments,
+the first of which is the minimum number of repeats required for the parse to be considered a success.
+This argument defaults to zero, but if it is explicitly set to one and the processed string starts with an arg,
+then `anyChars` will not consider a run of zero characters to be a success,
+and `segment` will try the `anyArg` branch after the `anyChars` branch fails.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
+//}
+extension (sc:StringContext)
+  def s2(args:Any*):String =
+    val anyChars = CharWhere(_ => true)
+        .repeat(1)
+    val anyArg = OfType[Any](classOf[Any])
+        .map(_.toString)
+    val segment = anyChars orElse anyArg
+    segment.interpolate(sc, args)
+
+s2"2 + 2 = ${2 + 2}" // "2 + 2 = "
+s2"${2 + 2} = 2 + 2" // "4"
+```
+
+Now that we have a parser that can match either a run of characters or an argument,
+we can `repeat` that parser to create a parser that can match a sequence of character-sequences-or-arguments.
+This time, since the input to the repeat parser is a `Interpolator[String]`, the result will be a `Interpolator[List[String]]`.
+In general, unless a higher priority instance of the Repeated typeclass can be found, `repeat` will create a parser that produces a `Seq[A]`;
+the `Char` to `String` seen before was a built-in higher priority Repeated typeclass instance.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
+//}
+extension (sc:StringContext)
+  def s2(args:Any*):List[String] =
+    val anyChars = CharWhere(_ => true)
+        .repeat(1)
+    val anyArg = OfType[Any](classOf[Any])
+        .map(_.toString)
+    val segment = anyChars orElse anyArg
+    val segments = segment
+        .repeat()
+    segments.interpolate(sc, args)
+
+s2"2 + 2 = ${2 + 2}" // List("2 + 2 = ", "4")
+s2"${2 + 2} = 2 + 2" // List("4", " = 2 + 2")
+```
+
+We have a `Interpolator[Seq[String]]`, and we can map a `Seq[String]` to an `String` to create a simple string context reimplementation.
+
+```scala
+//{
+import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+
+//}
+extension (sc:StringContext)
+  def s2(args:Any*):String =
+    val anyChars = CharWhere(_ => true)
+        .repeat(1)
+    val anyArg = OfType[Any](classOf[Any])
+        .map(_.toString)
+    val segment = anyChars orElse anyArg
+    val segments = segment
+        .repeat()
+        .map(_.mkString)
+    segments.interpolate(sc, args)
+
+s2"2 + 2 = ${2 + 2}" // "2 + 2 = 4"
+```
+
+This interpolator does work, however this interpolator works at run time.
+
+The library also supports creating marco-level parsers, that will instead run at compile time.
+There are several advantages to using a macro-based interpolator,
+
+* Interpolator parsing errors will fail at compile time, instead of being a runtime exception
+* OfType can work with types instead of classes,
+* The `Lifted` interpolator only works in the Quoted context
+
+The leaf interpolators used for a macro-based interpolator at provided in [[Interpolator.quotedInterpolators|com.rayrobdod.stringContextParserCombinator.Interpolator$#quotedInterpolators]]
+(or equivalently provided directly in the [[`Interpolator` companion object|com.rayrobdod.stringContextParserCombinator.Interpolator$]]).
+The extension method declaration changes to that of a [[macro definition|https://docs.scala-lang.org/scala3/guides/macros/macros.html]].
+
+Together the scaffolding of the string context extension method becomes
+
+```scala
+type Result
 import scala.quoted.{Expr, Quotes}
 import com.rayrobdod.stringContextParserCombinator.Interpolator._
-//}
 
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true)
-  val anyChars = anyChar.repeat().map(str => Expr(str))
-  val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
+extension (inline sc:StringContext)
+  inline def prefix(inline args:Any*):Result =
+    ${prefixImpl('sc, 'args)}
+
+def prefixImpl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Result] =
+  val interpolator:Interpolator[Expr[Result]] = ???
+  interpolator.interpolate(sc, args)
+```
+
+The `interpolate` method handles extracting string context parts and arguments from the Expr arguments.
+Most of the changes involve changing return values to be wrapped in an Expr.
+
+The `CharWhere` and the other character parsers capture `Char` values even in macro interpolators.
+However, the result must be wrapped in an `Expr`,
+so the parts must must be lifted into an Expr at some point.
+This can be done with the map operator, such as `.map(Expr(_))`, or equivalently with the [[mapToExpr|com.rayrobdod.stringContextParserCombinator.Interpolator.mapToExpr]] method.
+
+```diff
+ val anyChars = CharWhere(_ => true)
+     .repeat(1)
++    .mapToExpr
+```
+
+`OfType` changes from requiring a `java.lang.Class` and returning an immediate value,
+to requiring an implicit `scala.quoted.Type` and returning the `Expr`-wrapped value.
+Since the `OfType` result is in an `Expr`, the mapping applied to this value must be changed from a `Any => String` to a `Expr[Any] => Expr[String]`, essentially wrapping the mapping in a Quote.
+
+```diff
+-val anyArg = OfType[Any](classOf[Any])
++val anyArg = OfType[Any]
+-    .map(arg => arg.toString)
++    .map(arg => '{$arg.toString})
+```
+
+The operands that create a segment have changed from both being a `Interpolator[String]` to both being an `Interpolator[Expr[String]]`,
+so the `orElse`-combination of the two parts changes in the same way, but no source changes occur as a consequence of this.
+
+```diff
+ val segment = anyChars orElse anyArg
+```
+
+Lastly, the `segments` mapping has to be changed from a `Seq[String] => String` to a `Seq[Expr[String]] => Expr[String]`.
+
+```diff
+ val segments = segment
+     .repeat()
+-    .map(_.mkString)
++    .map(strExprs => '{${Expr.ofList(strExprs)}.mkString})
+```
+
+Taken together, the macro-level reimplementation of the standard string interpolator is as follows:
+
+```scala
+import scala.quoted.{Expr, Quotes}
+import com.rayrobdod.stringContextParserCombinator.Interpolator._
+
+extension (inline sc:StringContext)
+  inline def s2(inline args:Any*):String =
+    ${s2Impl('sc, 'args)}
+
+def s2Impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] =
+  val anyChars = CharWhere(_ => true)
+      .repeat(1)
+      .mapToExpr
+
+  val anyArg = OfType[Any]
+      .map(arg => '{$arg.toString})
+
   val segment = anyChars orElse anyArg
 
-  segment.interpolate(sc, args)
-}
+  val segments = segment
+      .repeat()
+      .map(strExprs => '{${Expr.ofList(strExprs)}.mkString})
+
+  segments.interpolate(sc, args)
 ```
-
-```
-s2"Hello ${name}!" == "Hello "
-s2"${name}" == ""
-```
-
-Oh, the parser didn't do quite what we wanted. Here, the parser saw that the string started with zero characters and
-considered that to be a match of the `anyChars` branch. To fix this, we are going to modify the `repeat` call in
-`anyChars`. `repeat` has several optional arguments, the first of which is the minimum number of repeats required for
-the parse to be considered a success. This argument defaults to zero, but if it is explicitly set to one and the
-processed string starts with an arg, then `anyChars` will not consider a run of zero characters to be a success, and
-`segment` will try the `anyArg` branch after the `anyChars` branch fails.
-
-```scala
-//{
-import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-//}
-
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true)
-  val anyChars = anyChar.repeat(1).map(str => Expr(str))
-  val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
-  val segment = anyChars orElse anyArg
-
-  segment.interpolate(sc, args)
-}
-```
-
-```
-s2"Hello ${name}!" == "Hello "
-s2"${name}" == "Mr. Smith"
-```
-
-Now that we have a parser that can match either a run of characters or an argument, we can `repeat` that parser to
-create a parser that can match a sequence of character-sequences-or-arguments. Similar to last time, however, since the
-input to the repeat parser is a `Interpolator[Expr[String]]`, the result will instead be a `Interpolator[Seq[Expr[String]]]`. In
-general, without providing a custom instance of the Repeated typeclass, `repeat` will create a parser that produces a
-`Seq[A]`; the `Char` to `String` seen before was a special case. Anyway, we have a `Interpolator[Seq[Expr[String]]]`, and we
-can map a `Seq[Expr[String]]` to an `Expr[String]`, using that mapping will give us our final parser.
-
-```scala
-//{
-import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-//}
-
-def s2impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] = {
-  val anyChar = CharWhere(_ => true)
-  val anyChars = anyChar.repeat(1).map(str => Expr(str))
-  val anyArg = OfType[Any].map(anyExpr => '{$anyExpr.toString()})
-  val segment = anyChars orElse anyArg
-  val segments = segment.repeat().map(strExprs => '{${Expr.ofList(strExprs)}.mkString})
-  // concatenation using a StringBuilder instead of List::mkString is left as an exercise for the reader
-
-  segment.interpolate(sc, args)
-}
-```
-
-```
-s2"Hello ${name}!" == "Hello Mr. Smith!"
-s2"1 + 1 = ${1 + 1}" == "1 + 1 = 2"
-```
-
-Now, we have a re-implementation of the standard string interpolator.

@@ -16,15 +16,13 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 	 *
 	 * @example
 	 * ```
-	 * def valueImpl(sc:Expr[scala.StringContext],
-	 *         args:Expr[Seq[Any]])(using Quotes):Expr[Result] = {
-	 *   val myParser:Interpolator[Expr[Result]] = ???
-	 *   myParser.interpolate(sc, args)
-	 * }
+	 * extension (inline sc:StringContext)
+	 *   inline def prefix(inline args:Any*):Result =
+	 *     ${prefixImpl('sc, 'args)}
 	 *
-	 * extension (inline sc:scala.StringContext)
-	 *	  inline def value(inline args:Any*):Result =
-	 *	    ${valueImpl('sc, 'args)}
+	 * def prefixImpl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Result] =
+	 *   val interpolator:Interpolator[Expr[Result]] = ???
+	 *   interpolator.interpolate(sc, args)
 	 * ```
 	 * @group Parse
 	 */

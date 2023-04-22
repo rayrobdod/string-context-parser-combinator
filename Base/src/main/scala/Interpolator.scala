@@ -33,9 +33,16 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 
 	/**
 	 * Processes an immediate string context and its arguments into a value
+	 * @example
+	 * ```
+	 * extension (sc:StringContext)
+	 *   def prefix(args:Any*):Result =
+	 *     val interpolator:Interpolator[Result] = ???
+	 *     interpolator.interpolate(sc, args)
+	 * ```
 	 * @group Parse
 	 */
-	def interpolate(sc:StringContext, args:List[Any])(implicit ev: Any <:< Expr):A = {
+	def interpolate(sc:StringContext, args:Seq[Any])(implicit ev: Any <:< Expr):A = {
 		implicit val given_Int_Position:Position[Int] = new Position[Int] {
 			def offset(pos:Int, offset:Int):Int = pos + offset
 		}
@@ -332,7 +339,7 @@ object Interpolator
 	 * Returns an Interpolators that can parse raw values
 	 * @group InterpolatorGroup
 	 */
-	def idInterpolators: Interpolators[Id, IdToExpr, Class] = {
+	val idInterpolators: Interpolators[Id, IdToExpr, Class] = {
 		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
 			override def DelayedConstruction[A](fn:Function0[SCInterpolator[Any, A]]):SCInterpolator[Any, A] =
 				new SCInterpolator(new internal.DelayedConstruction(fn))

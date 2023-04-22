@@ -59,9 +59,8 @@ lazy val base = (projectMatrix in file("Base"))
 		}),
 		console / initialCommands := """
 			import scala.quoted.{Expr, Quotes}
-			import com.rayrobdod.stringContextParserCombinator.{Parser => _, _}
-			import com.rayrobdod.stringContextParserCombinator.Parsers._
-			import com.rayrobdod.stringContextParserCombinator.typelevel._
+			import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+			import com.rayrobdod.stringContextParserCombinator.typeclass._
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
