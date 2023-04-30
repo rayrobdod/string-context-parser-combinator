@@ -7,6 +7,7 @@ package object json {
 	implicit final class JsonStringContext(val backing:StringContext) {
 		object json {
 			def apply(args:Any*):JValue = macro MacroImpl.stringContext_json
+			def unapply(value:JValue):Any = macro MacroImpl.stringContext_json_unapply
 		}
 	}
 }
