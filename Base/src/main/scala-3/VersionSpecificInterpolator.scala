@@ -75,7 +75,7 @@ trait VersionSpecificInterpolatorModule extends ExprIndependentInterpolators[Any
 	 * Create an Interpolators that can parse `quoted.Expr`s
 	 * @group InterpolatorGroup
 	 */
-	def macroInterpolators(using Quotes):Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type] & LiftedInterpolator = {
+	def quotedInterpolators(using Quotes):Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type] & LiftedInterpolator = {
 		new Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type]
 				with ExprIndependentInterpolators[quoted.Expr[Any]]
 				with LiftedInterpolator {

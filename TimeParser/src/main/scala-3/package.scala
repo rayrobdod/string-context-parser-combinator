@@ -46,7 +46,7 @@ object MacroImpl {
 
 	private def timeParsers(using Quotes) = {
 		val leafParsers:Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type] =
-					Interpolator.macroInterpolators
+					Interpolator.quotedInterpolators
 
 		TimeParsers(leafParsers)(
 			Expr(0),

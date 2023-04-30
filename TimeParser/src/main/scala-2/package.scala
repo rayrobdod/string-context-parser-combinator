@@ -13,7 +13,7 @@ package datetime {
 			def unapply(input:scala.reflect.api.Universe#Name):Option[String] = Option(input.decodedName.toString)
 		}
 
-		private[this] val leafParsers = Interpolator.macroInterpolators(c)
+		private[this] val leafParsers = Interpolator.contextInterpolators(c)
 		import leafParsers._
 		private[this] val timeLiftables = TimeLiftables(c)
 		import timeLiftables._

@@ -2,12 +2,13 @@ package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
-import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
+import com.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
 
 /**
- * Parses an interpolated string expression into some value
+ * Parses an interpolated string expression into some extractor
  *
- * @tparam Expr the macro-level expression type.
+ * @tparam Expr the macro-level expression type
+ * @tparam Type the macro-level type type
  * @tparam A the type of the parsed result
  *
  * @groupname Parse parse
@@ -27,15 +28,21 @@ import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpol
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] override val impl: internal.Interpolator[Expr, A]
-) extends VersionSpecificInterpolator[Expr, A] {
+final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinator] (
+		protected[stringContextParserCombinator] override val impl: internal.Extractor[Expr, Type, A]
+) extends VersionSpecificExtractor[Expr, Type, A] {
 
 	/**
-	 * Processes an immediate string context and its arguments into a value
+	 * Extract subexpressions from the given value according to the given StringContext
 	 * @group Parse
 	 */
-	def interpolate(sc:StringContext, args:List[Any])(implicit ev: Any <:< Expr):A = {
+	final def extract(
+		sc:StringContext,
+		scrutinee:A)(
+		implicit
+		ev:Id[Any] =:= Expr[Any],
+		ev2:Class[Any] =:= Type[Any]
+	):Option[Seq[Any]] = {
 		implicit val given_Int_Position:Position[Int] = new Position[Int] {
 			def offset(pos:Int, offset:Int):Int = pos + offset
 		}
@@ -45,16 +52,19 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 			val (prevStrings, pos) = folding
 			((part, pos) :: prevStrings, pos + part.size + argString.size)
 		}._1.reverse
-		val argWithPoss = args.zip(strings).map({(argStrPos) =>
-			val (arg, (str, pos)) = argStrPos
-			(ev(arg), pos + str.size)
-		}).toList
+		val argWithPoss = strings.init.map(x => (((), x._2 + x._1.size)))
 
-		val input = new Input[Expr, Int](strings, argWithPoss)
+		val input = new Input[Unit, Int](strings, argWithPoss)
+		implicit val exprs:UnapplyExprs[Id, Class] = UnapplyExprs.forId
 
-		impl.interpolate(input) match {
+		impl.asInstanceOf[internal.Extractor[Id, Class, A]].extractor(input)(implicitly, exprs) match {
 			case s:Success[_, _, _] => {
-				s.choicesHead.value
+				val expr:UnapplyExpr[Id, Class, A] = s.choicesHead.value
+				if (expr.condition(scrutinee)) {
+					Some(expr.parts.map(_.value(scrutinee)))
+				} else {
+					None
+				}
 			}
 			case f:Failure[Int] => {
 				val msg = f.expecting match {
@@ -72,74 +82,36 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		}
 	}
 
-
-
 	/**
-	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
+	 * Returns an extractor which invokes this extractor after mapping the input value using `contrafn`
 	 * @group Map
 	 */
-	def map[Z](fn:Function1[A, Z]):Interpolator[Expr, Z] =
-		new Interpolator(internal.Map.interpolator(this.impl, fn))
+	def contramap[Z](contrafn:Function1[Z, A]):Extractor[Expr, Type, Z] =
+		new Extractor(internal.Map.extractor(this.impl, contrafn))
 
 	/**
-	 * Returns a parser which invokes this parser, then maps a successful result by lifting the
-	 * successful result into an Expr
+	 * Returns an extractor which invokes the contrafn, then
+	 *   * If the Expr is true, passes the value to this extractor
+	 *   * If the Expr is false, fails the match
 	 * @group Map
 	 */
-	def mapToExpr[Z >: A, Expr2[_], ToExpr[_], Type[_]](
-		implicit mapping:typeclass.ToExprMapping[Expr2, ToExpr, Type],
-		toExpr:ToExpr[Z],
-		tpe:Type[Z]
-	):Interpolator[Expr, Expr2[Z]] = {
-		this.map(value => mapping(value, toExpr, tpe))
-	}
+	def widenWith[Z](contrafn: PartialExprFunction[Expr, Z, A]):Extractor[Expr, Type, Z] =
+		new Extractor(new internal.WidenWith(this.impl, contrafn))
 
 	/**
-	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
-	 * @group Sequence
-	 */
-	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Interpolator[ExprZ, Z]]):Interpolator[ExprZ, Z] =
-		new Interpolator(internal.FlatMap.interpolator(this.impl, fn))
-
-	/**
-	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
-	 * @group Filter
-	 */
-	def filter(predicate:Function1[A, Boolean], description:String):Interpolator[Expr, A] =
-		new Interpolator(internal.Filter.interpolator(this.impl, predicate, ExpectingDescription(description)))
-
-
-	/**
-	 * Returns a parser which invokes this parser, but has the given description upon failure
+	 * Returns a extractor which invokes this parser, but has the given description upon failure
 	 * @group ErrorPlus
 	 */
-	def opaque(description:String):Interpolator[Expr, A] =
-		new Interpolator(internal.Opaque.interpolator(this.impl, ExpectingDescription(description)))
+	def opaque(description:String):Extractor[Expr, Type, A] =
+		new Extractor(internal.Opaque.extractor(this.impl, ExpectingDescription(description)))
 
 	/**
 	 * Returns a parser which invokes this parser,
 	 * but treats the result of a failed parse as if it does not consume input
 	 * @group Misc
 	 */
-	def attempt:Interpolator[Expr, A] =
-		new Interpolator(internal.Attempt.interpolator(this.impl))
-
-	/**
-	 * Creates a parser that will
-	 *    * when interpolating, act like this parser
-	 *    * when extractoring, invoke this parser and check that the extractor input is equal to the parsed value
-	 *
-	 * The extractor parsing will probably fail if this parser expects to find holes.
-	 * @group Misc
-	 */
-	def extractorAtom[ExprZ[_], TypeZ[_], UnexprA](
-		implicit t:TypeZ[UnexprA],
-		ev:ExprZ[Any] <:< Expr,
-		ev2:A <:< ExprZ[UnexprA]
-	):Parser[ExprZ, TypeZ, ExprZ[UnexprA]] = {
-		val impl2 = this.impl.asInstanceOf[internal.Interpolator[ExprZ[Any], ExprZ[UnexprA]]]
-		new Parser(new internal.ExtractorAtom[ExprZ, TypeZ, UnexprA](impl2, t))
-	}
+	def attempt:Extractor[Expr, Type, A] =
+		new Extractor(internal.Attempt.extractor(this.impl))
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -149,8 +121,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Sequence
 	 */
-	def andThen[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
-		new Interpolator(internal.AndThen.interpolator(this.impl, rhs.impl, ev))
+	def andThen[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraSequenced[A,B,Z]):Extractor[Expr, Type, Z] =
+		new Extractor(internal.AndThen.extractor(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
@@ -163,8 +135,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @param ev A descriptor of how to treat either value as one value
 	 * @group Branch
 	 */
-	def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
-		new Interpolator(internal.OrElse.interpolator(this.impl, rhs.impl, ev))
+	def orElse[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraEithered[Expr, A,B,Z]):Extractor[Expr, Type, Z] =
+		new Extractor(internal.OrElse.extractor(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -177,14 +149,14 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @param ev A descriptor of how to combine the repeated values into one value
 	 * @group Repeat
 	 */
-	def repeat[ExprZ <: Expr, Z](
+	def repeat[Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Interpolator[ExprZ, Unit] = new Interpolator[ExprZ, Unit](new internal.Pass[Id, Id]),
+		delimiter:Extractor[Expr, Type, Unit] = new Extractor[Expr, Type, Unit](new internal.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.Repeated[A, Z]
-	):Interpolator[ExprZ, Z] =
-		new Interpolator(internal.Repeat.interpolator(this.impl, min, max, delimiter.impl, strategy, ev))
+		implicit ev:typeclass.ContraRepeated[Expr, A, Z]
+	):Extractor[Expr, Type, Z] =
+		new Extractor(internal.Repeat.extractor(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
 	 * Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed
@@ -196,14 +168,14 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.Optionally[A, Z]
-	):Interpolator[Expr, Z] =
-		new Interpolator(internal.Optionally.interpolator(this.impl, strategy, ev))
+		implicit ev:typeclass.ContraOptionally[Expr, A, Z]
+	):Extractor[Expr, Type, Z] =
+		new Extractor(internal.Optionally.extractor(this.impl, strategy, ev))
 }
 
 /**
- * @groupname InterpolatorGroup InterpolatorGroup
- * @groupprio InterpolatorGroup 3000
+ * @groupname ExtractorGroup ExtractorGroup
+ * @groupprio ExtractorGroup 3000
  * @groupname Part String-Part
  * @groupprio Part 100
  * @groupname PartAsChar String-Part as Char
@@ -219,28 +191,26 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
  * @groupname Misc Miscellaneous
  * @groupprio Misc 999
  */
-object Interpolator
-		extends VersionSpecificInterpolatorModule
-		with ExprIndependentInterpolators[Any]
+object Extractor
+		extends VersionSpecificExtractorModule
 {
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def DelayedConstruction[Expr, A](fn:Function0[SCPCInterpolator[Expr, A]]):SCPCInterpolator[Expr, A] =
-		new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
+	def DelayedConstruction[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
 	/**
-	 * A trait that provides Interpolator factory methods that conform to a particular
+	 * A trait that provides Extractor factory methods that conform to a particular
 	 * input Expr type parameter.
 	 *
-	 * In scala 3, the Interpolator companion object contains methods similar to these for quoted.Expr,
-	 * and as such this would generally by calling methods directly on Interpolator.
+	 * In scala 3, the Extractor companion object contains methods similar to these for quoted.Expr,
+	 * and as such this would generally by calling methods directly on Extractor.
 	 * However, since in scala 2 the Expr depends on a particular instance of `blackbox.Context`,
-	 * instead an Interpolators must be constructed from the Interpolator companion object's `macroInterpolators` method that takes a Context.
+	 * instead an Extractors must be constructed from the Extractor companion object's `macroExtractors` method that takes a Context.
 	 *
-	 * @group InterpolatorGroup
+	 * @group ExtractorGroup
 	 *
 	 * @groupname Part String-Part
 	 * @groupprio Part 100
@@ -257,194 +227,194 @@ object Interpolator
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Interpolators[Expr[+_], ToExpr[_], Type[_]] {
-		type Interpolator[A] = com.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
+	trait Extractors[Expr[+_], Type[_]] {
+		type Extractor[A] = com.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Set[Char]):Interpolator[Char]
+		def CharIn(str:Set[Char]):Extractor[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given Seq; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Seq[Char]):Interpolator[Char]
+		def CharIn(str:Seq[Char]):Extractor[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given String; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:String):Interpolator[Char]
+		def CharIn(str:String):Extractor[Char]
 
 		/**
 		 * Succeeds if the next character matches the given predicate; captures that character
 		 * @group PartAsChar
 		 */
-		def CharWhere(fn:Function1[Char, Boolean]):Interpolator[Char]
+		def CharWhere(fn:Function1[Char, Boolean]):Extractor[Char]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Set[CodePoint]):Interpolator[CodePoint]
+		def CodePointIn(str:Set[CodePoint]):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Seq[CodePoint]):Interpolator[CodePoint]
+		def CodePointIn(str:Seq[CodePoint]):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given string; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:String):Interpolator[CodePoint]
+		def CodePointIn(str:String):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint matches the given predicate; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointWhere(fn:Function1[CodePoint, Boolean]):Interpolator[CodePoint]
+		def CodePointWhere(fn:Function1[CodePoint, Boolean]):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next set of characters in the input is equal to the given string
 		 * @group Part
 		 */
-		def IsString(str:String):Interpolator[Unit]
+		def IsString(str:String):Extractor[Unit]
 
 		/**
 		 * A parser that consumes no input and always succeeds
 		 * @group Constant
 		 */
-		def Pass:Interpolator[Unit]
+		def Pass:Extractor[Unit]
 
 		/**
 		 * A parser that always reports a failure
 		 * @group Constant
 		 */
-		def Fail(message:String):Interpolator[Nothing]
+		def Fail(message:String):Extractor[Nothing]
 
 		/**
 		 * A parser that succeeds iff the input is empty
 		 * @group Position
 		 */
-		def End:Interpolator[Unit]
+		def End:Extractor[Unit]
 
 		/**
 		 * Indirectly refers to a parser, to allow for mutual-recursion
 		 * @group Misc
 		 */
-		def DelayedConstruction[A](fn:Function0[Interpolator[A]]):Interpolator[A]
+		def DelayedConstruction[A](fn:Function0[Extractor[A]]):Extractor[A]
 
 		/**
 		 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 		 * @group Arg
 		 */
-		def OfType[A](implicit tpe:Type[A]):Interpolator[Expr[A]]
+		def OfType[A](implicit tpe:Type[A]):Extractor[Expr[A]]
 	}
 
 	/**
-	 * Returns an Interpolators that can parse raw values
-	 * @group InterpolatorGroup
+	 * Returns an Extractors that can parse raw values
+	 * @group ExtractorGroup
 	 */
-	def idInterpolators: Interpolators[Id, IdToExpr, Class] = {
-		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
-			override def DelayedConstruction[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
-				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
+	def idExtractors: Extractors[Id, Class] = {
+		new Extractors[Id, Class] with ExprIndependentExtractors[Id, Class] {
+			override def DelayedConstruction[A](fn:Function0[Extractor[A]]):Extractor[A] =
+				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def OfType[A](implicit tpe: Class[A]): Interpolator[A] =
-				new Interpolator(new internal.OfClass(tpe))
+			override def OfType[A](implicit tpe: Class[A]): Extractor[A] =
+				new Extractor(new internal.OfClass(tpe))
 		}
 	}
 }
 
 /**
- * Interpolators that do not introduce an input dependency on Expr
+ * Extractors that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentInterpolators[Expr] {
+private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Set[Char]):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
+	def CharIn(str:Set[Char]):SCExtractor[Expr, Type, Char] =
+		new SCExtractor[Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Seq[Char]):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
+	def CharIn(str:Seq[Char]):SCExtractor[Expr, Type, Char] =
+		new SCExtractor[Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:String):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](scala.Predef.wrapString(str)))
+	def CharIn(str:String):SCExtractor[Expr, Type, Char] =
+		new SCExtractor[Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def CharWhere(fn:Function1[Char, Boolean]):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharWhere[Id, Id](fn))
+	def CharWhere(fn:Function1[Char, Boolean]):SCExtractor[Expr, Type, Char] =
+		new SCExtractor[Expr, Type, Char](internal.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Set[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
+	def CodePointIn(str:Set[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
+		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Seq[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
+	def CodePointIn(str:Seq[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
+		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:String):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
+	def CodePointIn(str:String):SCExtractor[Expr, Type, CodePoint] =
+		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointWhere[Id, Id](fn))
+	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCExtractor[Expr, Type, CodePoint] =
+		new SCExtractor[Expr, Type, CodePoint](internal.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def IsString(str:String):SCPCInterpolator[Expr, Unit] =
-		new SCPCInterpolator[Expr, Unit](internal.IsString[Id, Id](str))
+	def IsString(str:String):SCExtractor[Expr, Type, Unit] =
+		new SCExtractor[Expr, Type, Unit](internal.IsString(str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def Pass:SCPCInterpolator[Expr, Unit] =
-		new SCPCInterpolator[Expr, Unit](new internal.Pass[Id, Id])
+	def Pass:SCExtractor[Expr, Type, Unit] =
+		new SCExtractor[Expr, Type, Unit](new internal.Pass)
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def Fail(message:String):SCPCInterpolator[Expr, Nothing] =
-		new SCPCInterpolator[Expr, Nothing](new internal.Fail[Id, Id](ExpectingDescription(message)))
+	def Fail(message:String):SCExtractor[Expr, Type, Nothing] =
+		new SCExtractor[Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def End:SCPCInterpolator[Expr, Unit] =
-		new SCPCInterpolator[Expr, Unit](new internal.End[Id, Id]())
+	def End:SCExtractor[Expr, Type, Unit] =
+		new SCExtractor[Expr, Type, Unit](new internal.End())
 }
