@@ -34,6 +34,75 @@ object Repeat {
 		}
 	}
 
+	def extractor[Expr[_], Type[_], A, Z](
+		inner:Extractor[Expr, Type, A],
+		min:Int,
+		max:Int,
+		delimiter:Extractor[Expr, Type, Unit],
+		strategy:RepeatStrategy,
+		ev:typeclass.ContraRepeated[Expr, A, Z]
+	):Extractor[Expr, Type, Z] = {
+		require(min >= 0)
+		require(max >= 1)
+		require(max >= min)
+
+		new Extractor[Expr, Type, Z] {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+				Repeat.parse(
+					{(x:Input[Unit, Pos]) => inner.extractor(x)},
+					min,
+					max,
+					{(x:Input[Unit, Pos]) => delimiter.extractor(x).mapValues(_ => ())},
+					strategy,
+					true,
+					input
+				).mapValues({parts => exprs.repeated(parts, ev)})
+			}
+		}
+	}
+
+	def parser[Expr[_], Type[_], A, Z](
+		inner:Parser[Expr, Type, A],
+		min:Int,
+		max:Int,
+		delimiter:Parser[Expr, Type, Unit],
+		strategy:RepeatStrategy,
+		ev:typeclass.BiRepeated[Expr, A, Z]
+	):Parser[Expr, Type, Z] = {
+		require(min >= 0)
+		require(max >= 1)
+		require(max >= min)
+
+		new Parser[Expr, Type, Z] {
+			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+				Repeat.parse(
+					{(x:Input[ExprZ, Pos]) => inner.interpolate(x)},
+					min,
+					max,
+					{(x:Input[ExprZ, Pos]) => delimiter.interpolate(x)},
+					strategy,
+					true,
+					input
+				).mapValues({parts =>
+					val acc = ev.init()
+					parts.foreach(part => ev.append(acc, part))
+					ev.result(acc)
+				})
+			}
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+				Repeat.parse(
+					{(x:Input[Unit, Pos]) => inner.extractor(x)},
+					min,
+					max,
+					{(x:Input[Unit, Pos]) => delimiter.extractor(x).mapValues(_ => ())},
+					strategy,
+					true,
+					input
+				).mapValues({parts => exprs.repeated(parts, ev)})
+			}
+		}
+	}
+
 	private def parse[Expr, Pos : Ordering, A](
 		useInner: Input[Expr, Pos] => Result[Expr, Pos, A],
 		min:Int,

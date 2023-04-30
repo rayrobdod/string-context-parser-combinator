@@ -21,7 +21,7 @@ final class CodepointInTest extends AnyFunSpec {
 			new Input(tail._1, tail._2),
 			expecting
 		)
-		val parser = CodePointIn(parserSet)
+		val parser = CodePointIn[Id, Id](parserSet)
 		assertResult(expected){parser.interpolate(input)}
 	}
 
@@ -29,7 +29,7 @@ final class CodepointInTest extends AnyFunSpec {
 		val expected = Failure(
 			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CodePointIn(\"", "", "\")")), input.position))
 		)
-		val parser = CodePointIn(parserSet)
+		val parser = CodePointIn[Id, Id](parserSet)
 		assertResult(expected){parser.interpolate(input)}
 	}
 

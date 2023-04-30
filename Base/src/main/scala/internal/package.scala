@@ -4,17 +4,26 @@ import scala.collection.immutable.{Seq, Set}
 
 package internal {
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
-	private[internal] final class PartsParser[+A](
+	private[internal] final class PartsParser[Expr[_], Type[_], A](
 		partsFn:String => Option[(A, Int)],
 		expecting: ExpectingDescription
-	) extends Interpolator[Any, A] {
-		def interpolate[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
+	) extends Parser[Expr, Type, A] {
+		override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 			input.consume(
 				partsFn,
 				_ => None,
 				expecting
 			)
 		}
+
+		override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
+			input.consume(
+				partsFn.andThen(_.map({case (_, charCount) => (exprs.empty, charCount)})),
+				_ => None,
+				expecting
+			)
+		}
+
 	}
 }
 
@@ -87,27 +96,27 @@ package object internal {
 
 	/** Succeeds if the next character is a member of the given Set; captures that character */
 	private[stringContextParserCombinator]
-	def CharIn(
+	def CharIn[Expr[_], Type[_]](
 		chooseFrom:Set[Char]
-	):Interpolator[Any, Char] = CharWhere(
+	):Parser[Expr, Type, Char] = CharWhere(
 		chooseFrom.contains _,
 		ExpectingDescription(chooseFrom.map(c => escape(c)).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
 	private[stringContextParserCombinator]
-	def CharIn(
+	def CharIn[Expr[_], Type[_]](
 		chooseFrom:Seq[Char]
-	):Interpolator[Any, Char] = CharWhere(
+	):Parser[Expr, Type, Char] = CharWhere(
 		chooseFrom.contains _,
 		ExpectingDescription(chooseFrom.map(c => escape(c)).mkString("CharIn(\"", "", "\")"))
 	)
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
-	def CharWhere(
+	def CharWhere[Expr[_], Type[_]](
 		predicate:Function1[Char, Boolean]
-	):Interpolator[Any, Char] = {
+	):Parser[Expr, Type, Char] = {
 		val description = describeCodepointPredicate(c => predicate(c.toChar), Character.MAX_VALUE)
 		CharWhere(
 			predicate,
@@ -117,19 +126,19 @@ package object internal {
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
-	def CharWhere(
+	def CharWhere[Expr[_], Type[_]](
 		predicate:Function1[Char, Boolean],
 		description: ExpectingDescription
-	):Interpolator[Any, Char] = new PartsParser(
+	):Parser[Expr, Type, Char] = new PartsParser(
 		pt => Option((pt.charAt(0), 1)).filter(x => predicate(x._1)),
 		description
 	)
 
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn(
+	def CodePointIn[Expr[_], Type[_]](
 		chooseFrom:String
-	):Interpolator[Any, CodePoint] = {
+	):Parser[Expr, Type, CodePoint] = {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
 		this.CodePointWhere(
 			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
@@ -139,9 +148,9 @@ package object internal {
 
 	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn(
+	def CodePointIn[Expr[_], Type[_]](
 		chooseFrom:Set[CodePoint]
-	):Interpolator[Any, CodePoint] = {
+	):Parser[Expr, Type, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
 			ExpectingDescription(chooseFrom.map(c => escape(c.value)).mkString("CodePointIn(\"", "", "\")"))
@@ -150,9 +159,9 @@ package object internal {
 
 	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn(
+	def CodePointIn[Expr[_], Type[_]](
 		chooseFrom:Seq[CodePoint]
-	):Interpolator[Any, CodePoint] = {
+	):Parser[Expr, Type, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
 			ExpectingDescription(chooseFrom.map(c => escape(c.value)).mkString("CodePointIn(\"", "", "\")"))
@@ -161,9 +170,9 @@ package object internal {
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointWhere(
+	def CodePointWhere[Expr[_], Type[_]](
 		predicate:Function1[CodePoint, Boolean]
-	):Interpolator[Any, CodePoint] = {
+	):Parser[Expr, Type, CodePoint] = {
 		val description = describeCodepointPredicate(c => predicate(CodePoint(c)), Character.MAX_CODE_POINT)
 		CodePointWhere(
 			predicate,
@@ -173,43 +182,28 @@ package object internal {
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointWhere(
+	def CodePointWhere[Expr[_], Type[_]](
 		predicate:Function1[CodePoint, Boolean], description:ExpectingDescription
-	):Interpolator[Any, CodePoint] = new PartsParser(
+	):Parser[Expr, Type, CodePoint] = new PartsParser(
 		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
 		description
 	)
 
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	private[stringContextParserCombinator]
-	def IsString(
+	def IsString[Expr[_], Type[_]](
 		value:String
-	):Interpolator[Any, Unit] = new PartsParser(
+	):Parser[Expr, Type, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
 		ExpectingDescription(value.map(c => escape(c)).mkString("\"", "", "\""))
 	)
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
 	private[stringContextParserCombinator]
-	def Regex(
+	def Regex[Expr[_], Type[_]](
 		reg:scala.util.matching.Regex
-	):Interpolator[Any, String] = new PartsParser(
+	):Parser[Expr, Type, String] = new PartsParser(
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),
 		ExpectingDescription("s/" + reg.toString + "/")
 	)
-
-	private[stringContextParserCombinator]
-	def Optionally[Expr, A, Z](
-		backing:Interpolator[Expr, A],
-		strategy:RepeatStrategy,
-		ev:typeclass.Optionally[A, Z]
-	):Interpolator[Expr, Z] = {
-		Repeat.interpolator(backing, 0, 1, new Pass, strategy, new typeclass.Repeated[A, Z] {
-			final class Box[BoxType](var value:BoxType)
-			type Acc = Box[Z]
-			def init():Acc = new Box(ev.none)
-			def append(acc:Acc, elem:A):Unit = acc.value = ev.some(elem)
-			def result(acc:Acc):Z = acc.value
-		})
-	}
 }

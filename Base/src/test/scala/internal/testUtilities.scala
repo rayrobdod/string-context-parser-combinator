@@ -32,9 +32,14 @@ object TestUtilities {
 		def repeat[ExprZ <: Expr, Z](
 			min:Int = 0,
 			max:Int = Integer.MAX_VALUE,
-			delimiter:Interpolator[ExprZ, Unit] = new internal.Pass,
+			delimiter:Interpolator[ExprZ, Unit] = new internal.Pass[Id, Id],
 			strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 			implicit ev:typeclass.Repeated[A, Z]
 		):Interpolator[ExprZ, Z] = internal.Repeat.interpolator(self, min, max, delimiter, strategy, ev)
+
+		def optionally[Z](
+			strategy:RepeatStrategy = RepeatStrategy.Possessive)(
+			implicit ev:typeclass.Optionally[A, Z]
+		):Interpolator[Expr, Z] = internal.Optionally.interpolator(self, strategy, ev)
 	}
 }

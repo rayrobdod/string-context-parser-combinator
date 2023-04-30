@@ -9,7 +9,7 @@ final class RepeatTest extends AnyFunSpec {
 	describe ("Repeat") {
 		it ("`a*` matches ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -21,7 +21,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*` matches `a`") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
 
 			val expected = Success[Nothing, StubPosition, String](
@@ -43,7 +43,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*` matches `aaaa`") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -80,7 +80,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a*+` matches ``, does not backtrack") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -92,7 +92,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*+` matches `a`, does not backtrack") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
 
 			val expected = Success[Nothing, StubPosition, String](
@@ -109,7 +109,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*+` matches `aaaa`, does not backtrack") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -126,7 +126,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a*?` matches ``, reverse priority") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -138,7 +138,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*?` matches `a`, reverse priority") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 			val childExpecting = SingleExpecting("CharIn(\"a\")", 43)
 
 			val expected = Success[Nothing, StubPosition, String](
@@ -160,7 +160,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*?` matches `aaaa`, reverse priorty") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -197,7 +197,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a+` does not match ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Failure(
 				SingleExpecting("CharIn(\"a\")", 42)
@@ -207,7 +207,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a+` matches `a`") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"a",
@@ -219,7 +219,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a+` matches `aaaa`") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -251,7 +251,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a++` does not match ``, does not backtrack") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Failure(
 				SingleExpecting("CharIn(\"a\")", 42)
@@ -261,7 +261,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a++` matches `a`, does not backtrack") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"a",
@@ -273,7 +273,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a++` matches `aaaa`, does not backtrack") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -290,7 +290,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a+?` does not match ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Failure(
 				SingleExpecting("CharIn(\"a\")", 42)
@@ -300,7 +300,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a+?` matches `a`, reverse priorty") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"a",
@@ -312,7 +312,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a+?` matches `aaaa`, reverse priorty") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -344,7 +344,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a?` matches ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -356,7 +356,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a?` matches `a`") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -377,7 +377,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a?` does not match all of `aaaa`") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -399,7 +399,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a?+` matches ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -411,7 +411,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a?+` matches `a`") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -427,7 +427,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a?+` does not match all of `aaaa`") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -444,7 +444,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a??` matches ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -456,7 +456,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a??` matches `a`") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -477,7 +477,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a??` does not match all of `aaaa`") {
 			val initialInput = SinglePartInput("aaaa", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -499,7 +499,7 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`<pass>*` does not hang indefinitely") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = new Pass
+			val childParser = new Pass[Id, Id]
 
 			val expected = Success[Nothing, StubPosition, Unit](
 				Success1(
@@ -521,7 +521,7 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`(a*)*` does not hang indefinitely") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
+			val childParser = CharIn[Id, Id]("a")
 
 			val expected = Success[Nothing, StubPosition, Seq[String]](
 				Success1(
@@ -544,8 +544,8 @@ final class RepeatTest extends AnyFunSpec {
 
 		it ("`a*` with delim `b` matches ``") {
 			val initialInput = SinglePartInput("", 42)
-			val childParser = CharIn("a")
-			val delimParser = CharIn("b").map(_ => ())
+			val childParser = CharIn[Id, Id]("a")
+			val delimParser = CharIn[Id, Id]("b").map(_ => ())
 
 			val expected = Success[Nothing, StubPosition, String](
 				"",
@@ -557,8 +557,8 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*` with delim `b` matches `a`") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
-			val delimParser = CharIn("b").map(_ => ())
+			val childParser = CharIn[Id, Id]("a")
+			val delimParser = CharIn[Id, Id]("b").map(_ => ())
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -580,8 +580,8 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a*` with delim `b` matches `ababa`") {
 			val initialInput = SinglePartInput("ababa", 42)
-			val childParser = CharIn("a")
-			val delimParser = CharIn("b").map(_ => ())
+			val childParser = CharIn[Id, Id]("a")
+			val delimParser = CharIn[Id, Id]("b").map(_ => ())
 
 			val expected = Success[Nothing, StubPosition, String](
 				Success1(
@@ -614,8 +614,8 @@ final class RepeatTest extends AnyFunSpec {
 		}
 		it ("`a{2,}` with delim `b` does not match `a` and report expecting 'b'") {
 			val initialInput = SinglePartInput("a", 42)
-			val childParser = CharIn("a")
-			val delimParser = CharIn("b").map(_ => ())
+			val childParser = CharIn[Id, Id]("a")
+			val delimParser = CharIn[Id, Id]("b").map(_ => ())
 
 			val expected = Failure(
 				SingleExpecting("CharIn(\"a\")", 42) ++
@@ -626,9 +626,9 @@ final class RepeatTest extends AnyFunSpec {
 		}
 
 		describe("`(a ~ b ~ c)*`") {
-			val childParser = (CharIn("a")
-				andThen CharIn("b")
-				andThen CharIn("c"))
+			val childParser = (CharIn[Id, Id]("a")
+				andThen CharIn[Id, Id]("b")
+				andThen CharIn[Id, Id]("c"))
 			val parser = childParser.repeat(strategy = Greedy)
 
 			it ("matches ``; no cut") {

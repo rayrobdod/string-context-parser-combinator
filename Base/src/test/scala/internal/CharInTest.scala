@@ -21,7 +21,7 @@ final class CharInTest extends AnyFunSpec {
 			new Input(tail._1, tail._2),
 			expecting
 		)
-		val parser = CharIn(parserSet)
+		val parser = CharIn[Id, Id](parserSet)
 		assertResult(expected){parser.interpolate(input)}
 	}
 
@@ -29,7 +29,7 @@ final class CharInTest extends AnyFunSpec {
 		val expected = Failure(
 			ExpectingSet(Expecting(ExpectingDescription(parserSet.mkString("CharIn(\"", "", "\")")), input.position))
 		)
-		val parser = CharIn(parserSet)
+		val parser = CharIn[Id, Id](parserSet)
 		assertResult(expected){parser.interpolate(input)}
 	}
 

@@ -60,8 +60,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("missing right with any repeat fails and shows both inputs as options") {
 			val initialInput = SinglePartInput("a", 42)
-			val leftParser = CharIn("a").repeat(strategy = Greedy)
-			val rightParser = CharIn("b")
+			val leftParser = CharIn[Id, Id]("a").repeat(strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("b")
 
 			val expected = Failure(
 				RepeatedExpecting("CharIn(\"a\")", 42 to 43) ++
@@ -73,8 +73,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("unexpected right with any repeat fails and shows both inputs as options") {
 			val initialInput = SinglePartInput("ac", 42)
-			val leftParser = CharIn("a").repeat(strategy = Greedy)
-			val rightParser = CharIn("b")
+			val leftParser = CharIn[Id, Id]("a").repeat(strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("b")
 
 			val expected = Failure(
 				RepeatedExpecting("CharIn(\"a\")", 42 to 43) ++
@@ -86,8 +86,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("input too short for repeat") {
 			val initialInput = SinglePartInput("a", 42)
-			val leftParser = CharIn("a").repeat(3,5, strategy = Greedy)
-			val rightParser = CharIn("b")
+			val leftParser = CharIn[Id, Id]("a").repeat(3,5, strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("b")
 
 			val expected = Failure(
 				RepeatedExpecting("CharIn(\"a\")", 42 to 43)
@@ -98,8 +98,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("input too long for repeat") {
 			val initialInput = SinglePartInput("aaaaaaaa", 42)
-			val leftParser = CharIn("a").repeat(3,5, strategy = Greedy)
-			val rightParser = CharIn("b")
+			val leftParser = CharIn[Id, Id]("a").repeat(3,5, strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("b")
 			val rightExpecting = SingleExpecting("CharIn(\"b\")", 47)
 
 			val expected = Failure(
@@ -112,8 +112,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("pattern.repeat(Greedy) andThen subset") {
 			val initialInput = SinglePartInput("aa", 42)
-			val leftParser = CharIn("ab").repeat(strategy = Greedy)
-			val rightParser = CharIn("a")
+			val leftParser = CharIn[Id, Id]("ab").repeat(strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("a")
 			val leftExpecting = SingleExpecting("CharIn(\"ab\")", 44)
 			val rightExpecting = SingleExpecting("CharIn(\"a\")", 44)
 
@@ -138,8 +138,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("pattern.repeat andThen subset twice") {
 			val initialInput = SinglePartInput("aaa", 42)
-			val leftParser = CharIn("ab").repeat(strategy = Greedy)
-			val rightParser = CharIn("a")
+			val leftParser = CharIn[Id, Id]("ab").repeat(strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("a")
 			val leftExpecting = SingleExpecting("CharIn(\"ab\")", 45)
 			val rightExpecting = SingleExpecting("CharIn(\"a\")", 45)
 
@@ -171,8 +171,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("pattern.repeat(Possessive) andThen subset fails") {
 			val initialInput = SinglePartInput("aa", 42)
-			val leftParser = CharIn("ab").repeat(strategy = Possessive)
-			val rightParser = CharIn("a")
+			val leftParser = CharIn[Id, Id]("ab").repeat(strategy = Possessive)
+			val rightParser = CharIn[Id, Id]("a")
 			val leftExpecting = SingleExpecting("CharIn(\"ab\")", 44)
 			val rightExpecting = SingleExpecting("CharIn(\"a\")", 44)
 
@@ -188,8 +188,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("unexpected right with any repeat and delimiter fails and shows delimiter and right as options") {
 			val initialInput = SinglePartInput("az", 42)
-			val leftParser = CharIn("a").opaque("rep").repeat(delimiter = IsString("b").map(_ => ()).opaque("delim"), strategy = Greedy)
-			val rightParser = CharIn("c").opaque("right")
+			val leftParser = CharIn[Id, Id]("a").opaque("rep").repeat(delimiter = IsString[Id, Id]("b").map(_ => ()).opaque("delim"), strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("c").opaque("right")
 
 			val expected = Failure(
 				SingleExpecting("rep", 42) ++
@@ -203,8 +203,8 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("successful with delimiter") {
 			val initialInput = SinglePartInput("abac", 42)
-			val leftParser = CharIn("a").opaque("rep").repeat(delimiter = IsString("b").map(_ => ()).opaque("delim"), strategy = Greedy)
-			val rightParser = CharIn("c").opaque("right")
+			val leftParser = CharIn[Id, Id]("a").opaque("rep").repeat(delimiter = IsString[Id, Id]("b").map(_ => ()).opaque("delim"), strategy = Greedy)
+			val rightParser = CharIn[Id, Id]("c").opaque("right")
 
 			val expected = Success(
 				("aa", 'c'),
@@ -221,7 +221,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("right associative variant of \"'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
 			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString("[") andThen (IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]"))
+			val parser = IsString("[") andThen (IsString("a").repeat(delimiter = IsString[Id, Id](","), strategy = Greedy) andThen IsString[Id, Id]("]"))
 
 			val expected = Failure(
 				SingleExpecting("\",\"",44) ++
@@ -235,7 +235,7 @@ final class AndThen_Repeat_Test extends AnyFunSpec {
 		}
 		it ("'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
 			val initialInput = SinglePartInput("[a:a]", 42)
-			val parser = IsString("[") andThen IsString("a").repeat(delimiter = IsString(","), strategy = Greedy) andThen IsString("]")
+			val parser = IsString("[") andThen IsString("a").repeat(delimiter = IsString[Id, Id](","), strategy = Greedy) andThen IsString[Id, Id]("]")
 
 			val expected = Failure(
 				SingleExpecting("\",\"",44) ++

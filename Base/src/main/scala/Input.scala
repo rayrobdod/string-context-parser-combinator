@@ -54,6 +54,28 @@ final class Input[+Expr, Pos : Position : Ordering](
 	 */
 	private[stringContextParserCombinator] def isEmpty:Boolean = parts.head._1.isEmpty && args.isEmpty
 
+	/**
+	 * Feeds the first `part` of the input to the given interpolator; returns the parse result
+	 *
+	 * Since the arguments are temporarily ignored, allows a parser with a different `Expr` type to attempt to parse this input,
+	 * such as during the [[ExtractorAtom]] parsing
+	 */
+	private[stringContextParserCombinator]
+	def justCurrentPartConsume[Expr2, A](parser:internal.Interpolator[Expr2, A]):Result[Expr, Pos, A] = {
+		parser.interpolate(new Input[Nothing, Pos](this.parts.head :: Nil, Nil)) match {
+			case failure:Failure[Pos] => failure
+			case success:Success[Nothing, Pos, A] => success.map({
+				case Success1(value, remaining, expecting) => {
+					Success1(
+						value,
+						new Input(remaining.parts.head :: this.parts.tail, this.args),
+						expecting
+					)
+				}
+			})
+		}
+	}
+
 	override def toString:String = s"Input(${parts}, ${args})"
 	override def hashCode:Int = java.util.Objects.hash(parts, args)
 	override def equals(rhs:Any):Boolean = rhs match {
