@@ -5,10 +5,10 @@ import com.rayrobdod.stringContextParserCombinator._
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
 import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
 
-trait TimeParsers[Expr[_]] {
-	def localDate: Interpolator[Expr[Any], Expr[LocalDate]]
-	def localTime: Interpolator[Expr[Any], Expr[LocalTime]]
-	def localDateTime: Interpolator[Expr[Any], Expr[LocalDateTime]]
+trait TimeParsers[Expr[_], Type[_]] {
+	def localDate: Parser[Expr, Type, Expr[LocalDate]]
+	def localTime: Parser[Expr, Type, Expr[LocalTime]]
+	def localDateTime: Parser[Expr, Type, Expr[LocalDateTime]]
 }
 
 object TimeParsers {
@@ -27,7 +27,7 @@ object TimeParsers {
 
 
 	def apply[Expr[+_], ToExpr[_], Type[_]](
-		leaves:Interpolator.Interpolators[Expr, ToExpr, Type]
+		leaves:Parser.Parsers[Expr, ToExpr, Type]
 	)(
 		exprConstZero: Expr[Int],
 		yearMonthFlatMap: Expr[YearMonth] => leaves.Interpolator[Expr[LocalDate]],
@@ -43,45 +43,67 @@ object TimeParsers {
 		toExpr_Int: ToExpr[Int],
 		toExpr_Year: ToExpr[Year],
 		toExpr_Month: ToExpr[Month],
-		sequenced_YearMonth: typeclass.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]],
-		sequenced_LocalDateTime: typeclass.Sequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]]
-	):TimeParsers[Expr] = {
+		eithered_SymmetricExprYear: typeclass.BiEithered[Expr, Expr[Year], Expr[Year], Expr[Year]],
+		eithered_SymmetricExprMonth: typeclass.BiEithered[Expr, Expr[Month], Expr[Month], Expr[Month]],
+		eithered_SymmetricExprYearMonth: typeclass.BiEithered[Expr, Expr[YearMonth], Expr[YearMonth], Expr[YearMonth]],
+		eithered_SymmetricExprLocalDate: typeclass.BiEithered[Expr, Expr[LocalDate], Expr[LocalDate], Expr[LocalDate]],
+		eithered_SymmetricExprLocalTime: typeclass.BiEithered[Expr, Expr[LocalTime], Expr[LocalTime], Expr[LocalTime]],
+		sequenced_YearMonth: typeclass.BiSequenced[Expr[Year], Expr[Month], Expr[YearMonth]],
+		sequenced_LocalDate: typeclass.ContraSequenced[Expr[YearMonth], Expr[Int], Expr[LocalDate]],
+		sequenced_LocalDateTime: typeclass.BiSequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]]
+	):TimeParsers[Expr, Type] = {
 		import leaves._
 
 		import scala.language.implicitConversions
-		implicit def str2parser(str:String):Interpolator[Unit] = IsString(str)
+		implicit def str2parser(str:String):Parser[Unit] = IsString(str)
+		implicit def str2interpolator(str:String):Interpolator[Unit] = IsString(str).toInterpolator
+		implicit def str2extractor(str:String):Extractor[Unit] = IsString(str).toExtractor
 
-		val YearP:Interpolator[Expr[Year]] = {
-			val LiteralP:Interpolator[Expr[Year]] = {
+		val YearP:Parser[Expr[Year]] = {
+			val LiteralP:Parser[Expr[Year]] = {
 				(sign andThen digit.repeat(1, 9))
 					.opaque("\"-999999999\"-\"999999999\"")
 					.map(Year.of _)
 					.mapToExpr[Year, Expr, ToExpr, Type]
+					.extractorAtom[Expr, Type, Year]
 			}
-			val VariableP:Interpolator[Expr[Year]] = OfType[Year]
+			val VariableP:Parser[Expr[Year]] = OfType[Year]
 			VariableP orElse LiteralP
 		}
 
-		val MonthP:Interpolator[Expr[Month]] = {
-			val LiteralP:Interpolator[Expr[Month]] = {
+		val MonthP:Parser[Expr[Month]] = {
+			val LiteralP:Parser[Expr[Month]] = {
 				intTwoDigits(1, 12)
 					.map(Month.of _)
 					.mapToExpr[Month, Expr, ToExpr, Type]
+					.extractorAtom[Expr, Type, Month]
 			}
-			val VariableP:Interpolator[Expr[Month]] = OfType[Month]
+			val VariableP:Parser[Expr[Month]] = OfType[Month]
 			VariableP orElse LiteralP
 		}
 
-		val YearMonthP:Interpolator[Expr[YearMonth]] = {
-			val PartsP:Interpolator[Expr[YearMonth]] = (YearP andThen "-" andThen MonthP)
-			val VariableP:Interpolator[Expr[YearMonth]] = OfType[YearMonth]
+		val YearMonthP:Parser[Expr[YearMonth]] = {
+			val PartsP:Parser[Expr[YearMonth]] = (YearP andThen "-" andThen MonthP)
+			val VariableP:Parser[Expr[YearMonth]] = OfType[YearMonth]
 			VariableP orElse PartsP
 		}
 
-		val LocalDateP:Interpolator[Expr[LocalDate]] = {
-			val YearMonthVariantP:Interpolator[Expr[LocalDate]] = (YearMonthP andThen "-")
-				.flatMap(yearMonthFlatMap)
-			val VariableP:Interpolator[Expr[LocalDate]] = OfType[LocalDate]
+		val LocalDateP:Parser[Expr[LocalDate]] = {
+			val YearMonthVariantP:Parser[Expr[LocalDate]] = {
+				val interpolator:Interpolator[Expr[LocalDate]] = (YearMonthP andThen "-")
+					.flatMap(yearMonthFlatMap)
+				val extractor:Extractor[Expr[LocalDate]] = YearMonthP.toExtractor
+					.andThen("-")(typeclass.ContraSequenced.genericUnit[Expr[YearMonth]])
+					.andThen(
+						intTwoDigits(1, 31)
+							.mapToExpr[Int, Expr, ToExpr, Type]
+							.extractorAtom[Expr, Type, Int]
+							.toExtractor
+						)
+
+				Paired(interpolator, extractor)
+			}
+			val VariableP:Parser[Expr[LocalDate]] = OfType[LocalDate]
 			VariableP orElse YearMonthVariantP
 		}
 
@@ -104,7 +126,7 @@ object TimeParsers {
 		val SecondP:Interpolator[Expr[Int]] = MinuteP
 
 		val NanoP:Interpolator[Expr[Int]] = {
-			val LiteralP = CharIn('0' to '9').repeat(1, 9)
+			val LiteralP = CharIn('0' to '9').toInterpolator.repeat(1, 9)
 				.map(x => s"${x}000000000".substring(0, 9))
 				.map(Integer.parseInt _)
 				.opaque("\"0\"-\"999999999\"")
@@ -112,10 +134,10 @@ object TimeParsers {
 			LiteralP
 		}
 
-		val LocalTimeP:Interpolator[Expr[LocalTime]] = {
-			val LiteralP:Interpolator[Expr[LocalTime]] = (
-					HourP andThen ":" andThen MinuteP andThen (
-							str2parser(":") andThen SecondP andThen (str2parser(".") andThen NanoP).optionally()).optionally()
+		val LocalTimeP:Parser[Expr[LocalTime]] = {
+			val LiteralP:Parser[Expr[LocalTime]] = (
+				HourP andThen str2interpolator(":") andThen MinuteP andThen (
+							str2interpolator(":") andThen SecondP andThen (str2interpolator(".") andThen NanoP).optionally()).optionally()
 				)
 				.map({hmsn =>
 					val (hm, sn) = hmsn
@@ -125,18 +147,19 @@ object TimeParsers {
 
 					partsToLocalTime(hour, minute, second, nano)
 				})
-			val VariableP:Interpolator[Expr[LocalTime]] = OfType[LocalTime]
+				.extractorAtom[Expr, Type, LocalTime]
+			val VariableP:Parser[Expr[LocalTime]] = OfType[LocalTime]
 			VariableP orElse LiteralP
 		}
 
-		val LocalDateTimeP:Interpolator[Expr[LocalDateTime]] = {
+		val LocalDateTimeP:Parser[Expr[LocalDateTime]] = {
 			(LocalDateP andThen "T" andThen LocalTimeP)
 		}
 
-		new TimeParsers[Expr] {
-			override def localDate: Interpolator[Expr[LocalDate]] = LocalDateP
-			override def localTime: Interpolator[Expr[LocalTime]] = LocalTimeP
-			override def localDateTime: Interpolator[Expr[LocalDateTime]] = LocalDateTimeP
+		new TimeParsers[Expr, Type] {
+			override def localDate: Parser[Expr[LocalDate]] = LocalDateP
+			override def localTime: Parser[Expr[LocalTime]] = LocalTimeP
+			override def localDateTime: Parser[Expr[LocalDateTime]] = LocalDateTimeP
 		}
 	}
 }
