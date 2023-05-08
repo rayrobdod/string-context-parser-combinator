@@ -8,16 +8,28 @@ import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_R
 object MacroImpl {
 	import ExprConversions.given
 
-	private given given_Sequenced_Expr_YearMonth(using Quotes):typeclass.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
+	private given given_Sequenced_Expr_YearMonth(using Quotes):typeclass.BiSequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
 		def aggregate(left:Expr[Year], right:Expr[Month]):Expr[YearMonth] = (left, right) match {
 			case (Expr(year), Expr(month)) => '{YearMonth.of(${Expr(year.getValue())}, ${Expr(month.getValue())})}
 			case (Expr(year), month) => '{YearMonth.of(${Expr(year.getValue())}, $month)}
 			case (year, Expr(month)) => '{$year.atMonth(${Expr(month.getValue())})}
 			case (year, month) => '{$year.atMonth($month)}
 		}
+
+		def separate(value:Expr[YearMonth]):(Expr[Year], Expr[Month]) = value match {
+			case '{YearMonth.of($year:Int, $month:Month)} => ('{Year.of($year)}, month)
+			case '{($year:Year).atMonth($month:Month)} => (year, month)
+			case _ => ('{Year.of($value.getYear)}, '{$value.getMonth})
+		}
 	}
 
-	private given given_Sequenced_Expr_DateTime(using Quotes):typeclass.Sequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
+	private given given_Sequenced_Expr_Date(using Quotes):typeclass.ContraSequenced[Expr[YearMonth], Expr[Int], Expr[LocalDate]] with {
+		def separate(value:Expr[LocalDate]):(Expr[YearMonth], Expr[Int]) = value match {
+			case _ => ('{YearMonth.of($value.getYear, $value.getMonth)}, '{$value.getDayOfMonth})
+		}
+	}
+
+	private given given_Sequenced_Expr_DateTime(using Quotes):typeclass.BiSequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
 		def aggregate(left:Expr[LocalDate], right:Expr[LocalTime]):Expr[LocalDateTime] = (left, right) match {
 			case (Expr(date), Expr(time)) => '{
 				LocalDateTime.of(
@@ -38,15 +50,19 @@ object MacroImpl {
 			}
 			case (date, time) => '{ $date.atTime($time) }
 		}
+
+		def separate(value:Expr[LocalDateTime]):(Expr[LocalDate], Expr[LocalTime]) = {
+			('{$value.toLocalDate}, '{$value.toLocalTime})
+		}
 	}
 
-	import Interpolator.End
+	import Parser.End
 	import TimeParsers.intTwoDigits
 
 
 	private def timeParsers(using Quotes) = {
-		val leafParsers:Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type] =
-					Interpolator.macroInterpolators
+		val leafParsers:Parser.Parsers[quoted.Expr, quoted.ToExpr, quoted.Type] =
+					Parser.quotedParsers
 
 		TimeParsers(leafParsers)(
 			Expr(0),
@@ -62,19 +78,6 @@ object MacroImpl {
 			},
 			(hour, minute, second, nano) =>
 				'{ LocalTime.of($hour, $minute, $second, $nano) }
-		)(using
-			typeclass.ToExprMapping.toExprQuoted,
-			implicitly[quoted.Type[Int]],
-			implicitly[quoted.Type[Year]],
-			implicitly[quoted.Type[Month]],
-			implicitly[quoted.Type[YearMonth]],
-			implicitly[quoted.Type[LocalDate]],
-			implicitly[quoted.Type[LocalTime]],
-			implicitly[quoted.ToExpr[Int]],
-			implicitly[quoted.ToExpr[Year]],
-			implicitly[quoted.ToExpr[Month]],
-			implicitly[typeclass.Sequenced[Expr[Year], Expr[Month], Expr[YearMonth]]],
-			implicitly[typeclass.Sequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]]],
 		)
 	}
 
@@ -90,6 +93,18 @@ object MacroImpl {
 	def interpolate_localDateTime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDateTime] = {
 		(timeParsers.localDateTime andThen End).interpolate(sc, args)
 	}
+
+	def extractor_localDate(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalDate]] = {
+		(timeParsers.localDate andThen End).extractor(sc)
+	}
+
+	def extractor_localTime(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalTime]] = {
+		(timeParsers.localTime andThen End).extractor(sc)
+	}
+
+	def extractor_localDateTime(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalDateTime]] = {
+		(timeParsers.localDateTime andThen End).extractor(sc)
+	}
 }
 
 extension (inline sc:scala.StringContext)
@@ -99,6 +114,12 @@ extension (inline sc:scala.StringContext)
 		${MacroImpl.interpolate_localTime('sc, 'args)}
 	inline def localdatetime(inline args:Any*):LocalDateTime =
 		${MacroImpl.interpolate_localDateTime('sc, 'args)}
+	transparent inline def localdate:Unapply[LocalDate] =
+		${MacroImpl.extractor_localDate('sc)}
+	transparent inline def localtime:Unapply[LocalTime] =
+		${MacroImpl.extractor_localTime('sc)}
+	transparent inline def localdatetime:Unapply[LocalDateTime] =
+		${MacroImpl.extractor_localDateTime('sc)}
 
 extension (sc:scala.StringContext)
 	def localdate2(args:Any*):LocalDate =
@@ -107,3 +128,9 @@ extension (sc:scala.StringContext)
 		IdImpl.interpolate_localTime(sc, args*)
 	def localdatetime2(args:Any*):LocalDateTime =
 		IdImpl.interpolate_localDateTime(sc, args*)
+	def localdate2:Unapply.Seq[LocalDate, Any] =
+		(scrutinee) => IdImpl.extract_localDate(sc, scrutinee)
+	def localtime2:Unapply.Seq[LocalTime, Any] =
+		(scrutinee) => IdImpl.extract_localTime(sc, scrutinee)
+	def localdatetime2:Unapply.Seq[LocalDateTime, Any] =
+		(scrutinee) => IdImpl.extract_localDateTime(sc, scrutinee)

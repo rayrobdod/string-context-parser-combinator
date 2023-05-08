@@ -79,12 +79,12 @@ trait VersionSpecificInterpolatorModule {
 	 * Create a Interpolators that can parse Exprs belonging to the specified Context
 	 * @group InterpolatorGroup
 	 */
-	def macroInterpolators(c:Context):Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
+	def contextInterpolators(c:Context):Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
 		new Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag]
 				with ExprIndependentInterpolators[c.Expr[Any]]
 				with LiftedInterpolator[c.type] {
 			def DelayedConstruction[A](fn:Function0[Interpolator[A]]):Interpolator[A] =
-				new Interpolator[A](new internal.DelayedConstruction(fn))
+				new Interpolator[A](internal.DelayedConstruction.interpolator(fn))
 
 			override def OfType[A](implicit tpe: c.TypeTag[A]): Interpolator[c.Expr[A]] =
 				new Interpolator[c.Expr[A]](new internal.OfType[c.type, A](tpe))

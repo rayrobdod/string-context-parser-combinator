@@ -50,11 +50,11 @@ object MacroImpl {
 	}
 
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
-		val LeafParsers = Interpolator.macroInterpolators(c)
+		val LeafParsers = Interpolator.contextInterpolators(c)
 		import LeafParsers._
 		import c.universe.Quasiquote
 
-		implicit val thisCToExpr = typeclass.ToExprMapping.toExprContext(c)
+		implicit val thisCToExpr = typeclass.ToExprMapping.forContext(c)
 		val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr(c.universe.Literal(c.universe.Constant(x)))}
 		val constNullExpr:c.Expr[Null] = c.Expr(c.universe.Literal(c.universe.Constant(null)))
 		val constNegOneExpr:c.Expr[Int] = c.Expr(c.universe.Literal(c.universe.Constant(-1)))

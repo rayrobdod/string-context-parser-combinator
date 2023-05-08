@@ -2,7 +2,7 @@ package com.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
-import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCInterpolator}
+import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
 
 /**
  * Parses an interpolated string expression into some value
@@ -74,10 +74,9 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 						s"$exp\n\t$instr\n\t$pointer"
 					}
 				}
-				throw new Exception(msg)
+				throw new ParseException(msg)
 			}
 		}
-
 	}
 
 
@@ -87,7 +86,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Map
 	 */
 	def map[Z](fn:Function1[A, Z]):Interpolator[Expr, Z] =
-		new Interpolator(new internal.Map(this.impl, fn))
+		new Interpolator(internal.Map.interpolator(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then maps a successful result by lifting the
@@ -107,14 +106,14 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 */
 	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Interpolator[ExprZ, Z]]):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.FlatMap(this.impl, fn))
+		new Interpolator(internal.FlatMap.interpolator(this.impl, fn))
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
 	 * @group Filter
 	 */
 	def filter(predicate:Function1[A, Boolean], description:String):Interpolator[Expr, A] =
-		new Interpolator(new internal.Filter(this.impl, predicate, ExpectingDescription(description)))
+		new Interpolator(internal.Filter.interpolator(this.impl, predicate, ExpectingDescription(description)))
 
 
 	/**
@@ -122,7 +121,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group ErrorPlus
 	 */
 	def opaque(description:String):Interpolator[Expr, A] =
-		new Interpolator(new internal.Opaque(this.impl, ExpectingDescription(description)))
+		new Interpolator(internal.Opaque.interpolator(this.impl, ExpectingDescription(description)))
 
 	/**
 	 * Returns a parser which invokes this parser,
@@ -130,7 +129,24 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Misc
 	 */
 	def attempt:Interpolator[Expr, A] =
-		new Interpolator(new internal.Attempt(this.impl))
+		new Interpolator(internal.Attempt.interpolator(this.impl))
+
+	/**
+	 * Creates a parser that will
+	 *    * when interpolating, act like this parser
+	 *    * when extractoring, invoke this parser and check that the extractor input is equal to the parsed value
+	 *
+	 * The extractor parsing will probably fail if this parser expects to find holes.
+	 * @group Misc
+	 */
+	def extractorAtom[ExprZ[_], TypeZ[_], UnexprA](
+		implicit t:TypeZ[UnexprA],
+		ev:ExprZ[Any] <:< Expr,
+		ev2:A <:< ExprZ[UnexprA]
+	):Parser[ExprZ, TypeZ, ExprZ[UnexprA]] = {
+		val impl2 = this.impl.asInstanceOf[internal.Interpolator[ExprZ[Any], ExprZ[UnexprA]]]
+		new Parser(new internal.ExtractorAtom[ExprZ, TypeZ, UnexprA](impl2, t))
+	}
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
@@ -141,7 +157,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 */
 	def andThen[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.AndThen(this.impl, rhs.impl, ev))
+		new Interpolator(internal.AndThen.interpolator(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
@@ -155,7 +171,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Branch
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.OrElse(this.impl, rhs.impl, ev))
+		new Interpolator(internal.OrElse.interpolator(this.impl, rhs.impl, ev))
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -171,11 +187,11 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Interpolator[ExprZ, Unit] = new Interpolator[ExprZ, Unit](new internal.Pass),
+		delimiter:Interpolator[ExprZ, Unit] = new Interpolator[ExprZ, Unit](new internal.Pass[Id, Id]),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typeclass.Repeated[A, Z]
 	):Interpolator[ExprZ, Z] =
-		new Interpolator(new internal.Repeat(this.impl, min, max, delimiter.impl, strategy, ev))
+		new Interpolator(internal.Repeat.interpolator(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
 	 * Returns a parser which invokes this parser and provides a value whether this parser succeeded or failed
@@ -189,7 +205,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
 		implicit ev:typeclass.Optionally[A, Z]
 	):Interpolator[Expr, Z] =
-		new Interpolator(internal.Optionally(this.impl, strategy, ev))
+		new Interpolator(internal.Optionally.interpolator(this.impl, strategy, ev))
 }
 
 /**
@@ -218,9 +234,10 @@ object Interpolator
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def DelayedConstruction[Expr, A](fn:Function0[SCInterpolator[Expr, A]]):SCInterpolator[Expr, A] =
-		new SCInterpolator(new internal.DelayedConstruction(fn))
+	def DelayedConstruction[Expr, A](fn:Function0[SCPCInterpolator[Expr, A]]):SCPCInterpolator[Expr, A] =
+		new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
+	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
 	/**
 	 * A trait that provides Interpolator factory methods that conform to a particular
 	 * input Expr type parameter.
@@ -341,8 +358,8 @@ object Interpolator
 	 */
 	val idInterpolators: Interpolators[Id, IdToExpr, Class] = {
 		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
-			override def DelayedConstruction[A](fn:Function0[SCInterpolator[Any, A]]):SCInterpolator[Any, A] =
-				new SCInterpolator(new internal.DelayedConstruction(fn))
+			override def DelayedConstruction[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
+				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 			override def OfType[A](implicit tpe: Class[A]): Interpolator[A] =
 				new Interpolator(new internal.OfClass(tpe))
@@ -358,83 +375,83 @@ private[stringContextParserCombinator] trait ExprIndependentInterpolators[Expr] 
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Set[Char]):SCInterpolator[Expr, Char] =
-		new SCInterpolator(internal.CharIn(str))
+	def CharIn(str:Set[Char]):SCPCInterpolator[Expr, Char] =
+		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Seq[Char]):SCInterpolator[Expr, Char] =
-		new SCInterpolator(internal.CharIn(str))
+	def CharIn(str:Seq[Char]):SCPCInterpolator[Expr, Char] =
+		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:String):SCInterpolator[Expr, Char] =
-		new SCInterpolator(internal.CharIn(scala.Predef.wrapString(str)))
+	def CharIn(str:String):SCPCInterpolator[Expr, Char] =
+		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def CharWhere(fn:Function1[Char, Boolean]):SCInterpolator[Expr, Char] =
-		new SCInterpolator(internal.CharWhere(fn))
+	def CharWhere(fn:Function1[Char, Boolean]):SCPCInterpolator[Expr, Char] =
+		new SCPCInterpolator[Expr, Char](internal.CharWhere[Id, Id](fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Set[CodePoint]):SCInterpolator[Expr, CodePoint] =
-		new SCInterpolator(internal.CodePointIn(str))
+	def CodePointIn(str:Set[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
+		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Seq[CodePoint]):SCInterpolator[Expr, CodePoint] =
-		new SCInterpolator(internal.CodePointIn(str))
+	def CodePointIn(str:Seq[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
+		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:String):SCInterpolator[Expr, CodePoint] =
-		new SCInterpolator(internal.CodePointIn(str))
+	def CodePointIn(str:String):SCPCInterpolator[Expr, CodePoint] =
+		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCInterpolator[Expr, CodePoint] =
-		new SCInterpolator(internal.CodePointWhere(fn))
+	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCPCInterpolator[Expr, CodePoint] =
+		new SCPCInterpolator[Expr, CodePoint](internal.CodePointWhere[Id, Id](fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def IsString(str:String):SCInterpolator[Expr, Unit] =
-		new SCInterpolator(internal.IsString(str))
+	def IsString(str:String):SCPCInterpolator[Expr, Unit] =
+		new SCPCInterpolator[Expr, Unit](internal.IsString[Id, Id](str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def Pass:SCInterpolator[Expr, Unit] =
-		new SCInterpolator[Expr, Unit](new internal.Pass)
+	def Pass:SCPCInterpolator[Expr, Unit] =
+		new SCPCInterpolator[Expr, Unit](new internal.Pass[Id, Id])
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def Fail(message:String):SCInterpolator[Expr, Nothing] =
-		new SCInterpolator[Expr, Nothing](new internal.Fail(ExpectingDescription(message)))
+	def Fail(message:String):SCPCInterpolator[Expr, Nothing] =
+		new SCPCInterpolator[Expr, Nothing](new internal.Fail[Id, Id](ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def End:SCInterpolator[Expr, Unit] =
-		new SCInterpolator[Expr, Unit](new internal.End())
+	def End:SCPCInterpolator[Expr, Unit] =
+		new SCPCInterpolator[Expr, Unit](new internal.End[Id, Id]())
 }
