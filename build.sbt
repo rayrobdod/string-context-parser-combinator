@@ -9,6 +9,7 @@ val scala30Ver = "3.2.0"
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
 		"org.scalatest" %%% "scalatest" % "3.2.14" % "test",
+		"org.scalameta" %%% "munit" % "0.7.29" % Test,
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
