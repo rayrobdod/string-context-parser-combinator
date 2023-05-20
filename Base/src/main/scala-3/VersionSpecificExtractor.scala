@@ -144,7 +144,7 @@ trait VersionSpecificExtractorModule extends ExprIndependentExtractors[Expr, Typ
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 	 * @group Arg
 	 */
-	def OfType[A](using Type[A], Quotes): SCExtractor[Expr, Type, Expr[A]] =
+	def ofType[A](using Type[A], Quotes): SCExtractor[Expr, Type, Expr[A]] =
 		new SCExtractor(new internal.OfType[A])
 
 	/**
@@ -154,10 +154,10 @@ trait VersionSpecificExtractorModule extends ExprIndependentExtractors[Expr, Typ
 	def quotedExtractors(using Quotes):Extractor.Extractors[Expr, Type] = {
 		new Extractor.Extractors[Expr, Type]
 				with ExprIndependentExtractors[Expr, Type] {
-			override def DelayedConstruction[A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+			override def `lazy`[A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def OfType[A](implicit tpe: Type[A]): SCExtractor[Expr, Type, Expr[A]] =
+			override def ofType[A](implicit tpe: Type[A]): SCExtractor[Expr, Type, Expr[A]] =
 				new SCExtractor(new internal.OfType[A])
 		}
 	}

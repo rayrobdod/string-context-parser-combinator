@@ -65,13 +65,13 @@ trait VersionSpecificParserModule {
 	def contextParsers(c:Context):Parser.Parsers[c.Expr, c.universe.Liftable, c.TypeTag] = {
 		new Parser.Parsers[c.Expr, c.universe.Liftable, c.TypeTag]
 				with ExprIndependentParsers[c.Expr, c.TypeTag] {
-			override def DelayedConstruction[A](fn:Function0[SCPCParser[c.Expr, c.TypeTag, A]]):SCPCParser[c.Expr, c.TypeTag, A] =
+			override def `lazy`[A](fn:Function0[SCPCParser[c.Expr, c.TypeTag, A]]):SCPCParser[c.Expr, c.TypeTag, A] =
 				new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
-			override def Paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):SCPCParser[c.Expr, c.TypeTag, A] =
+			override def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):SCPCParser[c.Expr, c.TypeTag, A] =
 				new SCPCParser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def OfType[A](implicit tpe: c.TypeTag[A]): SCPCParser[c.Expr, c.TypeTag, c.Expr[A]] =
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCParser[c.Expr, c.TypeTag, c.Expr[A]] =
 				new SCPCParser(new internal.OfType[c.type, A](tpe))
 		}
 	}

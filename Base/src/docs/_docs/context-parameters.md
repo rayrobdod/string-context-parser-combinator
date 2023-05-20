@@ -69,7 +69,7 @@ given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
 	def aggregate(date:LocalDate, time:LocalTime):LocalDateTime = date.atTime(time)
 }
 
-((dateParser:Interpolator[LocalDate]) andThen IsString("T") andThen (timeParser:Interpolator[LocalTime])):Interpolator[LocalDateTime]
+((dateParser:Interpolator[LocalDate]) andThen isString("T") andThen (timeParser:Interpolator[LocalTime])):Interpolator[LocalDateTime]
 ```
 
 
@@ -129,7 +129,7 @@ val p2:Interpolator[B] = ???
 //}
 val discriminated:Interpolator[Either[A, B]] = (p1:Interpolator[A]).orElse(p2:Interpolator[B])(using Eithered.discriminatedUnion)
 // in the following, even digits are placed in a Left while odd digits are placed in a Right.
-val evenOdd:Interpolator[Either[Char, Char]] = CharIn("02468").orElse(CharIn("13579"))(using Eithered.discriminatedUnion)
+val evenOdd:Interpolator[Either[Char, Char]] = charIn("02468").orElse(charIn("13579"))(using Eithered.discriminatedUnion)
 ```
 
 The interface consists of two methods, the `left` method called if the first choice succeeded, or `right` if the second
@@ -222,7 +222,7 @@ given Repeated[Digit, Digits] with {
 }
 
 // create the parsers
-val digit:Interpolator[Digit] = CharIn('0' to '9').map(x => Digit(x - '0'))
+val digit:Interpolator[Digit] = charIn('0' to '9').map(x => Digit(x - '0'))
 val digits:Interpolator[Digits] = digit.repeat(1)
 ```
 

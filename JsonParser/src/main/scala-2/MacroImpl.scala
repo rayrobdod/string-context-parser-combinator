@@ -88,45 +88,45 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	private[this] val leafParsers = Parser.contextParsers(c)
 	import leafParsers._
 	private[this] val myInterpolators = Interpolator.contextInterpolators(c)
-	import myInterpolators.Lifted
+	import myInterpolators.lifted
 	private[this] val myBiEithered = typeclass.BiEithered.forContext(c)
 	import myBiEithered._
 	private[this] val myBiRepeateds = typeclass.BiRepeated.forContext(c)
 	import myBiRepeateds._
 
-	private[this] def CharFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] = {
-		CharWhere(pf.isDefinedAt)
+	private[this] def charFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] = {
+		charWhere(pf.isDefinedAt)
 			.flatMap(pf.apply)
 	}
 
-	private[this] val WhitespaceP:Parser[Unit] = {
-		CharIn("\n\r\t ")
+	private[this] val whitespace:Parser[Unit] = {
+		charIn("\n\r\t ")
 			.imap((_:Char) => (), (_:Unit) => ' ')
 			.repeat(strategy = RepeatStrategy.Possessive)
 			.opaque("Whitespace")
 	}
 
-	private[this] val NullP:Parser[c.Expr[JNull.type]] = {
-		IsString("null")
+	private[this] val jnull:Parser[c.Expr[JNull.type]] = {
+		isString("null")
 			.map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JNull))
 			.extractorAtom[c.Expr, c.TypeTag, JNull.type]
 	}
 
-	private[this] val BooleanP:Parser[c.Expr[JBool]] = {
-		val TrueI = IsString("true")
+	private[this] val booleanValue:Parser[c.Expr[JBool]] = {
+		val jTrue = isString("true")
 			.map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.True))
 			.extractorAtom[c.Expr, c.TypeTag, JBool]
-		val FalseI = IsString("false")
+		val jFalse = isString("false")
 			.map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.False))
 			.extractorAtom[c.Expr, c.TypeTag, JBool]
-		TrueI orElse FalseI
+		jTrue orElse jFalse
 	}
 
-	private[this] val NumberP:Parser[c.Expr[JValue with JNumber]] = {
+	private[this] val jnumber:Parser[c.Expr[JValue with JNumber]] = {
 		import Interpolator._
 		import scala.Predef.charWrapper
 
-		def RepeatedDigits(min:Int):Interpolator[String] = CharIn('0' to '9').repeat(min, strategy = RepeatStrategy.Possessive)
+		def RepeatedDigits(min:Int):Interpolator[String] = charIn('0' to '9').repeat(min, strategy = RepeatStrategy.Possessive)
 
 		/* Concatenate every capture in the following parser and combine into one long string */
 		implicit object StringStringAndThenTypes extends typeclass.Sequenced[String, String, String] {
@@ -136,10 +136,10 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		implicit val StringStringOptionallyTypes = typeclass.Optionally.whereDefault[String]("")
 
 		(
-			CharIn("-").optionally()
-			andThen (CharIn("0").map(_.toString) orElse (CharIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
-			andThen (CharIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally()
-			andThen (CharIn("eE").map(_.toString) andThen CharIn("+-").optionally() andThen RepeatedDigits(1)).optionally()
+			charIn("-").optionally()
+			andThen (charIn("0").map(_.toString) orElse (charIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
+			andThen (charIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally()
+			andThen (charIn("eE").map(_.toString) andThen charIn("+-").optionally() andThen RepeatedDigits(1)).optionally()
 		)
 			.map({x =>
 				val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
@@ -149,150 +149,150 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			.extractorAtom[c.Expr, c.TypeTag, JValue with JNumber]
 	}
 
-	private[this] val StringBase:Parser[c.Expr[String]] = {
+	private[this] val stringBase:Parser[c.Expr[String]] = {
 		import Interpolator._
-		val DelimiterP:Parser[Unit] = leafParsers.IsString("\"")
-		val JCharImmediate:Interpolator[Char] = CharWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
-		val JCharEscaped:Interpolator[Char] = (
-			(IsString("\\") andThen CharFlatCollect({
-				case '\\' => Pass.map(_ => '\\')
-				case '/' => Pass.map(_ => '/')
-				case '"' => Pass.map(_ => '"')
-				case 'n' => Pass.map(_ => '\n')
-				case 'r' => Pass.map(_ => '\r')
-				case 'b' => Pass.map(_ => '\b')
-				case 'f' => Pass.map(_ => '\f')
-				case 't' => Pass.map(_ => '\t')
-				case 'u' => CharIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar)
+		val delimiter:Parser[Unit] = leafParsers.isString("\"")
+		val jCharImmediate:Interpolator[Char] = charWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
+		val jCharEscaped:Interpolator[Char] = (
+			(isString("\\") andThen charFlatCollect({
+				case '\\' => pass.map(_ => '\\')
+				case '/' => pass.map(_ => '/')
+				case '"' => pass.map(_ => '"')
+				case 'n' => pass.map(_ => '\n')
+				case 'r' => pass.map(_ => '\r')
+				case 'b' => pass.map(_ => '\b')
+				case 'f' => pass.map(_ => '\f')
+				case 't' => pass.map(_ => '\t')
+				case 'u' => charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar)
 			}))
 		)
-		val JCharP:Interpolator[Char] = JCharEscaped orElse JCharImmediate
-		val JCharsI:Parser[c.Expr[String]] = JCharP
+		val jChar:Interpolator[Char] = jCharEscaped orElse jCharImmediate
+		val jCharsImmediate:Parser[c.Expr[String]] = jChar
 			.repeat(1, strategy = RepeatStrategy.Possessive)
 			.mapToExpr
 			.extractorAtom[c.Expr, c.TypeTag, String]
-		val LiftedV:Parser[c.Expr[String]] = Paired(
-			Lifted[Lift.String, c.Expr[JString]](
+		val jCharsLifted:Parser[c.Expr[String]] = paired(
+			lifted[Lift.String, c.Expr[JString]](
 				myLiftFunction[JString, Lift.String],
 				"A for Lift[A, JString]"
 			).map(x => c.universe.reify(x.splice.values)),
-			OfType[String].toExtractor
+			ofType[String].toExtractor
 		)
-		val Content:Parser[c.Expr[String]] = Paired(
-			(LiftedV orElse JCharsI)
+		val content:Parser[c.Expr[String]] = paired(
+			(jCharsLifted orElse jCharsImmediate)
 				.toInterpolator
 				.repeat[c.Expr[Any], List[c.Expr[String]]](strategy = RepeatStrategy.Possessive)
 				.map(strs => concatenateStrings(strs))
 			,
-			(JCharsI).toExtractor
+			(jCharsImmediate).toExtractor
 		)
-		(DelimiterP andThen Content andThen DelimiterP)
+		(delimiter andThen content andThen delimiter)
 	}
 
-	private[this] val JStringP:Parser[c.Expr[JString]] = {
-		StringBase.imap(
+	private[this] val jstring:Parser[c.Expr[JString]] = {
+		stringBase.imap(
 			x => c.universe.reify(_root_.org.json4s.JsonAST.JString.apply(x.splice)),
 			x => c.universe.reify(x.splice.values)
 		)
 	}
 
-	private[this] val ArrayP:Parser[c.Expr[JArray]] = DelayedConstruction(() => {
-		val Prefix:Parser[Unit] = IsString("[") andThen WhitespaceP
-		val Delim:Parser[Unit] = IsString(",") andThen WhitespaceP
-		val Suffix:Parser[Unit] = IsString("]")
+	private[this] val jarray:Parser[c.Expr[JArray]] = `lazy`(() => {
+		val prefix:Parser[Unit] = isString("[") andThen whitespace
+		val delimiter:Parser[Unit] = isString(",") andThen whitespace
+		val suffix:Parser[Unit] = isString("]")
 
-		val LiftedArrayV = Lifted[Lift.Array, c.Expr[JArray]](
+		val LiftedArrayV = lifted[Lift.Array, c.Expr[JArray]](
 			myLiftFunction[JArray, Lift.Array],
 			"A for Lift[A, JArray]"
 		)
 			.map(x => c.Expr[List[JValue]](c.universe.Select(x.tree, c.universe.TermName("arr"))))
 
 		val SplicableValue:Interpolator[Either[c.Expr[JValue], c.Expr[List[JValue]]]] = {
-			val value = ValueP.toInterpolator
-			val array = (IsString("..").toInterpolator andThen LiftedArrayV andThen WhitespaceP.toInterpolator)
+			val value = jvalue.toInterpolator
+			val array = (isString("..").toInterpolator andThen LiftedArrayV andThen whitespace.toInterpolator)
 			value.orElse(array)(typeclass.Eithered.discriminatedUnion)
 		}
 		val LiteralPresplice:Interpolator[List[Either[c.Expr[JValue], c.Expr[List[JValue]]]]] = (
-			Prefix.toInterpolator
-				andThen SplicableValue.repeat(delimiter = Delim.toInterpolator, strategy = RepeatStrategy.Possessive)
-				andThen Suffix.toInterpolator
+			prefix.toInterpolator
+				andThen SplicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
+				andThen suffix.toInterpolator
 		)
 
-		Paired(
+		paired(
 			LiteralPresplice
 				.map(xs => assembleCollection(xs))
 				.map(x => c.universe.reify(JArray.apply(x.splice)))
 			,
-			(Prefix.toExtractor
-					andThen[c.Expr[List[JValue]], c.Expr[List[JValue]]] (ValueP.toExtractor.repeat(delimiter = Delim.toExtractor))
-					andThen[Unit, c.Expr[List[JValue]]] Suffix.toExtractor
+			(prefix.toExtractor
+					andThen[c.Expr[List[JValue]], c.Expr[List[JValue]]] (jvalue.toExtractor.repeat(delimiter = delimiter.toExtractor))
+					andThen[Unit, c.Expr[List[JValue]]] suffix.toExtractor
 			)
 				.contramap((x:c.Expr[JArray]) =>  c.universe.reify(x.splice.arr))
 		)
 	})
 
-	private[this] val ObjectP:Parser[c.Expr[JObject]] = DelayedConstruction(() => {
-		val Prefix:Parser[Unit] = IsString("{") andThen WhitespaceP
-		val Separator:Parser[Unit] = IsString(":") andThen WhitespaceP
-		val Delim:Parser[Unit] = IsString(",") andThen WhitespaceP
-		val Suffix:Parser[Unit] = IsString("}")
+	private[this] val jobject:Parser[c.Expr[JObject]] = `lazy`(() => {
+		val prefix:Parser[Unit] = isString("{") andThen whitespace
+		val separator:Parser[Unit] = isString(":") andThen whitespace
+		val delimiter:Parser[Unit] = isString(",") andThen whitespace
+		val suffix:Parser[Unit] = isString("}")
 
-		val ObjectV = Lifted[Lift.Object, c.Expr[JObject]](
+		val liftedObject = lifted[Lift.Object, c.Expr[JObject]](
 			myLiftFunction[JObject, Lift.Object],
 			"A for Lift[A, JObject]"
 		).map(x => c.Expr[List[(String, JValue)]](c.universe.Select(x.tree, c.universe.TermName("obj"))))
 
-		val KeyValueV = Lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
+		val liftedKeyValue = lifted[Lift.KeyValue, c.Expr[(java.lang.String, JValue)]](
 			myLiftFunction[(java.lang.String, JValue), Lift.KeyValue],
 			"A for Lift[A, (String, JValue)]"
 		)
 
-		val KeyV = {
-			val LiftedV:Interpolator[c.Expr[String]] = Lifted[Lift.String, c.Expr[JString]](
+		val key = {
+			val jCharsLifted:Interpolator[c.Expr[String]] = lifted[Lift.String, c.Expr[JString]](
 				myLiftFunction[JString, Lift.String],
 				"A for Lift[A, JString]"
 			).map(x => c.universe.reify(x.splice.values))
-			val Immediate:Interpolator[c.Expr[String]] = StringBase.toInterpolator
-			(LiftedV orElse Immediate) andThen WhitespaceP.toInterpolator
+			val immediate:Interpolator[c.Expr[String]] = stringBase.toInterpolator
+			(jCharsLifted orElse immediate) andThen whitespace.toInterpolator
 		}
 
 		val SplicableValue:Interpolator[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]] = {
-			val keyValue = (KeyValueV andThen WhitespaceP.toInterpolator)
-			val keyThenValue = (KeyV andThen Separator.toInterpolator andThen ValueP.toInterpolator)
+			val keyValue = (liftedKeyValue andThen whitespace.toInterpolator)
+			val keyThenValue = (key andThen separator.toInterpolator andThen jvalue.toInterpolator)
 				.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
-			val mapping = (IsString("..").toInterpolator andThen ObjectV andThen WhitespaceP.toInterpolator)
+			val mapping = (isString("..").toInterpolator andThen liftedObject andThen whitespace.toInterpolator)
 			keyValue.orElse(keyThenValue).orElse(mapping)(typeclass.Eithered.discriminatedUnion)
 		}
 		val LiteralPresplice:Interpolator[List[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]]] = (
-			Prefix.toInterpolator
-				andThen SplicableValue.repeat(delimiter = Delim.toInterpolator, strategy = RepeatStrategy.Possessive)
-				andThen Suffix.toInterpolator
+			prefix.toInterpolator
+				andThen SplicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
+				andThen suffix.toInterpolator
 		)
 
-		Paired(
+		paired(
 			LiteralPresplice
 				.map(xs => assembleCollection(xs))
 				.map(x => c.universe.reify(JObject.apply(x.splice)))
 			,
-			(Prefix.toExtractor
-				andThen[c.Expr[List[(String, JValue)]], c.Expr[List[(String, JValue)]]] (OfType[(String, JValue)].toExtractor.repeat(delimiter = Delim.toExtractor))
-				andThen[Unit, c.Expr[List[(String, JValue)]]] Suffix.toExtractor
+			(prefix.toExtractor
+				andThen[c.Expr[List[(String, JValue)]], c.Expr[List[(String, JValue)]]] (ofType[(String, JValue)].toExtractor.repeat(delimiter = delimiter.toExtractor))
+				andThen[Unit, c.Expr[List[(String, JValue)]]] suffix.toExtractor
 			)
 				.contramap(x => c.universe.reify(x.splice.obj))
 		)
 	})
 
-	private[this] val LiftedP:Parser[c.Expr[JValue]] = {
-		Paired(
-			Lifted[Lift.Value, c.Expr[JValue]](
+	private[this] val jlifted:Parser[c.Expr[JValue]] = {
+		paired(
+			lifted[Lift.Value, c.Expr[JValue]](
 				myLiftFunction[JValue, Lift.Value],
 				"Liftable Value"
 			),
-			OfType[JValue].toExtractor
+			ofType[JValue].toExtractor
 		)
 	}
 
-	private[this] val ValueP:Parser[c.Expr[JValue]] = {
+	private[this] val jvalue:Parser[c.Expr[JValue]] = {
 		def widenToJValue[A <: JValue](parser:Parser[c.Expr[A]])(implicit typ:c.WeakTypeTag[A]):Parser[c.Expr[JValue]] = {
 			parser.widenWith(
 				Predef.identity,
@@ -304,24 +304,24 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 
 		((
-			widenToJValue(NullP) orElse
-			widenToJValue(BooleanP) orElse
-			widenToJValue(NumberP) orElse
-			widenToJValue(JStringP) orElse
-			widenToJValue(ArrayP) orElse
-			widenToJValue(ObjectP) orElse
-			LiftedP
-		) andThen WhitespaceP)
+			widenToJValue(jnull) orElse
+			widenToJValue(booleanValue) orElse
+			widenToJValue(jnumber) orElse
+			widenToJValue(jstring) orElse
+			widenToJValue(jarray) orElse
+			widenToJValue(jobject) orElse
+			jlifted
+		) andThen whitespace)
 	}
 
-	private[this] val Aggregate = (WhitespaceP andThen ValueP andThen End)
+	private[this] val onlyJvalue = (whitespace andThen jvalue andThen end)
 
 	private val className = "com.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"
 	def stringContext_json(args:c.Expr[Any]*):c.Expr[JValue] = {
-		Aggregate.interpolate(c)(className)(args.toList)
+		onlyJvalue.interpolate(c)(className)(args.toList)
 	}
 
 	def stringContext_json_unapply(value:c.Expr[JValue]):c.Expr[Any] = {
-		Aggregate.extractor[JValue](c)(className)(value)
+		onlyJvalue.extractor[JValue](c)(className)(value)
 	}
 }

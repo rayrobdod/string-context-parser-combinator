@@ -73,7 +73,7 @@ trait VersionSpecificParserModule extends ExprIndependentParsers[Expr, Type] {
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 	 * @group Arg
 	 */
-	def OfType[A](using Type[A], Quotes): SCPCParser[Expr, Type, Expr[A]] =
+	def ofType[A](using Type[A], Quotes): SCPCParser[Expr, Type, Expr[A]] =
 		new SCPCParser(new internal.OfType[A])
 
 	/**
@@ -83,13 +83,13 @@ trait VersionSpecificParserModule extends ExprIndependentParsers[Expr, Type] {
 	def quotedParsers(using Quotes):Parser.Parsers[Expr, ToExpr, Type] = {
 		new Parser.Parsers[Expr, ToExpr, Type]
 				with ExprIndependentParsers[Expr, Type] {
-			override def DelayedConstruction[A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
+			override def `lazy`[A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
 				new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
-			override def Paired[A](interpolator:SCPCInterpolator[Expr[Any], A], extractor:SCPCExtractor[Expr, Type, A]):SCPCParser[Expr, Type, A] =
+			override def paired[A](interpolator:SCPCInterpolator[Expr[Any], A], extractor:SCPCExtractor[Expr, Type, A]):SCPCParser[Expr, Type, A] =
 				new SCPCParser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def OfType[A](implicit tpe: Type[A]): SCPCParser[Expr, Type, Expr[A]] =
+			override def ofType[A](implicit tpe: Type[A]): SCPCParser[Expr, Type, Expr[A]] =
 				new SCPCParser(new internal.OfType[A])
 		}
 	}

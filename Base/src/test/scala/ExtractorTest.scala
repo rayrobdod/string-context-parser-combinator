@@ -70,10 +70,10 @@ final class ExtractorTest extends AnyFunSpec {
 		}
 	}
 
-	describe("Extractor.idExtractors.CharWhere") {
-		describe("Extractor.idExtractors.CharWhere(_ => false)") {
+	describe("Extractor.idExtractors.charWhere") {
+		describe("Extractor.idExtractors.charWhere(_ => false)") {
 			val expectingLine = "Expected nothing"
-			val dut = Extractor.idExtractors.CharWhere(_ => false)
+			val dut = Extractor.idExtractors.charWhere(_ => false)
 			val characterCases = List('\u0000', 'a', '\uFFFF', '\uD83D')
 
 			assertParseFailureOnEmptyInput(dut, '1', expectingLine)
@@ -84,9 +84,9 @@ final class ExtractorTest extends AnyFunSpec {
 				}
 			}
 		}
-		describe("Extractor.idExtractors.CharWhere(_ => true)") {
+		describe("Extractor.idExtractors.charWhere(_ => true)") {
 			val expectingLine = "Expected '\\u0000'<=c<='\uFFFF'"
-			val dut = Extractor.idExtractors.CharWhere(_ => true)
+			val dut = Extractor.idExtractors.charWhere(_ => true)
 			val characterCases = List('\u0000', 'a', '\uFFFF')
 
 			assertParseFailureOnEmptyInput(dut, '1', expectingLine)
@@ -99,9 +99,9 @@ final class ExtractorTest extends AnyFunSpec {
 				}
 			}
 		}
-		describe("Extractor.idExtractors.CharWhere(c => '0' <= c && c <= '9')") {
+		describe("Extractor.idExtractors.charWhere(c => '0' <= c && c <= '9')") {
 			val expectingLine = "Expected '0'<=c<='9'"
-			val dut = Extractor.idExtractors.CharWhere(c => '0' <= c && c <= '9')
+			val dut = Extractor.idExtractors.charWhere(c => '0' <= c && c <= '9')
 			val passCharCases = List('0', '9')
 			val failCharCases = List[Char]('a', '0' - 1, '9' + 1, '\u0000', '\uFFFF')
 
@@ -121,10 +121,10 @@ final class ExtractorTest extends AnyFunSpec {
 			}
 		}
 	}
-	describe("Extractor.idExtractors.CodePointWhere") {
-		describe("Extractor.idExtractors.CodePointWhere(_ => false)") {
+	describe("Extractor.idExtractors.codePointWhere") {
+		describe("Extractor.idExtractors.codePointWhere(_ => false)") {
 			val expectingLine = "Expected nothing"
-			val dut = Extractor.idExtractors.CodePointWhere(_ => false)
+			val dut = Extractor.idExtractors.codePointWhere(_ => false)
 			val characterCases = List('\u0000', 'a', '\uFFFF', '\uD83D')
 
 			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
@@ -135,9 +135,9 @@ final class ExtractorTest extends AnyFunSpec {
 				}
 			}
 		}
-		describe("Extractor.idExtractors.CodePointWhere(_ => true)") {
+		describe("Extractor.idExtractors.codePointWhere(_ => true)") {
 			val expectingLine = "Expected '\\u0000'<=c<='\uDBFF\uDFFF'"
-			val dut = Extractor.idExtractors.CodePointWhere(_ => true)
+			val dut = Extractor.idExtractors.codePointWhere(_ => true)
 			val characterCases = List[Int](0, 'a', 0xFFFF, Character.MAX_CODE_POINT)
 
 			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
@@ -153,9 +153,9 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseSuccess(dut, ("\uD83D\uDE00" :: Nil, CodePoint(128512)), Some(Nil))
 			}
 		}
-		describe("Extractor.idExtractors.CodePointWhere(c => 127137 <= c.value && c.value <= 127150)") {
+		describe("Extractor.idExtractors.codePointWhere(c => 127137 <= c.value && c.value <= 127150)") {
 			val expectingLine = "Expected '🂡'<=c<='🂮'"
-			val dut = Extractor.idExtractors.CodePointWhere(c => 127137 <= c.value && c.value <= 127150)
+			val dut = Extractor.idExtractors.codePointWhere(c => 127137 <= c.value && c.value <= 127150)
 			val passCharCases = List[Int](127137, 127144, 127150)
 			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, Character.MAX_CODE_POINT)
 
@@ -175,9 +175,9 @@ final class ExtractorTest extends AnyFunSpec {
 			}
 		}
 	}
-	describe("Extractor.idExtractors.End") {
+	describe("Extractor.idExtractors.end") {
 		val expectingLine = "Expected EOF"
-		val dut = Extractor.idExtractors.End
+		val dut = Extractor.idExtractors.end
 
 		it ("does match an empty input") {
 			assertParseSuccess(dut, ("" :: Nil, ()), Option(Nil))
@@ -187,13 +187,13 @@ final class ExtractorTest extends AnyFunSpec {
 		}
 		assertParseFailureOnExpr(dut, (), expectingLine)
 	}
-	describe("Extractor.idExtractors.OfType") {
+	describe("Extractor.idExtractors.ofType") {
 		sealed trait Scrutinee
 		object Scrutinee1 extends Scrutinee
 		object Scrutinee2 extends Scrutinee
 
 		val expectingLine = s"Expected OfType(${classOf[Scrutinee].getName})"
-		val dut = Extractor.idExtractors.OfType[Scrutinee](classOf[Scrutinee])
+		val dut = Extractor.idExtractors.ofType[Scrutinee](classOf[Scrutinee])
 
 		assertParseFailureOnEmptyInput(dut, Scrutinee2, expectingLine)
 		it ("throws when the next value is a character") {
@@ -204,11 +204,11 @@ final class ExtractorTest extends AnyFunSpec {
 		}
 	}
 	describe("Extractor#contramap") {
-		describe("OfType[Foo].contramap(Bar => Foo)") {
+		describe("ofType[Foo].contramap(Bar => Foo)") {
 			final case class Foo(x:Int)
 			final case class Bar(x:Int)
 
-			val dut = Extractor.idExtractors.OfType(classOf[Foo]).contramap[Bar](bar => new Foo(bar.x))
+			val dut = Extractor.idExtractors.ofType(classOf[Foo]).contramap[Bar](bar => new Foo(bar.x))
 
 			it ("Returns the mapped Foo when the next input is an Expr and the scrutinee is a Bar") {
 				assertParseSuccess(dut, ("" :: "" :: Nil, Bar(42)), Option(List(Foo(42))))
@@ -216,12 +216,12 @@ final class ExtractorTest extends AnyFunSpec {
 		}
 	}
 	describe("Extractor#widenWith") {
-		describe("OfType.widenWith(_.isInstanceOf)") {
+		describe("ofType.widenWith(_.isInstanceOf)") {
 			trait Superclass
 			final case class Subclass1(x:Int) extends Superclass
 			final case class Subclass2(x:Int) extends Superclass
 
-			val dut = Extractor.idExtractors.OfType(classOf[Subclass1])
+			val dut = Extractor.idExtractors.ofType(classOf[Subclass1])
 					.widenWith[Superclass](PartialExprFunction[Id, Superclass, Subclass1]({(x:Superclass) => x.isInstanceOf[Subclass1]}, {(x:Superclass) => x.asInstanceOf[Subclass1]}))
 
 			it ("on match") {
@@ -236,8 +236,8 @@ final class ExtractorTest extends AnyFunSpec {
 		describe("digit andThen alpha") {
 			val digitExpectingLine = "Expected '0'<=c<='9'"
 			val alphaExpectingLine = "Expected 'a'<=c<='z'"
-			val digitParser = Extractor.idExtractors.CharWhere(c => '0' <= c && c <= '9')
-			val alphaParser = Extractor.idExtractors.CharWhere(c => 'a' <= c && c <= 'z')
+			val digitParser = Extractor.idExtractors.charWhere(c => '0' <= c && c <= '9')
+			val alphaParser = Extractor.idExtractors.charWhere(c => 'a' <= c && c <= 'z')
 
 			val dut:Extractor[Id, Class, (Char, Char)] = digitParser andThen alphaParser
 
@@ -271,8 +271,8 @@ final class ExtractorTest extends AnyFunSpec {
 		}
 
 		describe("\"left\" orElse \"right\"") {
-			val left = Extractor.idExtractors.IsString("left")
-			val right = Extractor.idExtractors.IsString("right")
+			val left = Extractor.idExtractors.isString("left")
+			val right = Extractor.idExtractors.isString("right")
 
 			val dut:Extractor[Id, Class, Either[Unit, Unit]] = left.orElse(right)(discriminatedContraEithered)
 
@@ -293,7 +293,7 @@ final class ExtractorTest extends AnyFunSpec {
 			}
 		}
 		describe("parts that may consume input") {
-			def charIn(s:String) = Extractor.idExtractors.CharIn(s).contramap({(_:Unit) => ' '})
+			def charIn(s:String) = Extractor.idExtractors.charIn(s).contramap({(_:Unit) => ' '})
 
 			val abcd = charIn("a") andThen charIn("b") andThen charIn("c") andThen charIn("d")
 			val abzy = charIn("a") andThen charIn("b") andThen charIn("z") andThen charIn("y")
@@ -307,8 +307,8 @@ final class ExtractorTest extends AnyFunSpec {
 	describe("Extractor#repeat") {
 		import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 
-		describe("OfType*") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType*") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(strategy = Greedy)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
@@ -335,8 +335,8 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseSuccess(dut2, (input, scrutinee), Option(expecting))
 			}
 		}
-		describe("OfType*+") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType*+") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(strategy = Possessive)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
@@ -362,8 +362,8 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseFailure(dut2, (input, scrutinee), List("Expected OfType(java.lang.String)", "\t${}${}${}", "\t         ^"))
 			}
 		}
-		describe("OfType*?") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType*?") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(strategy = Lazy)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
@@ -382,7 +382,7 @@ final class ExtractorTest extends AnyFunSpec {
 			}
 
 			it ("will backtrack") {
-				val dut2:Extractor[Id, Class, List[String]] = dut.andThen(Extractor.idExtractors.End)
+				val dut2:Extractor[Id, Class, List[String]] = dut.andThen(Extractor.idExtractors.end)
 				val input = List.fill(4)("")
 				val scrutinee = List("a", "b", "c")
 				val expecting = List("a", "b", "c")
@@ -390,8 +390,8 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseSuccess(dut2, (input, scrutinee), Option(expecting))
 			}
 		}
-		describe("OfType+") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType+") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(1, strategy = Greedy)
 
 			it (s"when input has length 0 then throws") {
@@ -413,8 +413,8 @@ final class ExtractorTest extends AnyFunSpec {
 				}
 			}
 		}
-		describe("OfType?") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType?") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(0, 1, strategy = Greedy)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
@@ -432,8 +432,8 @@ final class ExtractorTest extends AnyFunSpec {
 				}
 			}
 		}
-		describe("Pass*") {
-			val one = Extractor.idExtractors.Pass
+		describe("pass*") {
+			val one = Extractor.idExtractors.pass
 			val dut = one.repeat(strategy = Greedy)
 
 			it ("does not hang indefinitely") {
@@ -442,8 +442,8 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseSuccess(dut, (input, ()), Option(Nil))
 			}
 		}
-		describe("(OfType*)*") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("(ofType*)*") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val two:Extractor[Id, Class, List[String]] = one.repeat(strategy = Greedy)
 			val dut:Extractor[Id, Class, List[List[String]]] = two.repeat(strategy = Greedy)
 
@@ -454,9 +454,9 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseSuccess(dut, (input, scrutinee), Option.empty)
 			}
 		}
-		describe("OfType* with delim `,`") {
-			val delim = Extractor.idExtractors.IsString(",")
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType* with delim `,`") {
+			val delim = Extractor.idExtractors.isString(",")
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(delimiter = delim, strategy = Greedy)
 
 			for (inputLength <- 0 to 1; scrutineeLength <- 0 to (inputLength + 1)) {
@@ -489,9 +489,9 @@ final class ExtractorTest extends AnyFunSpec {
 				}
 			}
 		}
-		describe("OfType{2,} with delim `,`") {
-			val delim = Extractor.idExtractors.IsString(",")
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType{2,} with delim `,`") {
+			val delim = Extractor.idExtractors.isString(",")
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, List[String]] = one.repeat(2, delimiter = delim, strategy = Greedy)
 
 			it (s"when input has length 1, throws and reports expecting the delimiter") {
@@ -501,7 +501,7 @@ final class ExtractorTest extends AnyFunSpec {
 			}
 		}
 		describe("`(a ~ b ~ c)*`") {
-			def charIn(s:String) = Extractor.idExtractors.CharIn(s)
+			def charIn(s:String) = Extractor.idExtractors.charIn(s)
 
 			val one:Extractor[Id, Class, (Char, Char)] = charIn("a") andThen charIn("b")
 			val two:Extractor[Id, Class, ((Char, Char), Char)] = one andThen charIn("c")
@@ -525,8 +525,8 @@ final class ExtractorTest extends AnyFunSpec {
 	describe("Extractor#optionally") {
 		import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 
-		describe("OfType?") {
-			val one = Extractor.idExtractors.OfType[String](classOf[String])
+		describe("ofType?") {
+			val one = Extractor.idExtractors.ofType[String](classOf[String])
 			val dut:Extractor[Id, Class, Option[String]] = one.optionally(strategy = Greedy)
 
 			it (s"when input has length 0 and scrutinee is None, then matches") {

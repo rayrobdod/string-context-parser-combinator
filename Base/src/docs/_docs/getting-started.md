@@ -25,8 +25,8 @@ extension (sc:StringContext)
 ```
 
 We'll start by creating a Interpolator that will match one of any character from the processed string.
-[[CharWhere|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.CharWhere]] is one of the leaf parsers that can be used for this;
-`CharWhere` takes a predicate and creates a parser in which,
+[[charWhere|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.charWhere]] is one of the leaf parsers that can be used for this;
+`charWhere` takes a predicate and creates a parser in which,
 if the next character passes the predicate, the parser passes and the character is captured.
 Since we want this parser to match any character,
 we will use a predicate that always returns true.
@@ -36,7 +36,7 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 
 extension (sc:StringContext)
   def s2(args:Any*):Char =
-    val anyChar = CharWhere(_ => true)
+    val anyChar = charWhere(_ => true)
     anyChar.interpolate(sc, args)
 
 s2"Hello" // 'H'
@@ -59,7 +59,7 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):String =
-    val anyChars = CharWhere(_ => true)
+    val anyChars = charWhere(_ => true)
         .repeat()
     anyChars.interpolate(sc, args)
 
@@ -71,10 +71,10 @@ s2"" // ""
 
 Next, lets handle processed string arguments.
 We will set aside `anyChars` for now.
-Of the leaf parsers that handle args, [[OfType|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.OfType]] is the most straightforward.
-`OfType` takes a type argument and type evidence (in this case a Class) and will match and capture any argument that is a subtype of that class.
-So, an `OfType[Int]` would match any argument that is an `Int` or a subclass of `Int`.
-Since we want to match any argument, we will use `OfType[Any]`.
+Of the leaf parsers that handle args, [[ofType|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.ofType]] is the most straightforward.
+`ofType` takes a type argument and type evidence (in this case a Class) and will match and capture any argument that is a subtype of that class.
+So, an `ofType[Int]` would match any argument that is an `Int` or a subclass of `Int`.
+Since we want to match any argument, we will use `ofType[Any]`.
 The result of running this parser is the same as its type parameter, in this case `Any`.
 
 ```scala
@@ -84,11 +84,11 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):Any =
-    val anyArg = OfType[Any](classOf[Any])
+    val anyArg = ofType[Any](classOf[Any])
     anyArg.interpolate(sc, args)
 
 s2"${2 + 2}" // 4
-s2"Hello" // throws: Expected OfType[Object]
+s2"Hello" // throws: Expected ofType[Object]
 ```
 
 We don't want the result of the interpolator to be an Any here, though; we want the result to be a String.
@@ -102,12 +102,12 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):String =
-    val anyArg = OfType[Any](classOf[Any])
+    val anyArg = ofType[Any](classOf[Any])
         .map(_.toString)
     anyArg.interpolate(sc, args)
 
 s2"${2 + 2}" // "4"
-s2"Hello" // throws: Expected OfType[Object]
+s2"Hello" // throws: Expected ofType[Object]
 ```
 
 Now that we have one parser that will match a sequence of characters and another that will match an arg,
@@ -126,9 +126,9 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):String =
-    val anyChars = CharWhere(_ => true)
+    val anyChars = charWhere(_ => true)
         .repeat()
-    val anyArg = OfType[Any](classOf[Any])
+    val anyArg = ofType[Any](classOf[Any])
         .map(_.toString)
     val segment = anyChars orElse anyArg
     segment.interpolate(sc, args)
@@ -153,9 +153,9 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):String =
-    val anyChars = CharWhere(_ => true)
+    val anyChars = charWhere(_ => true)
         .repeat(1)
-    val anyArg = OfType[Any](classOf[Any])
+    val anyArg = ofType[Any](classOf[Any])
         .map(_.toString)
     val segment = anyChars orElse anyArg
     segment.interpolate(sc, args)
@@ -177,9 +177,9 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):List[String] =
-    val anyChars = CharWhere(_ => true)
+    val anyChars = charWhere(_ => true)
         .repeat(1)
-    val anyArg = OfType[Any](classOf[Any])
+    val anyArg = ofType[Any](classOf[Any])
         .map(_.toString)
     val segment = anyChars orElse anyArg
     val segments = segment
@@ -199,9 +199,9 @@ import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators.
 //}
 extension (sc:StringContext)
   def s2(args:Any*):String =
-    val anyChars = CharWhere(_ => true)
+    val anyChars = charWhere(_ => true)
         .repeat(1)
-    val anyArg = OfType[Any](classOf[Any])
+    val anyArg = ofType[Any](classOf[Any])
         .map(_.toString)
     val segment = anyChars orElse anyArg
     val segments = segment
@@ -218,7 +218,7 @@ The library also supports creating marco-level parsers, that will instead run at
 There are several advantages to using a macro-based interpolator,
 
 * Interpolator parsing errors will fail at compile time, instead of being a runtime exception
-* OfType can work with types instead of classes,
+* `ofType` can work with types instead of classes,
 * The `Lifted` interpolator only works in the Quoted context
 
 The leaf interpolators used for a macro-based interpolator at provided in [[Interpolator.quotedInterpolators|com.rayrobdod.stringContextParserCombinator.Interpolator$#quotedInterpolators]]
@@ -244,24 +244,24 @@ def prefixImpl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[R
 The `interpolate` method handles extracting string context parts and arguments from the Expr arguments.
 Most of the changes involve changing return values to be wrapped in an Expr.
 
-The `CharWhere` and the other character parsers capture `Char` values even in macro interpolators.
+The `charWhere` and the other character parsers capture `Char` values even in macro interpolators.
 However, the result must be wrapped in an `Expr`,
 so the parts must must be lifted into an Expr at some point.
 This can be done with the map operator, such as `.map(Expr(_))`, or equivalently with the [[mapToExpr|com.rayrobdod.stringContextParserCombinator.Interpolator.mapToExpr]] method.
 
 ```diff
- val anyChars = CharWhere(_ => true)
+ val anyChars = charWhere(_ => true)
      .repeat(1)
 +    .mapToExpr
 ```
 
-`OfType` changes from requiring a `java.lang.Class` and returning an immediate value,
+`ofType` changes from requiring a `java.lang.Class` and returning an immediate value,
 to requiring an implicit `scala.quoted.Type` and returning the `Expr`-wrapped value.
-Since the `OfType` result is in an `Expr`, the mapping applied to this value must be changed from a `Any => String` to a `Expr[Any] => Expr[String]`, essentially wrapping the mapping in a Quote.
+Since the `ofType` result is in an `Expr`, the mapping applied to this value must be changed from a `Any => String` to a `Expr[Any] => Expr[String]`, essentially wrapping the mapping in a Quote.
 
 ```diff
--val anyArg = OfType[Any](classOf[Any])
-+val anyArg = OfType[Any]
+-val anyArg = ofType[Any](classOf[Any])
++val anyArg = ofType[Any]
 -    .map(arg => arg.toString)
 +    .map(arg => '{$arg.toString})
 ```
@@ -293,11 +293,11 @@ extension (inline sc:StringContext)
     ${s2Impl('sc, 'args)}
 
 def s2Impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[String] =
-  val anyChars = CharWhere(_ => true)
+  val anyChars = charWhere(_ => true)
       .repeat(1)
       .mapToExpr
 
-  val anyArg = OfType[Any]
+  val anyArg = ofType[Any]
       .map(arg => '{$arg.toString})
 
   val segment = anyChars orElse anyArg

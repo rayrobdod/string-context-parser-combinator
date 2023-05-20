@@ -5,7 +5,7 @@ import com.rayrobdod.stringContextParserCombinator._
 
 object IdImpl {
 	private[this] val leafParsers = Parser.idParsers
-	import leafParsers.End
+	import leafParsers.end
 	import TimeParsers.intTwoDigits
 	import typeclass.BiEithered.idSymmetric
 
@@ -49,21 +49,21 @@ object IdImpl {
 	)
 
 	def interpolate_localDate(sc:StringContext, args:Any*):LocalDate = {
-		(timeParsers.localDate andThen End).interpolate(sc, args.toList)
+		(timeParsers.localDate andThen end).interpolate(sc, args.toList)
 	}
 	def interpolate_localTime(sc:StringContext, args:Any*):LocalTime = {
-		(timeParsers.localTime andThen End).interpolate(sc, args.toList)
+		(timeParsers.localTime andThen end).interpolate(sc, args.toList)
 	}
 	def interpolate_localDateTime(sc:StringContext, args:Any*):LocalDateTime = {
-		(timeParsers.localDateTime andThen End).interpolate(sc, args.toList)
+		(timeParsers.localDateTime andThen end).interpolate(sc, args.toList)
 	}
 	def extract_localDate(sc:StringContext, value:LocalDate):Option[Seq[Any]] = {
-		(timeParsers.localDate andThen End).extract(sc, value)
+		(timeParsers.localDate andThen end).extract(sc, value)
 	}
 	def extract_localTime(sc:StringContext, value:LocalTime):Option[Seq[Any]] = {
-		(timeParsers.localTime andThen End).extract(sc, value)
+		(timeParsers.localTime andThen end).extract(sc, value)
 	}
 	def extract_localDateTime(sc:StringContext, value:LocalDateTime):Option[Seq[Any]] = {
-		(timeParsers.localDateTime andThen End).extract(sc, value)
+		(timeParsers.localDateTime andThen end).extract(sc, value)
 	}
 }

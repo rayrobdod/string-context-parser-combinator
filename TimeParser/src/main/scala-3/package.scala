@@ -56,7 +56,7 @@ object MacroImpl {
 		}
 	}
 
-	import Parser.End
+	import Parser.end
 	import TimeParsers.intTwoDigits
 
 
@@ -83,27 +83,27 @@ object MacroImpl {
 
 
 	def interpolate_localDate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDate] = {
-		(timeParsers.localDate andThen End).interpolate(sc, args)
+		(timeParsers.localDate andThen end).interpolate(sc, args)
 	}
 
 	def interpolate_localTime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalTime] = {
-		(timeParsers.localTime andThen End).interpolate(sc, args)
+		(timeParsers.localTime andThen end).interpolate(sc, args)
 	}
 
 	def interpolate_localDateTime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDateTime] = {
-		(timeParsers.localDateTime andThen End).interpolate(sc, args)
+		(timeParsers.localDateTime andThen end).interpolate(sc, args)
 	}
 
 	def extractor_localDate(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalDate]] = {
-		(timeParsers.localDate andThen End).extractor(sc)
+		(timeParsers.localDate andThen end).extractor(sc)
 	}
 
 	def extractor_localTime(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalTime]] = {
-		(timeParsers.localTime andThen End).extractor(sc)
+		(timeParsers.localTime andThen end).extractor(sc)
 	}
 
 	def extractor_localDateTime(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalDateTime]] = {
-		(timeParsers.localDateTime andThen End).extractor(sc)
+		(timeParsers.localDateTime andThen end).extractor(sc)
 	}
 }
 

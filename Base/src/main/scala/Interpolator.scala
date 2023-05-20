@@ -234,7 +234,7 @@ object Interpolator
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def DelayedConstruction[Expr, A](fn:Function0[SCPCInterpolator[Expr, A]]):SCPCInterpolator[Expr, A] =
+	def `lazy`[Expr, A](fn:Function0[SCPCInterpolator[Expr, A]]):SCPCInterpolator[Expr, A] =
 		new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
@@ -271,85 +271,85 @@ object Interpolator
 		 * Succeeds if the next character is a member of the given Set; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Set[Char]):Interpolator[Char]
+		def charIn(str:Set[Char]):Interpolator[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given Seq; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Seq[Char]):Interpolator[Char]
+		def charIn(str:Seq[Char]):Interpolator[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given String; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:String):Interpolator[Char]
+		def charIn(str:String):Interpolator[Char]
 
 		/**
 		 * Succeeds if the next character matches the given predicate; captures that character
 		 * @group PartAsChar
 		 */
-		def CharWhere(fn:Function1[Char, Boolean]):Interpolator[Char]
+		def charWhere(fn:Function1[Char, Boolean]):Interpolator[Char]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Set[CodePoint]):Interpolator[CodePoint]
+		def codePointIn(str:Set[CodePoint]):Interpolator[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Seq[CodePoint]):Interpolator[CodePoint]
+		def codePointIn(str:Seq[CodePoint]):Interpolator[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given string; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:String):Interpolator[CodePoint]
+		def codePointIn(str:String):Interpolator[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint matches the given predicate; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointWhere(fn:Function1[CodePoint, Boolean]):Interpolator[CodePoint]
+		def codePointWhere(fn:Function1[CodePoint, Boolean]):Interpolator[CodePoint]
 
 		/**
 		 * Succeeds if the next set of characters in the input is equal to the given string
 		 * @group Part
 		 */
-		def IsString(str:String):Interpolator[Unit]
+		def isString(str:String):Interpolator[Unit]
 
 		/**
 		 * A parser that consumes no input and always succeeds
 		 * @group Constant
 		 */
-		def Pass:Interpolator[Unit]
+		def pass:Interpolator[Unit]
 
 		/**
 		 * A parser that always reports a failure
 		 * @group Constant
 		 */
-		def Fail(message:String):Interpolator[Nothing]
+		def fail(message:String):Interpolator[Nothing]
 
 		/**
 		 * A parser that succeeds iff the input is empty
 		 * @group Position
 		 */
-		def End:Interpolator[Unit]
+		def end:Interpolator[Unit]
 
 		/**
 		 * Indirectly refers to a parser, to allow for mutual-recursion
 		 * @group Misc
 		 */
-		def DelayedConstruction[A](fn:Function0[Interpolator[A]]):Interpolator[A]
+		def `lazy`[A](fn:Function0[Interpolator[A]]):Interpolator[A]
 
 		/**
 		 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 		 * @group Arg
 		 */
-		def OfType[A](implicit tpe:Type[A]):Interpolator[Expr[A]]
+		def ofType[A](implicit tpe:Type[A]):Interpolator[Expr[A]]
 	}
 
 	/**
@@ -358,10 +358,10 @@ object Interpolator
 	 */
 	val idInterpolators: Interpolators[Id, IdToExpr, Class] = {
 		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
-			override def DelayedConstruction[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
+			override def `lazy`[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
 				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
-			override def OfType[A](implicit tpe: Class[A]): Interpolator[A] =
+			override def ofType[A](implicit tpe: Class[A]): Interpolator[A] =
 				new Interpolator(new internal.OfClass(tpe))
 		}
 	}
@@ -375,83 +375,83 @@ private[stringContextParserCombinator] trait ExprIndependentInterpolators[Expr] 
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Set[Char]):SCPCInterpolator[Expr, Char] =
+	def charIn(str:Set[Char]):SCPCInterpolator[Expr, Char] =
 		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Seq[Char]):SCPCInterpolator[Expr, Char] =
+	def charIn(str:Seq[Char]):SCPCInterpolator[Expr, Char] =
 		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:String):SCPCInterpolator[Expr, Char] =
+	def charIn(str:String):SCPCInterpolator[Expr, Char] =
 		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def CharWhere(fn:Function1[Char, Boolean]):SCPCInterpolator[Expr, Char] =
+	def charWhere(fn:Function1[Char, Boolean]):SCPCInterpolator[Expr, Char] =
 		new SCPCInterpolator[Expr, Char](internal.CharWhere[Id, Id](fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Set[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
+	def codePointIn(str:Set[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
 		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Seq[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
+	def codePointIn(str:Seq[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
 		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:String):SCPCInterpolator[Expr, CodePoint] =
+	def codePointIn(str:String):SCPCInterpolator[Expr, CodePoint] =
 		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCPCInterpolator[Expr, CodePoint] =
+	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCPCInterpolator[Expr, CodePoint] =
 		new SCPCInterpolator[Expr, CodePoint](internal.CodePointWhere[Id, Id](fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def IsString(str:String):SCPCInterpolator[Expr, Unit] =
+	def isString(str:String):SCPCInterpolator[Expr, Unit] =
 		new SCPCInterpolator[Expr, Unit](internal.IsString[Id, Id](str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def Pass:SCPCInterpolator[Expr, Unit] =
+	def pass:SCPCInterpolator[Expr, Unit] =
 		new SCPCInterpolator[Expr, Unit](new internal.Pass[Id, Id])
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def Fail(message:String):SCPCInterpolator[Expr, Nothing] =
+	def fail(message:String):SCPCInterpolator[Expr, Nothing] =
 		new SCPCInterpolator[Expr, Nothing](new internal.Fail[Id, Id](ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def End:SCPCInterpolator[Expr, Unit] =
+	def end:SCPCInterpolator[Expr, Unit] =
 		new SCPCInterpolator[Expr, Unit](new internal.End[Id, Id]())
 }

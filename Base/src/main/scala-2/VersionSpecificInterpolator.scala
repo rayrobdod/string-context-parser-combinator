@@ -83,13 +83,13 @@ trait VersionSpecificInterpolatorModule {
 		new Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag]
 				with ExprIndependentInterpolators[c.Expr[Any]]
 				with LiftedInterpolator[c.type] {
-			def DelayedConstruction[A](fn:Function0[Interpolator[A]]):Interpolator[A] =
+			override def `lazy`[A](fn:Function0[Interpolator[A]]):Interpolator[A] =
 				new Interpolator[A](internal.DelayedConstruction.interpolator(fn))
 
-			override def OfType[A](implicit tpe: c.TypeTag[A]): Interpolator[c.Expr[A]] =
+			override def ofType[A](implicit tpe: c.TypeTag[A]): Interpolator[c.Expr[A]] =
 				new Interpolator[c.Expr[A]](new internal.OfType[c.type, A](tpe))
 
-			override def Lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]):Interpolator[Z] =
+			override def lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]):Interpolator[Z] =
 				new Interpolator[Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
 		}
 	}
@@ -105,6 +105,6 @@ trait VersionSpecificInterpolatorModule {
 		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 		 * @group Arg
 		 */
-		def Lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCInterpolator[C#Expr[Any], Z]
+		def lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCInterpolator[C#Expr[Any], Z]
 	}
 }

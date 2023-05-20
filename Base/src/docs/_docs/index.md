@@ -17,14 +17,14 @@ def eval1(folding:Expr[Int], elem:(Char, Expr[Int]))(using Quotes):Expr[Int] = e
 }
 def eval(head:Expr[Int], tail:Seq[(Char, Expr[Int])])(using Quotes):Expr[Int] = tail.foldLeft(head)(eval1 _)
 
-def numberLiteral(using Quotes):Interpolator[Expr[Int]] = CharIn('0' to '9').repeat(1).map({x => Expr[Int](x.toInt)})
-def numberProvided(using Quotes):Interpolator[Expr[Int]] = OfType[Int]
-def parens(using Quotes):Interpolator[Expr[Int]] = DelayedConstruction(() => IsString("(") andThen addSub andThen IsString(")"))
+def numberLiteral(using Quotes):Interpolator[Expr[Int]] = charIn('0' to '9').repeat(1).map({x => Expr[Int](x.toInt)})
+def numberProvided(using Quotes):Interpolator[Expr[Int]] = ofType[Int]
+def parens(using Quotes):Interpolator[Expr[Int]] = `lazy`(() => isString("(") andThen addSub andThen isString(")"))
 def factor(using Quotes):Interpolator[Expr[Int]] = numberLiteral orElse numberProvided orElse parens
 
-def divMul(using Quotes):Interpolator[Expr[Int]] = (factor andThen (CharIn("*/") andThen factor).repeat()).map(eval _)
-def addSub(using Quotes):Interpolator[Expr[Int]] = (divMul andThen (CharIn("+-") andThen divMul).repeat()).map(eval _)
-def expr(using Quotes):Interpolator[Expr[Int]] = addSub andThen End
+def divMul(using Quotes):Interpolator[Expr[Int]] = (factor andThen (charIn("*/") andThen factor).repeat()).map(eval _)
+def addSub(using Quotes):Interpolator[Expr[Int]] = (divMul andThen (charIn("+-") andThen divMul).repeat()).map(eval _)
+def expr(using Quotes):Interpolator[Expr[Int]] = addSub andThen end
 
 def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.interpolate(sc, args)
 ```
