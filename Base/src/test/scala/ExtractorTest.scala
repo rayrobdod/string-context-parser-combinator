@@ -138,7 +138,7 @@ final class ExtractorTest extends AnyFunSpec {
 		describe("Extractor.idExtractors.codePointWhere(_ => true)") {
 			val expectingLine = "Expected '\\u0000'<=c<='\uDBFF\uDFFF'"
 			val dut = Extractor.idExtractors.codePointWhere(_ => true)
-			val characterCases = List[Int](0, 'a', 0xFFFF, Character.MAX_CODE_POINT)
+			val characterCases = List[Int](0, 'a', 0xFFFF, CodePoint.MaxValue)
 
 			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
 			assertParseFailureOnExpr(dut, CodePoint(0x31), expectingLine)
@@ -153,11 +153,11 @@ final class ExtractorTest extends AnyFunSpec {
 				assertParseSuccess(dut, ("\uD83D\uDE00" :: Nil, CodePoint(128512)), Some(Nil))
 			}
 		}
-		describe("Extractor.idExtractors.codePointWhere(c => 127137 <= c.value && c.value <= 127150)") {
+		describe("Extractor.idExtractors.codePointWhere(c => 127137 <= c.intValue && c.intValue <= 127150)") {
 			val expectingLine = "Expected '🂡'<=c<='🂮'"
-			val dut = Extractor.idExtractors.codePointWhere(c => 127137 <= c.value && c.value <= 127150)
+			val dut = Extractor.idExtractors.codePointWhere(c => 127137 <= c.intValue && c.intValue <= 127150)
 			val passCharCases = List[Int](127137, 127144, 127150)
-			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, Character.MAX_CODE_POINT)
+			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, CodePoint.MaxValue)
 
 			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
 			assertParseFailureOnExpr(dut, CodePoint(0x31), expectingLine)

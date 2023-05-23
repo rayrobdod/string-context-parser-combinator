@@ -62,8 +62,8 @@ object MacroImpl {
 
 		val hexChar:Interpolator[Char] = charWhere(c => '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F').opaque("hexChar")
 
-		val alphaChar:Interpolator[CodePoint] = codePointWhere(c => 'a' <= c.value && c.value <= 'z' || 'A' <= c.value && c.value <= 'Z').opaque("alphaChar")
-		val digitChar:Interpolator[CodePoint] = codePointWhere(c => '0' <= c.value && c.value <= '9').opaque("digitChar")
+		val alphaChar:Interpolator[CodePoint] = codePointWhere(c => 'a' <= c.intValue && c.intValue <= 'z' || 'A' <= c.intValue && c.intValue <= 'Z').opaque("alphaChar")
+		val digitChar:Interpolator[CodePoint] = codePointWhere(c => '0' <= c.intValue && c.intValue <= '9').opaque("digitChar")
 		val alphaNumChar:Interpolator[CodePoint] = alphaChar orElse digitChar
 		val unreservedChar:Interpolator[CodePoint] = alphaNumChar orElse codePointIn("-_.!~*'()")
 
