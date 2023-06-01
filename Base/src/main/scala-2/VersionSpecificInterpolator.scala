@@ -39,6 +39,7 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 		val StringContextApply = stringContextApply(c)
 
 		import c.universe.ApplyTag
+		import c.universe.SelectTag
 		val strings = c.prefix.tree.duplicate match {
 			// for methods on the extension object
 			case c.universe.Apply(

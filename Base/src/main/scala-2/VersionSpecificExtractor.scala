@@ -28,6 +28,7 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		val StringContextApply = stringContextApply(c)
 
 		import c.universe.ApplyTag
+		import c.universe.SelectTag
 		val strings = c.prefix.tree.duplicate match {
 			case c.universe.Apply(
 				ExtensionClassSelectChain(),
