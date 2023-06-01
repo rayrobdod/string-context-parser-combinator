@@ -74,7 +74,8 @@ package object stringContextParserCombinator {
 				c.abort(c.enclosingPosition, "Parsing failed")
 			}
 			case ExpectingSet.NonEmpty(position, descriptions) => {
-				val descriptions2 = descriptions.mkString("Expected ", " or ", "")
+				// `sorted` to make result deterministic
+				val descriptions2 = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
 				position.errorAndAbort(c)(descriptions2)
 			}
 		}

@@ -263,9 +263,13 @@ final class StringContextTest extends munit.FunSuite {
 	}
 
 	test("Rejects an empty string") {
-		assertNotEquals(
-			compileErrors(""" json"" """),
-			""
+		assertEquals(
+			compileErrors("""(json"")"""),
+			Seq(
+				"""error: Expected "[" or "\"" or "false" or "null" or "true" or "{" or Liftable Value or Number Literal or Whitespace""",
+				"""(json"")""",
+				"""     ^"""
+			).mkString("\n")
 		)
 	}
 	test("Rejects a whitespace-only string") {

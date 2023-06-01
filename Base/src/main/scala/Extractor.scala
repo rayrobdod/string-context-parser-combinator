@@ -70,7 +70,8 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 				val msg = f.expecting match {
 					case ExpectingSet.Empty() => "Parsing Failed"
 					case ExpectingSet.NonEmpty(position, descriptions) => {
-						val exp = descriptions.mkString("Expected ", " or ", "")
+						// `sorted` to make result deterministic
+						val exp = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
 						val instr = sc.parts.mkString(argString)
 						val pointer = (" " * position) + "^"
 

@@ -67,6 +67,7 @@ object MacroImpl {
 		CharIn("\n\r\t ")
 			.imap(_ => (), _ => ' ')
 			.repeat(strategy = RepeatStrategy.Possessive)
+			.opaque("Whitespace")
 	}
 
 	private def NullP(using Quotes):Parser[Expr[JNull.type]] = {
@@ -245,7 +246,7 @@ object MacroImpl {
 	private def LiftedP(using Quotes):Parser[Expr[JValue]] = Paired(
 		Interpolator.Lifted[Lift.Value, Expr[JValue]](
 			myLiftFunction[JValue, Lift.Value],
-			"Lifted Value"
+			"Liftable Value"
 		),
 		Extractor.OfType[JValue]
 	)
