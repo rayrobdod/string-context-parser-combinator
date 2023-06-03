@@ -69,16 +69,8 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 
 						val tupleModule = tupleTypeConstructorSymbol.companionModule
 						val tupleConstructorTree = Ref(tupleModule)
-						val partsFn:quoted.Expr[UnexprA] => List[quoted.Expr[Any]] = {a => expr.parts.map(partFn => partFn.value(a))}
-						val tupleTreeFn = partsFn.andThen({parts =>
-							tupleConstructorTree
-								.select(tupleModule.methodMember("apply")(0))
-								.appliedToTypeTrees(parts.map(_ => TypeIdent(defn.AnyClass)))
-								.appliedToArgs(parts.map(_.asTerm))
-						})
 
 						val unapplyTypeConstructorTree = TypeIdent(Symbol.requiredClass("com.rayrobdod.stringContextParserCombinator.Unapply.Fixed"))
-						val unapplyTypeTreeFn = tupleTreeFn.andThen(tupleTree => Applied(unapplyTypeConstructorTree, List(unexpraTypeTree, tupleTree)))
 
 						val anonfunType = MethodType(
 							List("a"))(

@@ -3,7 +3,6 @@ package com.rayrobdod.stringContextParserCombinatorExample.datetime
 import java.time._
 import scala.quoted._
 import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
 
 object MacroImpl {
 	import ExprConversions.given
