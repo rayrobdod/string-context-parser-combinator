@@ -144,8 +144,12 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		ev:ExprZ[Any] <:< Expr,
 		ev2:A <:< ExprZ[UnexprA]
 	):Parser[ExprZ, TypeZ, ExprZ[UnexprA]] = {
-		val impl2 = this.impl.asInstanceOf[internal.Interpolator[ExprZ[Any], ExprZ[UnexprA]]]
-		new Parser(new internal.ExtractorAtom[ExprZ, TypeZ, UnexprA](impl2, t))
+		type T2[-X] = internal.Interpolator[X, A]
+		type T3[+X] = internal.Interpolator[ExprZ[Any], X]
+
+		val impl2 = TypeConformanceCompat.contraSubstituteContra[T2, ExprZ[Any], Expr](ev, this.impl)
+		val impl3 = TypeConformanceCompat.contraSubstituteCo[T3, A, ExprZ[UnexprA]](ev2, impl2)
+		new Parser(new internal.ExtractorAtom[ExprZ, TypeZ, UnexprA](impl3, t))
 	}
 
 	/**
