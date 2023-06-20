@@ -20,7 +20,7 @@ package object stringContextParserCombinator {
 			case ExpectingSet.NonEmpty(position, descriptions) => {
 				// `sorted` to make result deterministic
 				val descriptions2 = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
-				position.errorAndAbort(descriptions2)
+				(position + 1).errorAndAbort(descriptions2)
 			}
 		}
 	}

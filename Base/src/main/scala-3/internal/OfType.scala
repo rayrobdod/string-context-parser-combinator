@@ -8,7 +8,7 @@ import scala.quoted.Type
 /** Succeeds if the next input element is an `arg` with the given type; captures the expression */
 private[stringContextParserCombinator]
 final class OfType[A](using Type[A], Quotes) extends Parser[Expr, Type, Expr[A]] {
-	private val expecting = ExpectingDescription(Type.show[A])
+	private val expecting = ExpectingDescription(s"OfType(${Type.show[A]})")
 
 	def interpolate[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Expr[A]] = {
 		input.consume(

@@ -268,7 +268,7 @@ final class StringContextTest extends munit.FunSuite {
 			Seq(
 				"""error: Expected "[" or "\"" or "false" or "null" or "true" or "{" or Liftable Value or Number Literal""",
 				"""(json"")""",
-				"""     ^"""
+				ErrorPositionCompat.emptyString
 			).mkString("\n")
 		)
 	}
