@@ -32,9 +32,12 @@ final class StringContextTest extends munit.FunSuite {
 		assertEquals(json"0", exp)
 	}
 	test("Rejects a number with a leading zero") {
-		assertNotEquals(
-			compileErrors("""(json"012")"""),
-			""
+		assertNoDiff(
+			compileErrors("""json"012""""),
+			"""|error: Expected EOF
+				|json"012"
+				|      ^
+				|""".stripMargin
 		)
 	}
 	test("Accepts a literal 1") {
@@ -256,9 +259,12 @@ final class StringContextTest extends munit.FunSuite {
 		assertEquals(json"""{ "_type": "Foo", ..$param }""", exp)
 	}
 	test("Reject Map with non-string keys") {
-		assertNotEquals(
-			compileErrors(""" json"{1:2}" """),
-			""
+		assertNoDiff(
+			compileErrors("""json"{1:2}""""),
+			"""|error: Expected ".." or "\"" or "}" or A for Lift[A, (String, JValue)] or A for Lift[A, JString]
+				|json"{1:2}"
+				|      ^
+				|""".stripMargin
 		)
 	}
 
@@ -273,39 +279,58 @@ final class StringContextTest extends munit.FunSuite {
 		)
 	}
 	test("Rejects a whitespace-only string") {
-		assertNotEquals(
-			compileErrors(""" json"   " """),
-			""
+		assertNoDiff(
+			compileErrors("""json"   """"),
+			"""|error: Expected "[" or "\"" or "false" or "null" or "true" or "{" or Liftable Value or Number Literal
+				|json"   "
+				|        ^
+				|""".stripMargin
 		)
 	}
 	test("Rejects trailing content") {
-		assertNotEquals(
-			compileErrors(""" json"true false" """),
-			""
+		assertNoDiff(
+			compileErrors("""json"true false""""),
+			"""|error: Expected EOF
+				|json"true false"
+				|          ^
+				|""".stripMargin
 		)
 	}
 	test("Rejects string with unknown escape sequence (a)") {
-		assertNotEquals(
-			compileErrors(" json\"\"\" \"\\a\" \"\"\" "),
-			""
+		assertNoDiff(
+			compileErrors("json\"\"\" \"\\a\" \"\"\""),
+			s"""|error: Expected '\\\"' or '/' or '\\\\' or 'b' or 'f' or 'n' or 'r' or 't'<=c<='u'
+				|json\"\"\" \"\\a\" \"\"\"
+				|          ^
+				|""".stripMargin
 		)
 	}
 	test("Rejects string with an invalid unicode escape sequence") {
-		assertNotEquals(
-			compileErrors(" json\"\"\" \"\\u12u4\" \"\"\" "),
-			""
+		// scala-handled `error in unicode escape` in 2.12-
+		// interpolator-handled `Expected CharIn("...")` in 2.13+
+		assertNoDiff(
+			compileErrors("json\"\"\" \"\\u12u4\" \"\"\"").split("\n", 2)(1),
+			s"""|json\"\"\" \"\\u12u4\" \"\"\"
+				|             ^
+				|""".stripMargin
 		)
 	}
 	test("Rejects array with object prefix/suffix") {
-		assertNotEquals(
-			compileErrors(""" json"{null}" """),
-			""
+		assertNoDiff(
+			compileErrors("""json"{null}""""),
+			"""|error: Expected ".." or "\"" or "}" or A for Lift[A, (String, JValue)] or A for Lift[A, JString]
+				|json"{null}"
+				|      ^
+				|""".stripMargin
 		)
 	}
 	test("Rejects object with array prefix/suffix") {
-		assertNotEquals(
-			compileErrors(" json\"\"\"[\"\":null]\"\"\" "),
-			""
+		assertNoDiff(
+			compileErrors("json\"\"\"[\"\":null]\"\"\""),
+			s"""|error: Expected \",\" or \"]\"
+				|json\"\"\"[\"\":null]\"\"\"
+				|          ^
+				|""".stripMargin
 		)
 	}
 }
