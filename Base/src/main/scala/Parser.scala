@@ -117,6 +117,14 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 		new Parser(internal.Attempt.parser(this.impl))
 
 	/**
+	 * Returns a parser which invokes this parser,
+	 * but does not show the expected value in failure messages
+	 * @group Misc
+	 */
+	def hide:Parser[Expr, Type, A] =
+		new Parser(internal.Hide.parser(this.impl))
+
+	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
 	 *
 	 * @tparam Z the result parser's parsed value type

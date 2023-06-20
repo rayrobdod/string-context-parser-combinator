@@ -8,6 +8,9 @@ sealed trait Result[+Expr, Pos, +A] {
 	/** Map the values contained in a successful result. Returns a failure as-is */
 	private[stringContextParserCombinator]
 	def mapValues[Z](fn:A => Z):Result[Expr, Pos, Z]
+
+	private[stringContextParserCombinator]
+	def mapExpecting(fn:ExpectingSet[Pos] => ExpectingSet[Pos]):Result[Expr, Pos, A]
 }
 
 /**
@@ -57,6 +60,10 @@ final case class Success[+Expr, Pos : Ordering, +A](
 		}
 	}
 
+	private[stringContextParserCombinator]
+	def mapExpecting(fn:ExpectingSet[Pos] => ExpectingSet[Pos]):Result[Expr, Pos, A] =
+		this.map(s => s.copy(expecting = fn(s.expecting)))
+
 	def +:[ExprZ >: Expr, Z >: A](newHead:Success1[ExprZ, Pos, Z]) = Success(newHead, this.choicesHead :: this.choicesTail)
 	def :+[ExprZ >: Expr, Z >: A](newLast:Success1[ExprZ, Pos, Z]) = Success(this.choicesHead, this.choicesTail ::: newLast :: Nil)
 	def ++[ExprZ >: Expr, Z >: A](rhs:Success[ExprZ, Pos, Z]) = Success(this.choicesHead, this.choicesTail ::: rhs.choicesHead :: rhs.choicesTail)
@@ -86,6 +93,10 @@ final case class Failure[Pos](
 ) extends Result[Nothing, Pos, Nothing] {
 	private[stringContextParserCombinator]
 	def mapValues[Z](fn:Nothing => Z):Result[Nothing, Pos, Z] = this
+
+	private[stringContextParserCombinator]
+	def mapExpecting(fn:ExpectingSet[Pos] => ExpectingSet[Pos]):Result[Nothing, Pos, Nothing] =
+		this.copy(expecting = fn(this.expecting))
 
 	/** Returns a failure that expects either the members this expects or an element that other expects */
 	private[stringContextParserCombinator]

@@ -103,7 +103,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		CharIn("\n\r\t ")
 			.imap((_:Char) => (), (_:Unit) => ' ')
 			.repeat(strategy = RepeatStrategy.Possessive)
-			.opaque("Whitespace")
+			.hide
 	}
 
 	private[this] val NullP:Parser[c.Expr[JNull.type]] = {

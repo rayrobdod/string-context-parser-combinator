@@ -67,7 +67,7 @@ object MacroImpl {
 		CharIn("\n\r\t ")
 			.imap(_ => (), _ => ' ')
 			.repeat(strategy = RepeatStrategy.Possessive)
-			.opaque("Whitespace")
+			.hide
 	}
 
 	private def NullP(using Quotes):Parser[Expr[JNull.type]] = {

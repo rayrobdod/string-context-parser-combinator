@@ -115,6 +115,14 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		new Extractor(internal.Attempt.extractor(this.impl))
 
 	/**
+	 * Returns a parser which invokes this parser,
+	 * but does not show the expected value in failure messages
+	 * @group Misc
+	 */
+	def hide:Extractor[Expr, Type, A] =
+		new Extractor(internal.Hide.extractor(this.impl))
+
+	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
 	 *
 	 * @tparam Z the result parser's parsed value type

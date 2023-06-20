@@ -133,6 +133,14 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		new Interpolator(internal.Attempt.interpolator(this.impl))
 
 	/**
+	 * Returns a parser which invokes this parser,
+	 * but does not show the expected value in failure messages
+	 * @group Misc
+	 */
+	def hide:Interpolator[Expr, A] =
+		new Interpolator(internal.Hide.interpolator(this.impl))
+
+	/**
 	 * Creates a parser that will
 	 *    * when interpolating, act like this parser
 	 *    * when extractoring, invoke this parser and check that the extractor input is equal to the parsed value
