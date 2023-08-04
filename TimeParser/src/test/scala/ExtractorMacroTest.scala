@@ -2,7 +2,6 @@ package com.rayrobdod.stringContextParserCombinatorExample.datetimeTest
 package extractorMacroTest
 
 import java.time._
-import org.scalatest.funspec.AnyFunSpec
 import com.rayrobdod.stringContextParserCombinatorExample.datetime._
 
 final class localtime extends munit.FunSuite {
