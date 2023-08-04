@@ -28,6 +28,7 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		val StringContextApply = stringContextApply(c)
 
 		import c.universe.ApplyTag
+		import c.universe.SelectTag
 		val strings = c.prefix.tree.duplicate match {
 			case c.universe.Apply(
 				ExtensionClassSelectChain(),
@@ -83,10 +84,10 @@ trait VersionSpecificExtractorModule {
 	def contextExtractors(c:Context):Extractor.Extractors[c.Expr, c.TypeTag] = {
 		new Extractor.Extractors[c.Expr, c.TypeTag]
 				with ExprIndependentExtractors[c.Expr, c.TypeTag] {
-			override def DelayedConstruction[A](fn:Function0[SCExtractor[c.Expr, c.TypeTag, A]]):SCExtractor[c.Expr, c.TypeTag, A] =
+			override def `lazy`[A](fn:Function0[SCExtractor[c.Expr, c.TypeTag, A]]):SCExtractor[c.Expr, c.TypeTag, A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def OfType[A](implicit tpe: c.TypeTag[A]): SCExtractor[c.Expr, c.TypeTag, c.Expr[A]] =
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCExtractor[c.Expr, c.TypeTag, c.Expr[A]] =
 				new SCExtractor(new internal.OfType[c.type, A](tpe))
 		}
 	}

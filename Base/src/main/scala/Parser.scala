@@ -209,7 +209,7 @@ object Parser
 	 * A parser that acts like the Interpolator when interpolating, and like the Extractor when extracting
 	 * @group Misc
 	 */
-	def Paired[Expr[_], Type[_], A](
+	def paired[Expr[_], Type[_], A](
 		interpolator:SCPCInterpolator[Expr[Any], A],
 		extractor:SCPCExtractor[Expr, Type, A]
 	):SCPCParser[Expr, Type, A] =
@@ -219,7 +219,7 @@ object Parser
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def DelayedConstruction[Expr[_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
+	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
 		new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
@@ -258,91 +258,91 @@ object Parser
 		 * Succeeds if the next character is a member of the given Set; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Set[Char]):Parser[Char]
+		def charIn(str:Set[Char]):Parser[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given Seq; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Seq[Char]):Parser[Char]
+		def charIn(str:Seq[Char]):Parser[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given String; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:String):Parser[Char]
+		def charIn(str:String):Parser[Char]
 
 		/**
 		 * Succeeds if the next character matches the given predicate; captures that character
 		 * @group PartAsChar
 		 */
-		def CharWhere(fn:Function1[Char, Boolean]):Parser[Char]
+		def charWhere(fn:Function1[Char, Boolean]):Parser[Char]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Set[CodePoint]):Parser[CodePoint]
+		def codePointIn(str:Set[CodePoint]):Parser[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Seq[CodePoint]):Parser[CodePoint]
+		def codePointIn(str:Seq[CodePoint]):Parser[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given string; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:String):Parser[CodePoint]
+		def codePointIn(str:String):Parser[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint matches the given predicate; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint]
+		def codePointWhere(fn:Function1[CodePoint, Boolean]):Parser[CodePoint]
 
 		/**
 		 * Succeeds if the next set of characters in the input is equal to the given string
 		 * @group Part
 		 */
-		def IsString(str:String):Parser[Unit]
+		def isString(str:String):Parser[Unit]
 
 		/**
 		 * A parser that consumes no input and always succeeds
 		 * @group Constant
 		 */
-		def Pass:Parser[Unit]
+		def pass:Parser[Unit]
 
 		/**
 		 * A parser that always reports a failure
 		 * @group Constant
 		 */
-		def Fail(message:String):Parser[Nothing]
+		def fail(message:String):Parser[Nothing]
 
 		/**
 		 * A parser that succeeds iff the input is empty
 		 * @group Position
 		 */
-		def End:Parser[Unit]
+		def end:Parser[Unit]
 
 		/**
 		 * Indirectly refers to a parser, to allow for mutual-recursion
 		 * @group Misc
 		 */
-		def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A]
+		def `lazy`[A](fn:Function0[Parser[A]]):Parser[A]
 
 		/**
 		 * A parser that acts like the Interpolator when interpolating, and like the Extractor when extracting
 		 * @group Misc
 		 */
-		def Paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):Parser[A]
+		def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):Parser[A]
 
 		/**
 		 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 		 * @group Arg
 		 */
-		def OfType[A](implicit tpe:Type[A]):Parser[Expr[A]]
+		def ofType[A](implicit tpe:Type[A]):Parser[Expr[A]]
 	}
 
 	/**
@@ -351,13 +351,13 @@ object Parser
 	 */
 	def idParsers: Parsers[Id, IdToExpr, Class] = {
 		new Parsers[Id, IdToExpr, Class] with ExprIndependentParsers[Id, Class] {
-			override def DelayedConstruction[A](fn:Function0[Parser[A]]):Parser[A] =
+			override def `lazy`[A](fn:Function0[Parser[A]]):Parser[A] =
 				new Parser(internal.DelayedConstruction.parser(() => fn().impl))
 
-			override def Paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):Parser[A] =
+			override def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):Parser[A] =
 				new Parser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def OfType[A](implicit tpe: Class[A]): Parser[A] =
+			override def ofType[A](implicit tpe: Class[A]): Parser[A] =
 				new Parser(new internal.OfClass(tpe))
 		}
 	}
@@ -371,83 +371,83 @@ private[stringContextParserCombinator] trait ExprIndependentParsers[Expr[_], Typ
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Set[Char]):SCPCParser[Expr, Type, Char] =
+	def charIn(str:Set[Char]):SCPCParser[Expr, Type, Char] =
 		new SCPCParser[Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Seq[Char]):SCPCParser[Expr, Type, Char] =
+	def charIn(str:Seq[Char]):SCPCParser[Expr, Type, Char] =
 		new SCPCParser[Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:String):SCPCParser[Expr, Type, Char] =
+	def charIn(str:String):SCPCParser[Expr, Type, Char] =
 		new SCPCParser[Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def CharWhere(fn:Function1[Char, Boolean]):SCPCParser[Expr, Type, Char] =
+	def charWhere(fn:Function1[Char, Boolean]):SCPCParser[Expr, Type, Char] =
 		new SCPCParser[Expr, Type, Char](internal.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Set[CodePoint]):SCPCParser[Expr, Type, CodePoint] =
+	def codePointIn(str:Set[CodePoint]):SCPCParser[Expr, Type, CodePoint] =
 		new SCPCParser[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Seq[CodePoint]):SCPCParser[Expr, Type, CodePoint] =
+	def codePointIn(str:Seq[CodePoint]):SCPCParser[Expr, Type, CodePoint] =
 		new SCPCParser[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:String):SCPCParser[Expr, Type, CodePoint] =
+	def codePointIn(str:String):SCPCParser[Expr, Type, CodePoint] =
 		new SCPCParser[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCPCParser[Expr, Type, CodePoint] =
+	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCPCParser[Expr, Type, CodePoint] =
 		new SCPCParser[Expr, Type, CodePoint](internal.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def IsString(str:String):SCPCParser[Expr, Type, Unit] =
+	def isString(str:String):SCPCParser[Expr, Type, Unit] =
 		new SCPCParser[Expr, Type, Unit](internal.IsString(str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def Pass:SCPCParser[Expr, Type, Unit] =
+	def pass:SCPCParser[Expr, Type, Unit] =
 		new SCPCParser[Expr, Type, Unit](new internal.Pass)
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def Fail(message:String):SCPCParser[Expr, Type, Nothing] =
+	def fail(message:String):SCPCParser[Expr, Type, Nothing] =
 		new SCPCParser[Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def End:SCPCParser[Expr, Type, Unit] =
+	def end:SCPCParser[Expr, Type, Unit] =
 		new SCPCParser[Expr, Type, Unit](new internal.End())
 }

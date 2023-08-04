@@ -1,12 +1,9 @@
 package com.rayrobdod
 
-import scala.Predef.refArrayOps
-import scala.collection.immutable.Seq
 import scala.language.higherKinds
 import scala.quoted.Expr
 import scala.quoted.Quotes
 import scala.quoted.Type
-import scala.quoted.Varargs
 
 /**
  * A library for implementing StringContext methods via Interpolator Combinators

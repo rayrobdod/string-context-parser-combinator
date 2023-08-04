@@ -69,16 +69,8 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 
 						val tupleModule = tupleTypeConstructorSymbol.companionModule
 						val tupleConstructorTree = Ref(tupleModule)
-						val partsFn:quoted.Expr[UnexprA] => List[quoted.Expr[Any]] = {a => expr.parts.map(partFn => partFn.value(a))}
-						val tupleTreeFn = partsFn.andThen({parts =>
-							tupleConstructorTree
-								.select(tupleModule.methodMember("apply")(0))
-								.appliedToTypeTrees(parts.map(_ => TypeIdent(defn.AnyClass)))
-								.appliedToArgs(parts.map(_.asTerm))
-						})
 
 						val unapplyTypeConstructorTree = TypeIdent(Symbol.requiredClass("com.rayrobdod.stringContextParserCombinator.Unapply.Fixed"))
-						val unapplyTypeTreeFn = tupleTreeFn.andThen(tupleTree => Applied(unapplyTypeConstructorTree, List(unexpraTypeTree, tupleTree)))
 
 						val anonfunType = MethodType(
 							List("a"))(
@@ -144,7 +136,7 @@ trait VersionSpecificExtractorModule extends ExprIndependentExtractors[Expr, Typ
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 	 * @group Arg
 	 */
-	def OfType[A](using Type[A], Quotes): SCExtractor[Expr, Type, Expr[A]] =
+	def ofType[A](using Type[A], Quotes): SCExtractor[Expr, Type, Expr[A]] =
 		new SCExtractor(new internal.OfType[A])
 
 	/**
@@ -154,10 +146,10 @@ trait VersionSpecificExtractorModule extends ExprIndependentExtractors[Expr, Typ
 	def quotedExtractors(using Quotes):Extractor.Extractors[Expr, Type] = {
 		new Extractor.Extractors[Expr, Type]
 				with ExprIndependentExtractors[Expr, Type] {
-			override def DelayedConstruction[A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+			override def `lazy`[A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def OfType[A](implicit tpe: Type[A]): SCExtractor[Expr, Type, Expr[A]] =
+			override def ofType[A](implicit tpe: Type[A]): SCExtractor[Expr, Type, Expr[A]] =
 				new SCExtractor(new internal.OfType[A])
 		}
 	}

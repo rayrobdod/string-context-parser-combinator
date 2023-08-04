@@ -10,6 +10,7 @@ build_script:
   - cmd: 'ECHO Global / publishTo := Some(Resolver.file("artifact", file("""C:\projects\string-context-parser-combinator\publish"""))) >publish-location.sbt'
   - cmd: 'sbt compile publish'
 test_script:
+  - cmd: 'sbt Test/compile'
   - cmd: 'sbt test'
 artifacts:
   - path: publish

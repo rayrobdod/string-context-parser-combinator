@@ -2,13 +2,13 @@ ThisBuild / version := "-SNAPSHOT"
 ThisBuild / organization := "com.rayrobdod"
 
 val scala211Ver = "2.11.12"
-val scala212Ver = "2.12.17"
-val scala213Ver = "2.13.10"
-val scala30Ver = "3.2.0"
+val scala212Ver = "2.12.18"
+val scala213Ver = "2.13.11"
+val scala3Ver = "3.3.0"
 
 lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
-		"org.scalatest" %%% "scalatest" % "3.2.14" % "test",
+		"org.scalatest" %%% "scalatest" % "3.2.16" % "test",
 		"org.scalameta" %%% "munit" % "0.7.29" % Test,
 	),
 	Compile / compile / scalacOptions += "-feature",
@@ -20,7 +20,7 @@ lazy val sharedSettings = Seq(
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-language:higherKinds")
 		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
-		case _ => Seq("-deprecation")
+		case _ => Seq("-deprecation", "-Wunused:all")
 	}),
 	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.11" | "2.12" | "2.13" => Seq(
@@ -68,12 +68,12 @@ lazy val base = (projectMatrix in file("Base"))
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
-		scala30Ver,
+		scala3Ver,
 	))
 	.jsPlatform(scalaVersions = Seq(
 		scala212Ver,
 		scala213Ver,
-		scala30Ver,
+		scala3Ver,
 	))
 
 lazy val json = (projectMatrix in file("JsonParser"))
@@ -94,12 +94,12 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
-		scala30Ver,
+		scala3Ver,
 	))
 	.jsPlatform(scalaVersions = Seq(
 		scala212Ver,
 		scala213Ver,
-		scala30Ver,
+		scala3Ver,
 	))
 
 lazy val time = (projectMatrix in file("TimeParser"))
@@ -117,15 +117,15 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
-		scala30Ver,
+		scala3Ver,
 	))
 	.jsPlatform(scalaVersions = Seq(
 			scala212Ver,
 			scala213Ver,
-			scala30Ver,
+			scala3Ver,
 		),
 		libraryDependencies ++= Seq(
-			"io.github.cquiroz" %%% "scala-java-time" % "2.4.0",
+			"io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
 		),
 	)
 
@@ -144,7 +144,7 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		scala211Ver,
 		scala212Ver,
 		scala213Ver,
-		scala30Ver,
+		scala3Ver,
 	))
 
 autoScalaLibrary := false

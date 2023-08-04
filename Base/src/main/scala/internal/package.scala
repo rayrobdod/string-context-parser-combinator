@@ -139,7 +139,7 @@ package object internal {
 	def CodePointIn[Expr[_], Type[_]](
 		chooseFrom:String
 	):Parser[Expr, Type, CodePoint] = {
-		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.value}}
+		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.intValue}}
 		this.CodePointWhere(
 			{(x:CodePoint) => chooseFrom.codePoints.anyMatch(IntEqualsCodePoint(x))},
 			ExpectingDescription(chooseFrom.map(c => escape(c)).mkString("CodePointIn(\"", "", "\")"))
@@ -153,7 +153,7 @@ package object internal {
 	):Parser[Expr, Type, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			ExpectingDescription(chooseFrom.map(c => escape(c.value)).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(c => escape(c.intValue)).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 
@@ -164,7 +164,7 @@ package object internal {
 	):Parser[Expr, Type, CodePoint] = {
 		this.CodePointWhere(
 			chooseFrom.contains _,
-			ExpectingDescription(chooseFrom.map(c => escape(c.value)).mkString("CodePointIn(\"", "", "\")"))
+			ExpectingDescription(chooseFrom.map(c => escape(c.intValue)).mkString("CodePointIn(\"", "", "\")"))
 		)
 	}
 

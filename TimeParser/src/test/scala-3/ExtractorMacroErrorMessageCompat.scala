@@ -6,7 +6,9 @@ object ExtractorMacroErrorMessageCompat {
 				|value $methodName is not a member of StringContext.
 				|An extension method was tried, but could not be fully constructed:
 				|
-				|    <empty>    failed with
+				|    <empty>
+				|
+				|    failed with:
 				|
 				|        $expectingLine
 				|$contextLine

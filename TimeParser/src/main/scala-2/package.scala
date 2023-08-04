@@ -84,23 +84,23 @@ package datetime {
 		private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
 
 		def interpolate_localDate(args:c.Expr[Any]*):c.Expr[LocalDate] = {
-			(timeParsers.localDate andThen End).interpolate(c)(extensionClassName)(args.toList)
+			(timeParsers.localDate andThen end).interpolate(c)(extensionClassName)(args.toList)
 		}
 		def interpolate_localTime(args:c.Expr[Any]*):c.Expr[LocalTime] = {
-			(timeParsers.localTime andThen End).interpolate(c)(extensionClassName)(args.toList)
+			(timeParsers.localTime andThen end).interpolate(c)(extensionClassName)(args.toList)
 		}
 		def interpolate_localDateTime(args:c.Expr[Any]*):c.Expr[LocalDateTime] = {
-			(timeParsers.localDateTime andThen End).interpolate(c)(extensionClassName)(args.toList)
+			(timeParsers.localDateTime andThen end).interpolate(c)(extensionClassName)(args.toList)
 		}
 
 		def extractor_localDate(value:c.Expr[LocalDate]):c.Expr[Any] = {
-			(timeParsers.localDate andThen End).extractor(c)(extensionClassName)(value)
+			(timeParsers.localDate andThen end).extractor(c)(extensionClassName)(value)
 		}
 		def extractor_localTime(value:c.Expr[LocalTime]):c.Expr[Any] = {
-			(timeParsers.localTime andThen End).extractor(c)(extensionClassName)(value)
+			(timeParsers.localTime andThen end).extractor(c)(extensionClassName)(value)
 		}
 		def extractor_localDateTime(value:c.Expr[LocalDateTime]):c.Expr[Any] = {
-			(timeParsers.localDateTime andThen End).extractor(c)(extensionClassName)(value)
+			(timeParsers.localDateTime andThen end).extractor(c)(extensionClassName)(value)
 		}
 	}
 }

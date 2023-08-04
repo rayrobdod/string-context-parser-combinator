@@ -16,6 +16,8 @@ jobs:
         distribution: 'zulu'
         java-version: ${{ matrix.java }}
         cache: 'sbt'
+    - name: sbt Test/compile
+      run: sbt Test/compile
     - name: sbt test
       run: sbt test
   publish-artifact:

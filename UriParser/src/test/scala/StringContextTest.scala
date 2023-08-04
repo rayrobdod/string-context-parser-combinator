@@ -93,7 +93,7 @@ final class StringContextTest extends munit.FunSuite {
 	test("Rejects hierarchical with almost Inet6Address as host (1::3:4:5:6::8)") {
 		assertNoDiff(
 			compileErrors("""uri"scheme://[1::3:4:5:6::8]/""""),
-			"""|error: Expected "#" or "%" or "?" or AlphaChar or CodePointIn("-_.!~*'()") or CodePointIn("/") or CodePointIn(";@&=+$,") or DigitChar or EOF
+			"""|error: Expected "#" or "%" or "?" or CodePointIn("-_.!~*'()") or CodePointIn("/") or CodePointIn(";@&=+$,") or EOF or alphaChar or digitChar
 				|uri"scheme://[1::3:4:5:6::8]/"
 				|          ^
 				|""".stripMargin

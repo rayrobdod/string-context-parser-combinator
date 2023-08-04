@@ -207,7 +207,7 @@ object Extractor
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def DelayedConstruction[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
 	/**
@@ -243,85 +243,85 @@ object Extractor
 		 * Succeeds if the next character is a member of the given Set; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Set[Char]):Extractor[Char]
+		def charIn(str:Set[Char]):Extractor[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given Seq; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:Seq[Char]):Extractor[Char]
+		def charIn(str:Seq[Char]):Extractor[Char]
 
 		/**
 		 * Succeeds if the next character is a member of the given String; captures that character
 		 * @group PartAsChar
 		 */
-		def CharIn(str:String):Extractor[Char]
+		def charIn(str:String):Extractor[Char]
 
 		/**
 		 * Succeeds if the next character matches the given predicate; captures that character
 		 * @group PartAsChar
 		 */
-		def CharWhere(fn:Function1[Char, Boolean]):Extractor[Char]
+		def charWhere(fn:Function1[Char, Boolean]):Extractor[Char]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Set[CodePoint]):Extractor[CodePoint]
+		def codePointIn(str:Set[CodePoint]):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:Seq[CodePoint]):Extractor[CodePoint]
+		def codePointIn(str:Seq[CodePoint]):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint is a member of the given string; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointIn(str:String):Extractor[CodePoint]
+		def codePointIn(str:String):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next codepoint matches the given predicate; captures that code point
 		 * @group PartAsCodepoint
 		 */
-		def CodePointWhere(fn:Function1[CodePoint, Boolean]):Extractor[CodePoint]
+		def codePointWhere(fn:Function1[CodePoint, Boolean]):Extractor[CodePoint]
 
 		/**
 		 * Succeeds if the next set of characters in the input is equal to the given string
 		 * @group Part
 		 */
-		def IsString(str:String):Extractor[Unit]
+		def isString(str:String):Extractor[Unit]
 
 		/**
 		 * A parser that consumes no input and always succeeds
 		 * @group Constant
 		 */
-		def Pass:Extractor[Unit]
+		def pass:Extractor[Unit]
 
 		/**
 		 * A parser that always reports a failure
 		 * @group Constant
 		 */
-		def Fail(message:String):Extractor[Nothing]
+		def fail(message:String):Extractor[Nothing]
 
 		/**
 		 * A parser that succeeds iff the input is empty
 		 * @group Position
 		 */
-		def End:Extractor[Unit]
+		def end:Extractor[Unit]
 
 		/**
 		 * Indirectly refers to a parser, to allow for mutual-recursion
 		 * @group Misc
 		 */
-		def DelayedConstruction[A](fn:Function0[Extractor[A]]):Extractor[A]
+		def `lazy`[A](fn:Function0[Extractor[A]]):Extractor[A]
 
 		/**
 		 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 		 * @group Arg
 		 */
-		def OfType[A](implicit tpe:Type[A]):Extractor[Expr[A]]
+		def ofType[A](implicit tpe:Type[A]):Extractor[Expr[A]]
 	}
 
 	/**
@@ -330,10 +330,10 @@ object Extractor
 	 */
 	def idExtractors: Extractors[Id, Class] = {
 		new Extractors[Id, Class] with ExprIndependentExtractors[Id, Class] {
-			override def DelayedConstruction[A](fn:Function0[Extractor[A]]):Extractor[A] =
+			override def `lazy`[A](fn:Function0[Extractor[A]]):Extractor[A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def OfType[A](implicit tpe: Class[A]): Extractor[A] =
+			override def ofType[A](implicit tpe: Class[A]): Extractor[A] =
 				new Extractor(new internal.OfClass(tpe))
 		}
 	}
@@ -347,83 +347,83 @@ private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[_], 
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Set[Char]):SCExtractor[Expr, Type, Char] =
+	def charIn(str:Set[Char]):SCExtractor[Expr, Type, Char] =
 		new SCExtractor[Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:Seq[Char]):SCExtractor[Expr, Type, Char] =
+	def charIn(str:Seq[Char]):SCExtractor[Expr, Type, Char] =
 		new SCExtractor[Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def CharIn(str:String):SCExtractor[Expr, Type, Char] =
+	def charIn(str:String):SCExtractor[Expr, Type, Char] =
 		new SCExtractor[Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def CharWhere(fn:Function1[Char, Boolean]):SCExtractor[Expr, Type, Char] =
+	def charWhere(fn:Function1[Char, Boolean]):SCExtractor[Expr, Type, Char] =
 		new SCExtractor[Expr, Type, Char](internal.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Set[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
+	def codePointIn(str:Set[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
 		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:Seq[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
+	def codePointIn(str:Seq[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
 		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointIn(str:String):SCExtractor[Expr, Type, CodePoint] =
+	def codePointIn(str:String):SCExtractor[Expr, Type, CodePoint] =
 		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def CodePointWhere(fn:Function1[CodePoint, Boolean]):SCExtractor[Expr, Type, CodePoint] =
+	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCExtractor[Expr, Type, CodePoint] =
 		new SCExtractor[Expr, Type, CodePoint](internal.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def IsString(str:String):SCExtractor[Expr, Type, Unit] =
+	def isString(str:String):SCExtractor[Expr, Type, Unit] =
 		new SCExtractor[Expr, Type, Unit](internal.IsString(str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def Pass:SCExtractor[Expr, Type, Unit] =
+	def pass:SCExtractor[Expr, Type, Unit] =
 		new SCExtractor[Expr, Type, Unit](new internal.Pass)
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def Fail(message:String):SCExtractor[Expr, Type, Nothing] =
+	def fail(message:String):SCExtractor[Expr, Type, Nothing] =
 		new SCExtractor[Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def End:SCExtractor[Expr, Type, Unit] =
+	def end:SCExtractor[Expr, Type, Unit] =
 		new SCExtractor[Expr, Type, Unit](new internal.End())
 }

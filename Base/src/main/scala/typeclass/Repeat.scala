@@ -59,7 +59,7 @@ object Repeated extends LowPrioRepeated {
 		final class RepeatedCodepoint extends Repeated[CodePoint, String] {
 			type Acc = java.lang.StringBuilder
 			def init():Acc = new java.lang.StringBuilder
-			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.value)}
+			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.intValue)}
 			def result(acc:Acc):String = acc.toString
 		}
 		new RepeatedCodepoint()
