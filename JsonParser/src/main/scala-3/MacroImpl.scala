@@ -67,6 +67,7 @@ object MacroImpl {
 		charIn("\n\r\t ")
 			.imap(_ => (), _ => ' ')
 			.repeat(strategy = RepeatStrategy.Possessive)
+			.hide
 	}
 
 	private def jnull(using Quotes):Parser[Expr[JNull.type]] = {
@@ -243,7 +244,7 @@ object MacroImpl {
 	private def jlifted(using Quotes):Parser[Expr[JValue]] = paired(
 		Interpolator.lifted[Lift.Value, Expr[JValue]](
 			myLiftFunction[JValue, Lift.Value],
-			"Lifted Value"
+			"Liftable Value"
 		),
 		Extractor.ofType[JValue]
 	)

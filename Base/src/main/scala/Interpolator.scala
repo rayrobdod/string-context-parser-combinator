@@ -67,7 +67,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 				val msg = f.expecting match {
 					case ExpectingSet.Empty() => "Parsing Failed"
 					case ExpectingSet.NonEmpty(position, descriptions) => {
-						val exp = descriptions.mkString("Expected ", " or ", "")
+						// `sorted` to make result deterministic
+						val exp = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
 						val instr = sc.parts.mkString(argString)
 						val pointer = (" " * position) + "^"
 
@@ -130,6 +131,14 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 */
 	def attempt:Interpolator[Expr, A] =
 		new Interpolator(internal.Attempt.interpolator(this.impl))
+
+	/**
+	 * Returns a parser which invokes this parser,
+	 * but does not show the expected value in failure messages
+	 * @group Misc
+	 */
+	def hide:Interpolator[Expr, A] =
+		new Interpolator(internal.Hide.interpolator(this.impl))
 
 	/**
 	 * Creates a parser that will

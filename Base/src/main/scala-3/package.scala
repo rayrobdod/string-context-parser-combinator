@@ -15,8 +15,9 @@ package object stringContextParserCombinator {
 				scala.quoted.quotes.reflect.report.errorAndAbort("Parsing failed")
 			}
 			case ExpectingSet.NonEmpty(position, descriptions) => {
-				val descriptions2 = descriptions.mkString("Expected ", " or ", "")
-				position.errorAndAbort(descriptions2)
+				// `sorted` to make result deterministic
+				val descriptions2 = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
+				(position + 1).errorAndAbort(descriptions2)
 			}
 		}
 	}

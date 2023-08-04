@@ -70,7 +70,8 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 				val msg = f.expecting match {
 					case ExpectingSet.Empty() => "Parsing Failed"
 					case ExpectingSet.NonEmpty(position, descriptions) => {
-						val exp = descriptions.mkString("Expected ", " or ", "")
+						// `sorted` to make result deterministic
+						val exp = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
 						val instr = sc.parts.mkString(argString)
 						val pointer = (" " * position) + "^"
 
@@ -112,6 +113,14 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 	 */
 	def attempt:Extractor[Expr, Type, A] =
 		new Extractor(internal.Attempt.extractor(this.impl))
+
+	/**
+	 * Returns a parser which invokes this parser,
+	 * but does not show the expected value in failure messages
+	 * @group Misc
+	 */
+	def hide:Extractor[Expr, Type, A] =
+		new Extractor(internal.Hide.extractor(this.impl))
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser.
