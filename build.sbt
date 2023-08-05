@@ -1,12 +1,24 @@
-ThisBuild / version := "-SNAPSHOT"
-ThisBuild / organization := "com.rayrobdod"
-
 val scala211Ver = "2.11.12"
 val scala212Ver = "2.12.18"
 val scala213Ver = "2.13.11"
 val scala3Ver = "3.3.0"
 
+val githubId = "rayrobdod/string-context-parser-combinator"
+
 lazy val sharedSettings = Seq(
+	organization := "name.rayrobdod",
+	organizationHomepage := Some(url("https://rayrobdod.name/")),
+	versionScheme := Some("early-semver"),
+	licenses := Seq(License.Apache2),
+	developers := List(
+		Developer(
+			"rayrobdod",
+			"Raymond Dodge",
+			"git@rayrobdod.name",
+			url("https://rayrobdod.name"),
+		),
+	),
+	autoAPIMappings := true,
 	libraryDependencies ++= Seq(
 		"org.scalameta" %%% "munit" % "0.7.29" % Test,
 	),
@@ -35,10 +47,9 @@ lazy val sharedSettings = Seq(
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-revision", git.gitHeadCommit.value.get,
 			"-siteroot", ((sourceDirectory).value / "docs").toString,
-			"-external-mappings:.*scala.*::scaladoc3::https://scala-lang.org/api/3.x/",
 			"-snippet-compiler:compile",
-			"-social-links:github::https://github.com/rayrobdod/string-context-parser-combinator",
-			"-source-links:Base=github://rayrobdod/string-context-parser-combinator#Base",
+			s"-social-links:github::https://github.com/${githubId}",
+			s"-source-links:github://${githubId}",
 		)
 	}),
 	Compile / doc / fileInputOptions += "-siteroot",
@@ -51,6 +62,11 @@ lazy val base = (projectMatrix in file("Base"))
 	.settings(sharedSettings)
 	.settings(
 		name := "string-context-parser-combinator",
+		description := "A scala library for writing custom string interpolation implementations using parser combinators",
+		apiURL := Some(url("https://rayrobdod.github.io/string-context-parser-combinator/")),
+		Compile / packageBin / packageOptions += Package.ManifestAttributes(
+			"Automatic-Module-Name" -> "name.rayrobdod.stringContextParserCombinator"
+		),
 		libraryDependencies ++= (scalaBinaryVersion.value match {
 			case "2.11" | "2.12" | "2.13" => Seq(
 				"org.scala-lang" % "scala-reflect" % scalaVersion.value,
