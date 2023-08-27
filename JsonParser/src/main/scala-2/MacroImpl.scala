@@ -293,12 +293,38 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	}
 
 	private[this] val jvalue:Parser[c.Expr[JValue]] = {
+		/**
+		 * if this is replaced with `c.universe.reify(value.splice.isInstanceOf[A])`,
+		 * scalac complains, despite empirical evidence to the contrary, that `A` is unchecked and the WeakTypeTag is unused
+		 */
+		def isInstanceOfTree[A](typeTag:c.WeakTypeTag[A])(value:c.Expr[JValue]):c.Expr[Boolean] = {
+			c.Expr[Boolean](
+				c.universe.TypeApply(
+					c.universe.Select(value.tree, c.universe.TermName("isInstanceOf")),
+					c.universe.TypeTree(typeTag.tpe) :: Nil
+				)
+			)
+		}
+
+		/**
+		 * if this is replaced with `c.universe.reify(value.splice.asInstanceOf[A])`,
+		 * scalac complains, despite empirical evidence to the contrary, that `A` is unchecked and the WeakTypeTag is unused
+		 */
+		def asInstanceOfTree[A](typeTag:c.WeakTypeTag[A])(value:c.Expr[JValue]):c.Expr[A] = {
+			c.Expr[A](
+				c.universe.TypeApply(
+					c.universe.Select(value.tree, c.universe.TermName("asInstanceOf")),
+					c.universe.TypeTree(typeTag.tpe) :: Nil
+				)
+			)
+		}
+
 		def widenToJValue[A <: JValue](parser:Parser[c.Expr[A]])(implicit typ:c.WeakTypeTag[A]):Parser[c.Expr[JValue]] = {
 			parser.widenWith(
 				Predef.identity,
 				PartialExprFunction(
-					value => c.universe.reify(value.splice.isInstanceOf[A]),
-					value => c.universe.reify(value.splice.asInstanceOf[A])
+					isInstanceOfTree(typ) _,
+					asInstanceOfTree(typ) _
 				)
 			)
 		}
