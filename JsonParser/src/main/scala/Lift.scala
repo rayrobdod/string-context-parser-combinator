@@ -46,7 +46,8 @@ object Lift {
 
 	type Object[A] = Lift[A, JObject]
 	implicit def map[A](implicit child:Lift[A, JValue]):Lift[scala.collection.immutable.Map[java.lang.String, A], JObject] =
-		xs => JObject(xs.mapValues(child.apply _).toList)
+		// 2.12 doesn't have `xs.view.mapValues`; 2.13 deprecates `xs.mapValues` without the view
+		xs => JObject(xs.view.map({x => ((x._1, child(x._2)))}).toList)
 
 	type Value[A] = Lift[A, JValue]
 }

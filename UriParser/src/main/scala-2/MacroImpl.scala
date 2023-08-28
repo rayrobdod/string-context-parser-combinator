@@ -228,10 +228,6 @@ object MacroImpl {
 		val netPath:Interpolator[((c.Expr[String], (c.Expr[String], c.Expr[Int])), c.Expr[String])] = isString("//") andThen server andThen absolutePathExpr
 		val noServer:(c.Expr[String], (c.Expr[String], c.Expr[Int])) = (constNullExpr, (constNullExpr, constNegOneExpr))
 
-		val hierarchialPart:Interpolator[(((c.Expr[String], (c.Expr[String], c.Expr[Int])), c.Expr[String]), c.Expr[String])] = {
-			(netPath orElse absolutePathExpr.map(x => (noServer, x))) andThen query
-		}
-
 		val absoluteUri:Interpolator[c.Expr[URI]] = {
 			scheme andThen
 			isString(":") flatMap

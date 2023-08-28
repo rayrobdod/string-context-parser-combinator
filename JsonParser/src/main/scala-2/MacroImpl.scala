@@ -84,7 +84,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 	}
 
-	private[this] implicit val thisCToExpr = typeclass.ToExprMapping.forContext(c)
+	private[this] implicit val thisCToExpr:typeclass.ToExprMapping[c.Expr, c.universe.Liftable, c.TypeTag] = typeclass.ToExprMapping.forContext(c)
 	private[this] val leafParsers = Parser.contextParsers(c)
 	import leafParsers._
 	private[this] val myInterpolators = Interpolator.contextInterpolators(c)
@@ -224,8 +224,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				.map(x => c.universe.reify(JArray.apply(x.splice)))
 			,
 			(prefix.toExtractor
-					andThen[c.Expr[List[JValue]], c.Expr[List[JValue]]] (jvalue.toExtractor.repeat(delimiter = delimiter.toExtractor))
-					andThen[Unit, c.Expr[List[JValue]]] suffix.toExtractor
+					.andThen[c.Expr[List[JValue]], c.Expr[List[JValue]]](jvalue.toExtractor.repeat(delimiter = delimiter.toExtractor))
+					.andThen[Unit, c.Expr[List[JValue]]](suffix.toExtractor)
 			)
 				.contramap((x:c.Expr[JArray]) =>  c.universe.reify(x.splice.arr))
 		)
@@ -275,8 +275,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				.map(x => c.universe.reify(JObject.apply(x.splice)))
 			,
 			(prefix.toExtractor
-				andThen[c.Expr[List[(String, JValue)]], c.Expr[List[(String, JValue)]]] (ofType[(String, JValue)].toExtractor.repeat(delimiter = delimiter.toExtractor))
-				andThen[Unit, c.Expr[List[(String, JValue)]]] suffix.toExtractor
+				.andThen[c.Expr[List[(String, JValue)]], c.Expr[List[(String, JValue)]]](ofType[(String, JValue)].toExtractor.repeat(delimiter = delimiter.toExtractor))
+				.andThen[Unit, c.Expr[List[(String, JValue)]]](suffix.toExtractor)
 			)
 				.contramap(x => c.universe.reify(x.splice.obj))
 		)

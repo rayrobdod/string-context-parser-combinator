@@ -191,10 +191,6 @@ object MacroImpl {
 	private def netPath(using Quotes):Interpolator[((Expr[String], (Expr[String], Expr[Int])), Expr[String])] = isString("//") andThen server andThen absolutePathExpr
 	private def noServer(using Quotes):(Expr[String], (Expr[String], Expr[Int])) = (nullExpr, (nullExpr, Expr.apply(-1)))
 
-	private def hierarchialPart(using Quotes):Interpolator[(((Expr[String], (Expr[String], Expr[Int])), Expr[String]), Expr[String])] = {
-		(netPath orElse absolutePathExpr.map(x => (noServer, x))) andThen query
-	}
-
 	private def newUriExprOpaque(scheme:Expr[String], ssp:Expr[String], frag:Expr[String])(using Quotes) = '{
 		new java.net.URI(
 			$scheme,
