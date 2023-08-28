@@ -42,7 +42,7 @@ object CodePoint {
 	val MaxValue = Character.MAX_CODE_POINT
 	val MinValue = Character.MIN_CODE_POINT
 
-	implicit def char2Codepoint(c:Char):CodePoint = new CodePoint(c)
+	implicit def char2Codepoint(c:Char):CodePoint = new CodePoint(c.toInt)
 
 	implicit def orderingCodepoint:Ordering[CodePoint] = Ordering.Int.on(_.intValue)
 }

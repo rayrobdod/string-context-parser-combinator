@@ -7,6 +7,8 @@ abstract class BaseExtractorSuite extends munit.FunSuite {
 	val eof = ("" :: Nil, Nil)
 	object InterpolatedValue {}
 
+	def escape(in:Char):String = escape(in.toInt)
+
 	/**
 	 * Returns a string representing the given code point, possibly represented
 	 * with scala-type escape sequences

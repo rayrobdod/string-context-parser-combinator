@@ -230,8 +230,8 @@ final class StringContextTest extends munit.FunSuite {
 		val v1 = 123
 		val k2 = "bar"
 		val v2 = 456
-		val kv1 = (k1, JLong(v1))
-		val kv2 = (k2, JLong(v2))
+		val kv1 = (k1, JLong(v1.toLong))
+		val kv2 = (k2, JLong(v2.toLong))
 		val exp = JObject(List(kv1, kv2))
 		assertEquals(json"""{$k1: $v1, $k2: $v2}""", exp)
 	}
@@ -253,7 +253,7 @@ final class StringContextTest extends munit.FunSuite {
 	}
 	test("Splicing using custom lift") {
 		case class Foo(bar:Int, baz:Boolean)
-		implicit val liftFoo:Lift[Foo, JObject] = x => JObject(List(("foo", JLong(x.bar)), ("baz", JBool(x.baz))))
+		implicit val liftFoo:Lift[Foo, JObject] = x => JObject(List(("foo", JLong(x.bar.toLong)), ("baz", JBool(x.baz))))
 		val param = Foo(42, false)
 		val exp = JObject(List(("_type", JString("Foo")), ("foo", JLong(42)), ("baz", JBool.False)))
 		assertEquals(json"""{ "_type": "Foo", ..$param }""", exp)

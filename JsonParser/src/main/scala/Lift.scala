@@ -24,7 +24,7 @@ object Lift {
 
 	type Number[A] = Lift[A, JValue with JNumber]
 	implicit val int:Lift[scala.Int, JValue with JNumber] =
-		x => JLong.apply(x)
+		x => JLong.apply(x.toLong)
 	implicit val long:Lift[scala.Long, JValue with JNumber] =
 		JLong.apply _
 	implicit val bigint:Lift[scala.math.BigInt, JValue with JNumber] =

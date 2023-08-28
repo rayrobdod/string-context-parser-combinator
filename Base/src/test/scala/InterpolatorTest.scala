@@ -5,6 +5,8 @@ import munit.Location
 import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 
 abstract class BaseInterpolatorSuite extends munit.FunSuite {
+	def escape(in:Char):String = escape(in.toInt)
+
 	/**
 	 * Returns a string representing the given code point, possibly represented
 	 * with scala-type escape sequences
