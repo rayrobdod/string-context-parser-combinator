@@ -269,11 +269,11 @@ package ExtractorTest {
 			typeclass.ContraEithered[Id, A, B, scala.util.Either[A, B]](
 				PartialExprFunction[Id, scala.util.Either[A, B], A](
 					it => it.isLeft,
-					it => it.left.get
+					it => it.swap.toOption.get
 				),
 				PartialExprFunction[Id, scala.util.Either[A, B], B](
 					it => it.isRight,
-					it => it.right.get
+					it => it.toOption.get
 				)
 			)
 		}

@@ -68,7 +68,7 @@ object MacroImpl {
 		val unreservedChar:Interpolator[CodePoint] = alphaNumChar orElse codePointIn("-_.!~*'()")
 
 		val escapedChar:Interpolator[CodePoint] = {
-			implicit object Utf8ContinuationAndThen extends typeclass.Sequenced[Int, Int, Int] {def aggregate(a:Int, b:Int):Int = a << 6 | b}
+			implicit val Utf8ContinuationAndThen:typeclass.Sequenced[Int, Int, Int] = {(a:Int, b:Int) => a << 6 | b}
 			val escapedContinuation:Interpolator[Int] = (isString("%") andThen charIn("89ABab") andThen hexChar).map({x => (parseByteHex(x) & 0x3F)})
 
 			(isString("%") andThen (
@@ -184,10 +184,6 @@ object MacroImpl {
 				.repeat()
 				.map(xs => concatenateStrings(c)(xs))
 			val Mapping = {
-				import scala.language.implicitConversions
-				implicit def fn2then[A,B,Z](fn:(A,B) => Z):typeclass.Sequenced[A,B,Z] = new typeclass.Sequenced[A,B,Z]{
-					def aggregate(a:A, b:B):Z = fn(a,b)
-				}
 				implicit def AndThenElemElem:typeclass.Sequenced[c.Expr[String], c.Expr[String], List[c.Expr[String]]] = (a:c.Expr[String],b:c.Expr[String]) => a :: b :: Nil
 				implicit def AndThenElemList:typeclass.Sequenced[c.Expr[String], List[c.Expr[String]], List[c.Expr[String]]] = (a:c.Expr[String], b:List[c.Expr[String]]) => a +: b
 				implicit def AndThenListElem:typeclass.Sequenced[List[c.Expr[String]], c.Expr[String], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:c.Expr[String]) => a :+ b

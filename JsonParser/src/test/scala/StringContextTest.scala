@@ -80,7 +80,7 @@ final class StringContextTest extends munit.FunSuite {
 	}
 	test("Accepts a custom lift number") {
 		object Pi {}
-		implicit val liftPi:Lift[Pi.type, JValue with JNumber] = Lift(_ => JDecimal(BigDecimal("3.14")))
+		implicit val liftPi:Lift[Pi.type, JValue with JNumber] = _ => JDecimal(BigDecimal("3.14"))
 		val exp = JDecimal(BigDecimal("3.14"))
 		assertEquals(json"$Pi", exp)
 	}
@@ -96,7 +96,7 @@ final class StringContextTest extends munit.FunSuite {
 	}
 	test("Accepts a custom lift string") {
 		object Pi {}
-		implicit val liftPi:Lift[Pi.type, JString] = Lift(_ => JString("π"))
+		implicit val liftPi:Lift[Pi.type, JString] = _ => JString("π")
 		val exp = JString("π")
 		assertEquals(json"$Pi", exp)
 	}
@@ -120,7 +120,7 @@ final class StringContextTest extends munit.FunSuite {
 	}
 	test("Accepts a custom lift embedded in a string") {
 		object Pi {}
-		implicit val liftPi:Lift[Pi.type, JString] = Lift(_ => JString("π"))
+		implicit val liftPi:Lift[Pi.type, JString] = _ => JString("π")
 		val exp = JString("1π2")
 		assertEquals(json""" "1${Pi}2" """, exp)
 	}
@@ -253,7 +253,7 @@ final class StringContextTest extends munit.FunSuite {
 	}
 	test("Splicing using custom lift") {
 		case class Foo(bar:Int, baz:Boolean)
-		implicit val liftFoo:Lift[Foo, JObject] = Lift(x => JObject(List(("foo", JLong(x.bar)), ("baz", JBool(x.baz)))))
+		implicit val liftFoo:Lift[Foo, JObject] = x => JObject(List(("foo", JLong(x.bar)), ("baz", JBool(x.baz))))
 		val param = Foo(42, false)
 		val exp = JObject(List(("_type", JString("Foo")), ("foo", JLong(42)), ("baz", JBool.False)))
 		assertEquals(json"""{ "_type": "Foo", ..$param }""", exp)

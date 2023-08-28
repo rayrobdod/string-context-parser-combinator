@@ -1,4 +1,3 @@
-val scala211Ver = "2.11.12"
 val scala212Ver = "2.12.18"
 val scala213Ver = "2.13.11"
 val scala3Ver = "3.3.0"
@@ -24,17 +23,16 @@ lazy val sharedSettings = Seq(
 	),
 	Compile / compile / scalacOptions += "-feature",
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.11" => Seq("-target:jvm-1.7")
 		case "2.12" => Seq("-target:jvm-1.8")
 		case _ => if (scala.util.Properties.isJavaAtLeast("9")) {Seq("-release", "8")} else {Seq.empty}
 	}),
 	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.11" | "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-language:higherKinds")
+		case "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-language:higherKinds")
 		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
 		case _ => Seq("-deprecation", "-Wunused:all")
 	}),
 	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.11" | "2.12" | "2.13" => Seq(
+		case "2.12" | "2.13" => Seq(
 			"-doc-title", name.value,
 			"-doc-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.txt").toString,
@@ -68,7 +66,7 @@ lazy val base = (projectMatrix in file("Base"))
 			"Automatic-Module-Name" -> "name.rayrobdod.stringContextParserCombinator"
 		),
 		libraryDependencies ++= (scalaBinaryVersion.value match {
-			case "2.11" | "2.12" | "2.13" => Seq(
+			case "2.12" | "2.13" => Seq(
 				"org.scala-lang" % "scala-reflect" % scalaVersion.value,
 			)
 			case _ => Seq()
@@ -80,7 +78,6 @@ lazy val base = (projectMatrix in file("Base"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala211Ver,
 		scala212Ver,
 		scala213Ver,
 		scala3Ver,
@@ -106,7 +103,6 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala211Ver,
 		scala212Ver,
 		scala213Ver,
 		scala3Ver,
@@ -129,7 +125,6 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala211Ver,
 		scala212Ver,
 		scala213Ver,
 		scala3Ver,
@@ -156,7 +151,6 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
-		scala211Ver,
 		scala212Ver,
 		scala213Ver,
 		scala3Ver,

@@ -7,16 +7,16 @@ import com.rayrobdod.stringContextParserCombinator.typeclass._
  * Instances of SCPC implicits that concatenate strings or default-value strings
  */
 object ConcatenateStringImplicits {
-	implicit val AndThenCodepointString: Sequenced[CodePoint, String, String] = new Sequenced[CodePoint, String, String] {
-		def aggregate(a:CodePoint, b:String):String = s"${a}${b}"
+	implicit val AndThenCodepointString: Sequenced[CodePoint, String, String] = {
+		(a:CodePoint, b:String) => s"${a}${b}"
 	}
 
-	implicit val AndThenStringCodepoint: Sequenced[String, CodePoint, String] = new Sequenced[String, CodePoint, String] {
-		def aggregate(a:String, b:CodePoint):String = s"${a}${b}"
+	implicit val AndThenStringCodepoint: Sequenced[String, CodePoint, String] = {
+		(a:String, b:CodePoint) => s"${a}${b}"
 	}
 
-	implicit val AndThenStringString: Sequenced[String, String, String] = new Sequenced[String, String, String] {
-		def aggregate(a:String, b:String):String = s"${a}${b}"
+	implicit val AndThenStringString: Sequenced[String, String, String] = {
+		(a:String, b:String) => s"${a}${b}"
 	}
 
 	implicit val EmptyStringOptionallyTypes: Optionally[String, String] = Optionally.whereDefault[String]("")
