@@ -10,22 +10,25 @@ final class localtime extends munit.FunSuite {
 			case localtime"$res" => {
 				assertEquals(res, LocalTime.MIDNIGHT)
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("a literal midnight string matches the midnight value") {
 		LocalTime.MIDNIGHT match {
-			 case localtime"00:00" => // pass
+			case localtime"00:00" => // pass
+			case _ => fail("did not match")
 		}
 	}
 	test("a literal midnight string does not match a not-midnight value") {
 		LocalTime.of(1,2,3) match {
-			 case localtime"00:00" => fail("did match")
-			 case _ => // pass
+			case localtime"00:00" => fail("did match")
+			case _ => // pass
 		}
 	}
 	test("a literal 01:02:03.4 can match") {
 		LocalTime.of(1,2,3,400000000) match {
-			 case localtime"01:02:03.4" => // pass
+			case localtime"01:02:03.4" => // pass
+			case _ => fail("did not match")
 		}
 	}
 	test("Specifying minutes is mandatory") {
@@ -65,28 +68,31 @@ final class localtime extends munit.FunSuite {
 final class localdate extends munit.FunSuite {
 	test("literal string matches corresponding LocalDate") {
 		LocalDate.of(2001, 2, 3) match {
-			 case localdate"2001-02-03" => // pass
+			case localdate"2001-02-03" => // pass
+			case _ => fail("did not match")
 		}
 	}
 	test("literal string does not match a different LocalDate") {
 		LocalDate.of(2001, 2, 4) match {
-			 case localdate"2001-02-03" => fail("did match")
-			 case _ => // pass
+			case localdate"2001-02-03" => fail("did match")
+			case _ => // pass
 		}
 	}
 	test("can extract a YearMonth from value") {
 		LocalDate.of(2001, 2, 3) match {
-			 case localdate"${yearMonth}-03" => {
+			case localdate"${yearMonth}-03" => {
 				assertEquals(yearMonth, YearMonth.of(2001, 2))
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("can extract a year and a month from value") {
 		LocalDate.of(2001, 2, 3) match {
-			 case localdate"${year}-${month}-03" => {
+			case localdate"${year}-${month}-03" => {
 				assertEquals(year, Year.of(2001))
 				assertEquals(month, Month.FEBRUARY)
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("does not compile if attempting to match month 0") {
@@ -104,7 +110,8 @@ final class localdate extends munit.FunSuite {
 final class localdatetime extends munit.FunSuite {
 	test("literal string matches corresponding LocalDateTime") {
 		LocalDateTime.of(2001, 2, 3, 4, 5, 6) match {
-			 case localdatetime"2001-02-03T04:05:06" => // pass
+			case localdatetime"2001-02-03T04:05:06" => // pass
+			case _ => fail("did not match")
 		}
 	}
 	test("can split into a date and a time") {
@@ -113,6 +120,7 @@ final class localdatetime extends munit.FunSuite {
 				assertEquals(date, LocalDate.of(2001, 2, 3))
 				assertEquals(time, LocalTime.of(4, 5, 6))
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("can extract a date") {
@@ -120,6 +128,7 @@ final class localdatetime extends munit.FunSuite {
 			case localdatetime"${date}T04:05:06" => {
 				assertEquals(date, LocalDate.of(2001, 2, 3))
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("can extract a time") {
@@ -127,6 +136,7 @@ final class localdatetime extends munit.FunSuite {
 			case localdatetime"2001-02-03T${time}" => {
 				assertEquals(time, LocalTime.of(4, 5, 6))
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("can extract a year") {
@@ -134,6 +144,7 @@ final class localdatetime extends munit.FunSuite {
 			case localdatetime"${year}-02-03T04:05:06" => {
 				assertEquals(year, Year.of(2001))
 			}
+			case _ => fail("did not match")
 		}
 	}
 	test("does not compile if date-time-splitter is missing the `T`") {

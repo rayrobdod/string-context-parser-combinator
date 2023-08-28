@@ -54,7 +54,6 @@ object TimeParsers {
 	):TimeParsers[Expr, Type] = new TimeParsers[Expr, Type] {
 		import leaves._
 
-		import scala.language.implicitConversions
 		implicit def str2parser(str:String):Parser[Unit] = isString(str)
 		implicit def str2interpolator(str:String):Interpolator[Unit] = isString(str).toInterpolator
 		implicit def str2extractor(str:String):Extractor[Unit] = isString(str).toExtractor

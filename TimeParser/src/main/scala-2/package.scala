@@ -1,7 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample
 
 import java.time._
-import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
 import com.rayrobdod.stringContextParserCombinator._
 

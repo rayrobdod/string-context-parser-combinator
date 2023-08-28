@@ -1,7 +1,6 @@
 package com.rayrobdod.stringContextParserCombinatorExample
 
 import java.net.URI
-import scala.language.experimental.macros
 
 /**
  * @SeeAlso https://www.ietf.org/rfc/rfc2396.txt

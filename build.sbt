@@ -21,16 +21,10 @@ lazy val sharedSettings = Seq(
 	libraryDependencies ++= Seq(
 		"org.scalameta" %%% "munit" % "0.7.29" % Test,
 	),
-	Compile / compile / scalacOptions += "-feature",
-	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.12" => Seq("-target:jvm-1.8")
-		case _ => if (scala.util.Properties.isJavaAtLeast("9")) {Seq("-release", "8")} else {Seq.empty}
-	}),
-	Compile / compile / scalacOptions ++= (scalaBinaryVersion.value match {
-		case "2.12" => Seq("-deprecation", "-Ywarn-unused-import", "-Ywarn-unused", "-Xlint:_", "-Xfuture", "-Xcheckinit", "-language:higherKinds")
-		case "2.13" => Seq("-Ywarn-unused:_", "-Xlint:_", "-Xcheckinit")
-		case _ => Seq("-deprecation", "-Wunused:all")
-	}),
+	tpolecatExcludeOptions ++= Set(
+		org.typelevel.scalacoptions.ScalacOptions.warnUnusedNoWarn,
+		org.typelevel.scalacoptions.ScalacOptions.privateWarnUnusedNoWarn,
+	),
 	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.12" | "2.13" => Seq(
 			"-doc-title", name.value,

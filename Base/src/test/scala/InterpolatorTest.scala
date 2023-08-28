@@ -542,34 +542,34 @@ package InterpolatorTest {
 
 	final class ComboAndThenRepeat extends BaseInterpolatorSuite {
 		import Interpolator.idInterpolators.charIn
-		import Interpolator.idInterpolators.{isString => isstr}
+		import Interpolator.idInterpolators.isString
 
 		test ("If the repeat is permissibly empty and right fails, then fails and shows both inputs as expected options") {
-			val dut = isstr("left").repeat(strategy = Greedy).andThen(isstr("right"))
+			val dut = isString("left").repeat(strategy = Greedy).andThen(isString("right"))
 			assertParseFailure(dut, ("" :: Nil, Nil), List("Expected \"left\" or \"right\"", s"\t", "\t^"))
 		}
 		test ("If the repeat is permissibly empty and right succeeds, then result is a success") {
-			val dut = isstr("left").repeat(strategy = Greedy).andThen(isstr("right"))
+			val dut = isString("left").repeat(strategy = Greedy).andThen(isString("right"))
 			assertParseSuccess(dut, ("right" :: Nil, Nil), ())
 		}
 		test ("If the repeat has consumed input, then the result matches that failure") {
-			val dut = (isstr("le").andThen(isstr("ft"))).repeat(strategy = Greedy).andThen(isstr("right"))
+			val dut = (isString("le").andThen(isString("ft"))).repeat(strategy = Greedy).andThen(isString("right"))
 			assertParseFailure(dut, ("le" :: Nil, Nil), List("Expected \"ft\"", s"\tle", "\t  ^"))
 		}
 		test ("missing right with any repeat fails and shows both inputs as options") {
-			val dut = isstr("left").repeat(strategy = Greedy).andThen(isstr("right"))
+			val dut = isString("left").repeat(strategy = Greedy).andThen(isString("right"))
 			assertParseFailure(dut, ("left" :: Nil, Nil), List("Expected \"left\" or \"right\"", s"\tleft", "\t    ^"))
 		}
 		test ("unexpected right with any repeat fails and shows both inputs as options") {
-			val dut = isstr("a").repeat(strategy = Greedy).andThen(isstr("b"))
+			val dut = isString("a").repeat(strategy = Greedy).andThen(isString("b"))
 			assertParseFailure(dut, ("ac" :: Nil, Nil), List("Expected \"a\" or \"b\"", s"\tac", "\t ^"))
 		}
 		test ("input too short for repeat") {
-			val dut = isstr("a").repeat(3,5, strategy = Greedy).andThen(isstr("b"))
+			val dut = isString("a").repeat(3,5, strategy = Greedy).andThen(isString("b"))
 			assertParseFailure(dut, ("a" :: Nil, Nil), List("Expected \"a\"", s"\ta", "\t ^"))
 		}
 		test ("input too long for repeat") {
-			val dut = isstr("a").repeat(3,5, strategy = Greedy).andThen(isstr("b"))
+			val dut = isString("a").repeat(3,5, strategy = Greedy).andThen(isString("b"))
 			assertParseFailure(dut, ("aaaaaaaa" :: Nil, Nil), List("Expected \"b\"", s"\taaaaaaaa", "\t     ^"))
 		}
 		test ("pattern.repeat(Greedy) andThen subset") {
@@ -585,20 +585,20 @@ package InterpolatorTest {
 			assertParseFailure(dut, ("aa" :: Nil, Nil), List("Expected CharIn(\"a\") or CharIn(\"ab\")", s"\taa", "\t  ^"))
 		}
 		test ("unexpected right with any repeat and delimiter fails and shows delimiter and right as options") {
-			val dut = isstr("a").repeat(delimiter = isstr("b"), strategy = Greedy).andThen(isstr("c"))
+			val dut = isString("a").repeat(delimiter = isString("b"), strategy = Greedy).andThen(isString("c"))
 			assertParseFailure(dut, ("az" :: Nil, Nil), List("Expected \"b\" or \"c\"", s"\taz", "\t ^"))
 		}
 		test ("successful with delimiter") {
-			val dut = isstr("a").repeat(delimiter = isstr("b"), strategy = Greedy).andThen(isstr("c"))
+			val dut = isString("a").repeat(delimiter = isString("b"), strategy = Greedy).andThen(isString("c"))
 			assertParseSuccess(dut, ("abac" :: Nil, Nil), ())
 		}
 
 		test ("right associative variant of \"'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found\"") {
-			val dut = isstr("[") andThen (isstr("a").repeat(delimiter = isstr(",")) andThen isstr("]"))
+			val dut = isString("[") andThen (isString("a").repeat(delimiter = isString(",")) andThen isString("]"))
 			assertParseFailure(dut, ("[a,a" :: Nil, Nil), List("Expected \",\" or \"]\"", s"\t[a,a", "\t    ^"))
 		}
 		test ("'[' ~ 'a'.rep(',') ~ ']' reports the delimiter as an option when the suffix is not found") {
-			val dut = isstr("[") andThen isstr("a").repeat(delimiter = isstr(",")) andThen isstr("]")
+			val dut = isString("[") andThen isString("a").repeat(delimiter = isString(",")) andThen isString("]")
 			assertParseFailure(dut, ("[a,a" :: Nil, Nil), List("Expected \",\" or \"]\"", s"\t[a,a", "\t    ^"))
 		}
 	}

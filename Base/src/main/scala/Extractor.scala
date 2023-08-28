@@ -1,5 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
 import com.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
@@ -40,8 +41,8 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		sc:StringContext,
 		scrutinee:A)(
 		implicit
-		ev:Id[Any] =:= Expr[Any],
-		ev2:Class[Any] =:= Type[Any]
+		@nowarn("msg=never used") ev:Id[Any] =:= Expr[Any],
+		@nowarn("msg=never used") ev2:Class[Any] =:= Type[Any]
 	):Option[Seq[Any]] = {
 		implicit val given_Int_Position:Position[Int] = new Position[Int] {
 			def offset(pos:Int, offset:Int):Int = pos + offset

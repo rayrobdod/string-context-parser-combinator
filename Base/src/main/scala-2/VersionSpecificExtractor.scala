@@ -1,5 +1,6 @@
 package com.rayrobdod.stringContextParserCombinator
 
+import scala.annotation.nowarn
 import scala.reflect.macros.blackbox.Context
 import com.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
 
@@ -20,8 +21,8 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		extensionClassName:String)(
 		value:c.Expr[UnexprA])(
 		implicit ev:c.Expr[UnexprA] <:< A,
-		ev2:c.Expr[_] =:= Expr[_],
-		ev3:c.TypeTag[_] =:= Type[_],
+		@nowarn("msg=never used") ev2:c.Expr[_] =:= Expr[_],
+		@nowarn("msg=never used") ev3:c.TypeTag[_] =:= Type[_],
 		ttUnexprA:c.TypeTag[UnexprA]
 	):c.Expr[Any] = {
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)

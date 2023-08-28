@@ -1,6 +1,5 @@
 package com.rayrobdod.stringContextParserCombinatorExample
 
-import scala.language.experimental.macros
 import org.json4s.JsonAST.JValue
 
 package object json {

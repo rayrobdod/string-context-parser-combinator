@@ -1,6 +1,5 @@
 package com.rayrobdod.stringContextParserCombinator
 
-import scala.language.implicitConversions
 import scala.math.Ordering
 
 /**

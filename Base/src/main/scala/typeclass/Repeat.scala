@@ -50,7 +50,7 @@ object Repeated extends LowPrioRepeated {
 		final class RepeatedChar extends Repeated[Char, String] {
 			type Acc = StringBuilder
 			def init():Acc = new StringBuilder
-			def append(acc:Acc, elem:Char):Unit = {acc += elem}
+			def append(acc:Acc, elem:Char):Unit = {acc += elem; ()}
 			def result(acc:Acc):String = acc.toString
 		}
 		new RepeatedChar()
@@ -59,7 +59,7 @@ object Repeated extends LowPrioRepeated {
 		final class RepeatedCodepoint extends Repeated[CodePoint, String] {
 			type Acc = java.lang.StringBuilder
 			def init():Acc = new java.lang.StringBuilder
-			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.intValue)}
+			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.intValue); ()}
 			def result(acc:Acc):String = acc.toString
 		}
 		new RepeatedCodepoint()
@@ -71,7 +71,7 @@ private[typeclass] trait LowPrioRepeated {
 		final class RepeatedGenericToList extends Repeated[A, List[A]] {
 			type Acc = Builder[A, List[A]]
 			def init():Acc = List.newBuilder[A]
-			def append(acc:Acc, elem:A):Unit = {acc += elem}
+			def append(acc:Acc, elem:A):Unit = {acc += elem; ()}
 			def result(acc:Acc):List[A] = acc.result()
 		}
 		new RepeatedGenericToList()
@@ -112,7 +112,7 @@ private[typeclass] trait LowPrioBiRepeated extends VersionSpecificLowPrioBiRepea
 		new BiRepeated[Id, A, List[A]] {
 			type Acc = Builder[A, List[A]]
 			def init():Acc = List.newBuilder[A]
-			def append(acc:Acc, elem:A):Unit = {acc += elem}
+			def append(acc:Acc, elem:A):Unit = {acc += elem; ()}
 			def result(acc:Acc):List[A] = acc.result()
 
 			def headTail:PartialExprFunction[Id, List[A], (A, List[A])] = {

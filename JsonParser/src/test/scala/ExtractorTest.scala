@@ -6,7 +6,7 @@ import com.rayrobdod.stringContextParserCombinatorExample.json._
 final class StringContextUnapplyTest extends munit.FunSuite {
 	test("can extract a whole value") {
 		JNull match {
-			case json"$value" => // pass
+			case json"$_" => // pass
 			case _ => fail("did not match")
 		}
 	}
@@ -48,7 +48,7 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 	}
 	test("can extract the values from a one-item array") {
 		JArray(List(JDecimal(123))) match {
-			case json"[${_1}]" =>
+			case json"[$_]" =>
 				//assertEquals(_1, JDecimal(123))
 			case _ => fail("did not match")
 		}
@@ -79,13 +79,13 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 	}
 	test("a one-elem list pattern does not match an empty list") {
 		JArray(List()) match {
-			case json"[${_1}]" => fail("did match")
+			case json"[$_]" => fail("did match")
 			case _ => // pass
 		}
 	}
 	test("a one-elem list pattern does not match a two-element list") {
 		JArray(List(JBool.True, JBool.True)) match {
-			case json"[${_1}]" => fail("did match")
+			case json"[$_]" => fail("did match")
 			case _ => // pass
 		}
 	}
@@ -97,8 +97,9 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 	}
 	test("can extract the values from a one-item map") {
 		JObject(List("a" -> JDecimal(123))) match {
-			case json"{${_1}}" =>
-				assertEquals(_1, "a" -> JDecimal(123))
+			case json"{${(k, v)}}" =>
+				assertEquals(k, "a")
+				assertEquals(v, JDecimal(123))
 			case _ => fail("did not match")
 		}
 	}
