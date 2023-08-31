@@ -4,7 +4,13 @@ val scala3Ver = "3.3.0"
 
 val githubId = "rayrobdod/string-context-parser-combinator"
 
+sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / dynverVTagPrefix := false
+
 lazy val sharedSettings = Seq(
+	sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
+
 	organization := "name.rayrobdod",
 	organizationHomepage := Some(url("https://rayrobdod.name/")),
 	versionScheme := Some("early-semver"),
