@@ -7,8 +7,8 @@ install:
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
 build_script:
-  - cmd: 'ECHO Global / publishTo := Some(Resolver.file("artifact", file("""C:\projects\string-context-parser-combinator\publish"""))) >publish-location.sbt'
-  - cmd: 'sbt compile publish'
+  - cmd: 'sbt compile publishLocal'
+  - cmd: 'move C:\Users\appveyor\.ivy2\local C:\projects\string-context-parser-combinator\publish'
 test_script:
   - cmd: 'sbt Test/compile'
   - cmd: 'sbt test'
