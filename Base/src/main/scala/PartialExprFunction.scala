@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 /**
  * A partial function which is valid according to an `Expr[Boolean]` instead of a plain `Boolean`

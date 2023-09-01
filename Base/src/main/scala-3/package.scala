@@ -1,4 +1,4 @@
-package com.rayrobdod
+package name.rayrobdod
 
 import scala.language.higherKinds
 import scala.quoted.Expr

@@ -1,10 +1,10 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
-import com.rayrobdod.stringContextParserCombinator.{Extractor => SCPCExtractor}
-import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
-import com.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
+import name.rayrobdod.stringContextParserCombinator.{Extractor => SCPCExtractor}
+import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
+import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
 
 /**
  * Parses an interpolated string expression into some value
@@ -250,9 +250,9 @@ object Parser
 	 * @groupprio Misc 999
 	 */
 	trait Parsers[Expr[+_], ToExpr[_], Type[_]] {
-		type Interpolator[A] = com.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
-		type Extractor[A] = com.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
-		type Parser[A] = com.rayrobdod.stringContextParserCombinator.Parser[Expr, Type, A]
+		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
+		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
+		type Parser[A] = name.rayrobdod.stringContextParserCombinator.Parser[Expr, Type, A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character

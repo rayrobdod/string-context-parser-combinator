@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetimeTest
+package name.rayrobdod.stringContextParserCombinatorExample.datetimeTest
 
 import scala.annotation.nowarn
 

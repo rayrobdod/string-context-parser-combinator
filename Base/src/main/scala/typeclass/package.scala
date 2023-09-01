@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 /**
  * Implicit values used by branch combinators

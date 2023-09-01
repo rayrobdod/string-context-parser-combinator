@@ -1,7 +1,7 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.quoted.*
-import com.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor, Unapply => SCUnapply}
+import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor, Unapply => SCUnapply}
 
 /**
  * Parts of [[Extractor]] that use types specific to scala 3
@@ -70,7 +70,7 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 						val tupleModule = tupleTypeConstructorSymbol.companionModule
 						val tupleConstructorTree = Ref(tupleModule)
 
-						val unapplyTypeConstructorTree = TypeIdent(Symbol.requiredClass("com.rayrobdod.stringContextParserCombinator.Unapply.Fixed"))
+						val unapplyTypeConstructorTree = TypeIdent(Symbol.requiredClass("name.rayrobdod.stringContextParserCombinator.Unapply.Fixed"))
 
 						val anonfunType = MethodType(
 							List("a"))(

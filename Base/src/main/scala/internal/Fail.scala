@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 package internal
 
 /** A parser that consumes no input and always fails */

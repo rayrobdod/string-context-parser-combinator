@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinatorExample.jsonTest
+package name.rayrobdod.stringContextParserCombinatorExample.jsonTest
 
 object ErrorPositionCompat {
 	val emptyString = "      ^"

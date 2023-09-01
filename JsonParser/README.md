@@ -2,7 +2,7 @@ This sample provides a `json` interpolator, that creates JValues from the interp
 
 ```scala
 import org.json4s.JsonAST._
-import com.rayrobdod.stringContextParserCombinatorExample.json._
+import name.rayrobdod.stringContextParserCombinatorExample.json._
 
 val foo:Int = 123
 val bar:String = "abc"

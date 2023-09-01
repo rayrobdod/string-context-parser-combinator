@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetime
+package name.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
 import scala.quoted._
-import com.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
 	import ExprConversions.given

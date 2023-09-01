@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinatorExample.json
+package name.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.Seq
 import scala.quoted.{Expr, Quotes, Type}
 import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
-import com.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
 	/**
@@ -51,14 +51,14 @@ object MacroImpl {
 	 * that is, generate something like `Lift.string.apply("abcd").values`
 	 */
 	private def jstringExprToStringExpr(using Quotes)(in:Expr[JString]):Expr[String] = in match {
-		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.string.apply(${param}) } => param
-		case '{ com.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[JString].apply(${param}) } => '{ $param.values }
+		case '{ name.rayrobdod.stringContextParserCombinatorExample.json.Lift.string.apply(${param}) } => param
+		case '{ name.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[JString].apply(${param}) } => '{ $param.values }
 		case _ => '{ $in.values }
 	}
 
-	import com.rayrobdod.stringContextParserCombinator.Parser._
-	import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
-	import com.rayrobdod.stringContextParserCombinator.Extractor.Extractor
+	import name.rayrobdod.stringContextParserCombinator.Parser._
+	import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+	import name.rayrobdod.stringContextParserCombinator.Extractor.Extractor
 
 	private def charFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] =
 		charWhere(pf.isDefinedAt).flatMap(pf.apply)

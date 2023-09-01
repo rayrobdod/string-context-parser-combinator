@@ -1,7 +1,7 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetime
+package name.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator._
 
 object IdImpl {
 	private[this] val leafParsers = Parser.idParsers

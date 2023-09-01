@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinatorExample.jsonTest
+package name.rayrobdod.stringContextParserCombinatorExample.jsonTest
 
 import scala.annotation.nowarn
 import scala.collection.immutable.{Map, Vector}
 import org.json4s.{JValue, JNull, JBool, JNumber, JLong, JDecimal, JString, JArray, JObject}
-import com.rayrobdod.stringContextParserCombinatorExample.json._
+import name.rayrobdod.stringContextParserCombinatorExample.json._
 
 final class StringContextTest extends munit.FunSuite {
 	test("Accepts an immediate null") {

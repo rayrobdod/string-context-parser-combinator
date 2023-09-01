@@ -1,11 +1,11 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 package internal
 
 private[stringContextParserCombinator]
 object FlatMap {
 	def interpolator[Expr, A, Z](
 		left:Interpolator[Expr, A],
-		right:A => com.rayrobdod.stringContextParserCombinator.Interpolator[Expr, Z]
+		right:A => name.rayrobdod.stringContextParserCombinator.Interpolator[Expr, Z]
 	):Interpolator[Expr, Z] = {
 		new Interpolator[Expr, Z] {
 			def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {

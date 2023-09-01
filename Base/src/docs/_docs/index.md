@@ -7,7 +7,7 @@ StringContextParserCombinators is a library for writing String Context extension
 
 ```scala
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
 
 def eval1(folding:Expr[Int], elem:(Char, Expr[Int]))(using Quotes):Expr[Int] = elem._1 match {
 	case '+' => '{${folding} + ${elem._2}}
@@ -49,6 +49,6 @@ scala> math"1+A"
 
 # Entry Points
 
-Create leaf parsers using the methods in [[the Interpolator companion object|com.rayrobdod.stringContextParserCombinator.Interpolator$]],
-combine and manipulate them with the methods in [[com.rayrobdod.stringContextParserCombinator.Interpolator]], then interpolate
-using the [[Interpolator.interpolate|com.rayrobdod.stringContextParserCombinator.Interpolator#interpolate-fffff934]] method
+Create leaf parsers using the methods in [[the Interpolator companion object|name.rayrobdod.stringContextParserCombinator.Interpolator$]],
+combine and manipulate them with the methods in [[name.rayrobdod.stringContextParserCombinator.Interpolator]], then interpolate
+using the [[Interpolator.interpolate|name.rayrobdod.stringContextParserCombinator.Interpolator#interpolate-fffff934]] method

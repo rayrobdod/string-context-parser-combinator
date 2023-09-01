@@ -1,10 +1,10 @@
-package com.rayrobdod.stringContextParserCombinatorExample.uri
+package name.rayrobdod.stringContextParserCombinatorExample.uri
 
 import java.net.URI
 import scala.quoted._
-import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
-import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits.{given}
+import name.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
+import name.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits.{given}
 
 object MacroImpl {
 	/**
@@ -18,7 +18,7 @@ object MacroImpl {
 		}
 	}
 
-	import com.rayrobdod.stringContextParserCombinator.Interpolator._
+	import name.rayrobdod.stringContextParserCombinator.Interpolator._
 	private def parseByteHex(x:(Char, Char)):Int = java.lang.Integer.parseInt(s"${x._1}${x._2}", 16)
 
 

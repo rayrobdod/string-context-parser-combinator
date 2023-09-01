@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Seq
 import munit.Location
-import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
+import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 
 abstract class BaseInterpolatorSuite extends munit.FunSuite {
 	def escape(in:Char):String = escape(in.toInt)
@@ -236,7 +236,7 @@ package InterpolatorTest {
 
 		final class IsEven extends BaseInterpolatorSuite {
 			val dut = Interpolator.idInterpolators.ofType(classOf[Foo]).filter(_.x % 2 == 0, "is even")
-			val className = "com.rayrobdod.stringContextParserCombinator.InterpolatorTest.filter.Foo"
+			val className = "name.rayrobdod.stringContextParserCombinator.InterpolatorTest.filter.Foo"
 
 			test ("if base parser fails, parser passes through the failure") {
 				assertParseFailure(dut, ("" :: Nil, Nil), List(s"Expected OfType($className)", "\t", "\t^"))
@@ -307,7 +307,7 @@ package InterpolatorTest {
 		}
 	}
 	package repeat {
-		import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
+		import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 		import Interpolator.idInterpolators.{charIn, end}
 
 		final class ZeroOrMoreGreedy extends BaseInterpolatorSuite {

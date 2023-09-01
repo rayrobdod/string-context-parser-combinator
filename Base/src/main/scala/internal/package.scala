@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.{Seq, Set}
 

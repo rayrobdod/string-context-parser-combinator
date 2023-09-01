@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinatorExample.json
+package name.rayrobdod.stringContextParserCombinatorExample.json
 
 import org.json4s.{JValue, JBool, JNumber, JLong, JInt, JDecimal, JString, JArray, JObject}
 

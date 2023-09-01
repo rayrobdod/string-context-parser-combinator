@@ -1,6 +1,6 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetime
+package name.rayrobdod.stringContextParserCombinatorExample.datetime
 
-import com.rayrobdod.stringContextParserCombinator.typeclass.Repeated
+import name.rayrobdod.stringContextParserCombinator.typeclass.Repeated
 
 /** Represents a base-ten digit. */
 final class Digit private (private val value:Int)

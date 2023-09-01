@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetime
+package name.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
 import scala.quoted._

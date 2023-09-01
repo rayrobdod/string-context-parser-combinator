@@ -1,7 +1,7 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.reflect.macros.blackbox.Context
-import com.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
+import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
 
 /**
  * Parts of [[Parser]] that use types specific to scala 3

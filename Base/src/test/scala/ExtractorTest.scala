@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Seq
 import munit.Location
@@ -317,7 +317,7 @@ package ExtractorTest {
 		}
 	}
 	package repeat {
-		import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
+		import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 
 		final class ZeroOrMore extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
@@ -535,7 +535,7 @@ package ExtractorTest {
 		}
 	}
 	package optionally {
-		import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
+		import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 
 		final class ZeroOrOne extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])

@@ -1,13 +1,13 @@
-package com.rayrobdod.stringContextParserCombinatorExample.uri
+package name.rayrobdod.stringContextParserCombinatorExample.uri
 
 // the compiler creates smaller typecreator classes for `java.lang.String` than `scala.Predef.String`
 import java.lang.String
 
 import java.net.URI
 import scala.reflect.macros.blackbox.Context
-import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinator.RepeatStrategy._
-import com.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits._
+import name.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
+import name.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits._
 
 object MacroImpl {
 	/**
@@ -293,7 +293,7 @@ object MacroImpl {
 
 		val uri:Interpolator[c.Expr[URI]] = (resolvedUri.attempt orElse absoluteUri.attempt orElse relativeUri) andThen end
 
-		val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.uri.package.UriStringContext"
+		val extensionClassName = "name.rayrobdod.stringContextParserCombinatorExample.uri.package.UriStringContext"
 		uri.interpolate(c)(extensionClassName)(args.toList)
 	}
 }

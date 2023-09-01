@@ -73,8 +73,8 @@ lazy val base = (projectMatrix in file("Base"))
 		}),
 		console / initialCommands := """
 			import scala.quoted.{Expr, Quotes}
-			import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
-			import com.rayrobdod.stringContextParserCombinator.typeclass._
+			import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+			import name.rayrobdod.stringContextParserCombinator.typeclass._
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
@@ -99,7 +99,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		),
 		console / initialCommands := """
 			import org.json4s._
-			import com.rayrobdod.stringContextParserCombinatorExample.json._
+			import name.rayrobdod.stringContextParserCombinatorExample.json._
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
@@ -121,7 +121,7 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		publish / skip := true,
 		console / initialCommands := """
 			import java.time._
-			import com.rayrobdod.stringContextParserCombinatorExample.datetime._
+			import name.rayrobdod.stringContextParserCombinatorExample.datetime._
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(
@@ -147,7 +147,7 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		publish / skip := true,
 		console / initialCommands := """
 			import java.net.URI
-			import com.rayrobdod.stringContextParserCombinatorExample.uri._
+			import name.rayrobdod.stringContextParserCombinatorExample.uri._
 		""",
 	)
 	.jvmPlatform(scalaVersions = Seq(

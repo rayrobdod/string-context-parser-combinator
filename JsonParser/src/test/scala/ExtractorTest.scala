@@ -1,7 +1,7 @@
-package com.rayrobdod.stringContextParserCombinatorExample.jsonTest
+package name.rayrobdod.stringContextParserCombinatorExample.jsonTest
 
 import org.json4s._
-import com.rayrobdod.stringContextParserCombinatorExample.json._
+import name.rayrobdod.stringContextParserCombinatorExample.json._
 
 final class StringContextUnapplyTest extends munit.FunSuite {
 	test("can extract a whole value") {

@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 /**
  * Thrown by [[Id]]-using parse methods when the parser fails to parse the string context

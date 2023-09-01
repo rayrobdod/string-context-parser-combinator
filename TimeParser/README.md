@@ -3,7 +3,7 @@ values.
 
 ```scala
 import java.time._
-import com.rayrobdod.stringContextParserCombinatorExample.datetime._
+import name.rayrobdod.stringContextParserCombinatorExample.datetime._
 
 val month = Month.FEBRUARY
 

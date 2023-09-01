@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetimeTest
+package name.rayrobdod.stringContextParserCombinatorExample.datetimeTest
 package interpolationMacroTest
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinatorExample.datetime._
+import name.rayrobdod.stringContextParserCombinatorExample.datetime._
 
 final class localtime extends munit.FunSuite {
 	test("Accepts a literal midnight") {

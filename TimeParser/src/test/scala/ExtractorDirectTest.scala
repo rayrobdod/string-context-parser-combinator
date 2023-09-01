@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetimeTest
+package name.rayrobdod.stringContextParserCombinatorExample.datetimeTest
 package extractorDirectTest
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinator.ParseException
-import com.rayrobdod.stringContextParserCombinatorExample.datetime._
+import name.rayrobdod.stringContextParserCombinator.ParseException
+import name.rayrobdod.stringContextParserCombinatorExample.datetime._
 
 final class localtime2 extends munit.FunSuite {
 	test("can match a whole time") {

@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
-import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
+import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
 
 /**
  * Parses an interpolated string expression into some value
@@ -278,7 +278,7 @@ object Interpolator
 	 * @groupprio Misc 999
 	 */
 	trait Interpolators[Expr[+_], ToExpr[_], Type[_]] {
-		type Interpolator[A] = com.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
+		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character

@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinatorExample
+package name.rayrobdod.stringContextParserCombinatorExample
 
 import org.json4s.JsonAST.JValue
 

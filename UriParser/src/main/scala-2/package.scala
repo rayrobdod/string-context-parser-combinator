@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinatorExample
+package name.rayrobdod.stringContextParserCombinatorExample
 
 import java.net.URI
 

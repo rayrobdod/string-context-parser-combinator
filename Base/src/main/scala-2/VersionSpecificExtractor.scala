@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.annotation.nowarn
 import scala.reflect.macros.blackbox.Context
-import com.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
+import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
 
 /**
  * Parts of [[Extractor]] that use types specific to scala 3

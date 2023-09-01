@@ -2,7 +2,7 @@ A sample string context parser for URI values
 
 ```
 import java.net.URI
-import com.rayrobdod.stringContextParserCombinatorExample.uri._
+import name.rayrobdod.stringContextParserCombinatorExample.uri._
 
 val port = 8080
 val action = "edit"

@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinatorExample.datetime
+package name.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
-import com.rayrobdod.stringContextParserCombinator._
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
-import com.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
+import name.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
+import name.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
 
 trait TimeParsers[Expr[_], Type[_]] {
 	def localDate: Parser[Expr, Type, Expr[LocalDate]]

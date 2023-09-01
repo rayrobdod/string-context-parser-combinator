@@ -1,7 +1,7 @@
-package com.rayrobdod.stringContextParserCombinatorExample.uriTest
+package name.rayrobdod.stringContextParserCombinatorExample.uriTest
 
 import java.net.URI
-import com.rayrobdod.stringContextParserCombinatorExample.uri._
+import name.rayrobdod.stringContextParserCombinatorExample.uri._
 
 final class StringContextTest extends munit.FunSuite {
 	test("opaque") {

@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 package internal
 
 /** Acts like the Interpolator when interpolating, and like the Extractor when extracting */

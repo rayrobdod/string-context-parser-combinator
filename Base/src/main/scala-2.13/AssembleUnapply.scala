@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.reflect.macros.blackbox.Context
 
@@ -19,7 +19,7 @@ object AssembleUnapply {
 		c.Expr[Boolean](
 			q"""
 				({($valueName: $valueType) => $condition}
-					:_root_.com.rayrobdod.stringContextParserCombinator.Unapply.Zero[$valueType])
+					:_root_.name.rayrobdod.stringContextParserCombinator.Unapply.Zero[$valueType])
 					.unapply($value)
 			"""
 		)
@@ -43,7 +43,7 @@ object AssembleUnapply {
 		c.Expr(
 			q"""
 				({($valueName: $valueType) => Option.when($condition)($extractedValue)}
-					:com.rayrobdod.stringContextParserCombinator.Unapply.Fixed[$valueType, $extractedType])
+					:name.rayrobdod.stringContextParserCombinator.Unapply.Fixed[$valueType, $extractedType])
 					.unapply($value)
 			"""
 		)(extractedType)
@@ -87,7 +87,7 @@ object AssembleUnapply {
 		c.Expr(
 			q"""
 				({($valueName: $valueType) => Option.when($condition)($extractedTuple)}
-					:com.rayrobdod.stringContextParserCombinator.Unapply.Fixed[$valueType, $extractedType])
+					:name.rayrobdod.stringContextParserCombinator.Unapply.Fixed[$valueType, $extractedType])
 					.unapply($value)
 			"""
 		)(c.WeakTypeTag(extractedType))

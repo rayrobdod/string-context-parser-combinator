@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 private[stringContextParserCombinator]
 sealed trait ExpectingSet[Pos] {

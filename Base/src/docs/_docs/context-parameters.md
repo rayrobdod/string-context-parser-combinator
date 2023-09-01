@@ -2,10 +2,10 @@
 title: Context Parameters
 ---
 
-The [[Interpolator|com.rayrobdod.stringContextParserCombinator.Interpolator]] methods
+The [[Interpolator|name.rayrobdod.stringContextParserCombinator.Interpolator]] methods
 `andThen`, `orElse`, `repeat` and `optionally` each take a context parameter which describes how to
 combine the results of the aggregate parser's components. Each of these types reside in
-[[com.rayrobdod.stringContextParserCombinator.typeclass]]. Each of these four types' companion object defines one
+[[name.rayrobdod.stringContextParserCombinator.typeclass]]. Each of these four types' companion object defines one
 low-priority given instance that accepts any type and produces an appropriate generic result. The companion object also
 defines additional instances for more specific types, usually to avoid sticking `scala.Unit` values in a collection, and
 maybe a few more for common use cases.
@@ -18,14 +18,14 @@ of a given instance to the minimum viable to prevent given instances from becomi
 
 ## Sequenced
 
-A [[Sequenced|com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced]] describes how to combine two adjacent values into
+A [[Sequenced|name.rayrobdod.stringContextParserCombinator.typeclass.Sequenced]] describes how to combine two adjacent values into
 one value.
 
 The fallback given sequenced places the two items in a tuple.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
 class B {}
 val p1:Interpolator[A] = ???
@@ -40,7 +40,7 @@ used, the unit value is dropped, leaving the other value in tact. If both values
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
 val u1:Interpolator[Unit] = ???
 val u2:Interpolator[Unit] = ???
@@ -59,8 +59,8 @@ Below is example of defining and using a custom Sequenced.
 ```scala
 import java.time._
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-import com.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
 val dateParser:Interpolator[LocalDate] = ???
 val timeParser:Interpolator[LocalTime] = ???
 
@@ -75,7 +75,7 @@ given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
 
 ## Eithered
 
-An [[Eithered|com.rayrobdod.stringContextParserCombinator.typeclass.Eithered]] describes how to treat a parser result
+An [[Eithered|name.rayrobdod.stringContextParserCombinator.typeclass.Eithered]] describes how to treat a parser result
 that may be the result of one parser or the result of the other parser.
 
 The fallback given Eithered creates a union type of the two component types. Since the union of a type with itself is
@@ -84,8 +84,8 @@ parser of that type.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
-import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
 val p1:Interpolator[A] = ???
@@ -103,7 +103,7 @@ non-unit case is wrapped in a `scala.Some`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
 val p1:Interpolator[Unit] = ???
 val p2:Interpolator[Unit] = ???
@@ -119,8 +119,8 @@ in a `scala.Either`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 class A {}
 class B {}
 val p1:Interpolator[A] = ???
@@ -142,8 +142,8 @@ import java.io.File
 import java.net.URI
 import java.util.UUID
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-import com.rayrobdod.stringContextParserCombinator.typeclass.Eithered
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.typeclass.Eithered
 val uuidParser:Interpolator[UUID] = ???
 val fileParser:Interpolator[File] = ???
 
@@ -159,14 +159,14 @@ given Eithered[File, UUID, URI] with {
 
 ## Repeated
 
-A [[Repeated|com.rayrobdod.stringContextParserCombinator.typeclass.Repeated]] describes how to combine a homogeneous
+A [[Repeated|name.rayrobdod.stringContextParserCombinator.typeclass.Repeated]] describes how to combine a homogeneous
 sequence of zero-or-more values.
 
 The fallback given Repeated places the items in a `scala.Seq`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
 val p1:Interpolator[A] = ???
 
@@ -181,8 +181,8 @@ repeated `CodePoint` values into a `String`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.CodePoint
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.CodePoint
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 val unitParser:Interpolator[Unit] = ???
 val charParser:Interpolator[Char] = ???
 val codePointParser:Interpolator[CodePoint] = ???
@@ -202,8 +202,8 @@ Below is example of providing and using custom Repeated.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-import com.rayrobdod.stringContextParserCombinator.typeclass.Repeated
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.typeclass.Repeated
 
 //}
 // define the marker types
@@ -228,7 +228,7 @@ val digits:Interpolator[Digits] = digit.repeat(1)
 
 ## Optionally
 
-An [[Optionally|com.rayrobdod.stringContextParserCombinator.typeclass.Optionally]] describes the result of a parser that
+An [[Optionally|name.rayrobdod.stringContextParserCombinator.typeclass.Optionally]] describes the result of a parser that
 might parse another value.
 
 The fallback given Optionally places the items in a `scala.Option`, wrapping a found value in a Some and using a None as
@@ -236,7 +236,7 @@ the empty value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 class A {}
 val p1:Interpolator[A] = ???
 
@@ -248,7 +248,7 @@ The `Unit`-handling Optionally value doesn't wrap a present `()` in an Option, a
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
+import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
 val p1:Interpolator[Unit] = ???
 
 //}
@@ -263,8 +263,8 @@ a default value.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
-import com.rayrobdod.stringContextParserCombinator.typeclass.Optionally
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.typeclass.Optionally
 val stringParser:Interpolator[String] = ???
 
 //}

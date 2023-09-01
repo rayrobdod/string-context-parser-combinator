@@ -1,8 +1,8 @@
-package com.rayrobdod.stringContextParserCombinatorExample
+package name.rayrobdod.stringContextParserCombinatorExample
 
 import java.time._
 import scala.reflect.macros.whitebox.Context
-import com.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator._
 
 package datetime {
 	final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
@@ -80,7 +80,7 @@ package datetime {
 					c.Expr[LocalTime](q"java.time.LocalTime.of($hour, $minute, $second, $nano)")
 		)
 
-		private[this] val extensionClassName = "com.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
+		private[this] val extensionClassName = "name.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
 
 		def interpolate_localDate(args:c.Expr[Any]*):c.Expr[LocalDate] = {
 			(timeParsers.localDate andThen end).interpolate(c)(extensionClassName)(args.toList)

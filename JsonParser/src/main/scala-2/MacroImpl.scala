@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinatorExample.json
+package name.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.Seq
 import scala.reflect.macros.whitebox.Context
 import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
-import com.rayrobdod.stringContextParserCombinator._
+import name.rayrobdod.stringContextParserCombinator._
 
 final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	/**
@@ -342,7 +342,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 	private[this] val onlyJvalue = (whitespace andThen jvalue andThen end)
 
-	private val className = "com.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"
+	private val className = "name.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"
 	def stringContext_json(args:c.Expr[Any]*):c.Expr[JValue] = {
 		onlyJvalue.interpolate(c)(className)(args.toList)
 	}

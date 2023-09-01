@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.annotation.nowarn
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
-import com.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
+import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
 
 /**
  * Parses an interpolated string expression into some extractor
@@ -238,7 +238,7 @@ object Extractor
 	 * @groupprio Misc 999
 	 */
 	trait Extractors[Expr[+_], Type[_]] {
-		type Extractor[A] = com.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
+		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character

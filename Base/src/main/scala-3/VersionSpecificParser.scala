@@ -1,9 +1,9 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 import scala.quoted.*
-import com.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
-import com.rayrobdod.stringContextParserCombinator.{Extractor => SCPCExtractor}
-import com.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
+import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
+import name.rayrobdod.stringContextParserCombinator.{Extractor => SCPCExtractor}
+import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
 
 /**
  * Parts of [[Parser]] that use types specific to scala 3

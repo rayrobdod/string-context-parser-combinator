@@ -8,7 +8,7 @@ That is, an interpolator that builds a string consisting of the concatenation of
 The crux of parser combinators is creating a parser by combining smaller parsers together,
 so we'll start with a small parser and build up to a parser with the desired properties.
 
-The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|com.rayrobdod.stringContextParserCombinator.Interpolator$#idInterpolators-0]].
+The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$#idInterpolators-0]].
 And we're [[defining a new string interpolation|https://docs.scala-lang.org/overviews/core/string-interpolation.html#advanced-usage]].
 So, the scaffolding will look something like:
 
@@ -16,7 +16,7 @@ So, the scaffolding will look something like:
 //{
 type Result
 //}
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 extension (sc:StringContext)
   def prefix(args:Any*):Result =
@@ -25,14 +25,14 @@ extension (sc:StringContext)
 ```
 
 We'll start by creating a Interpolator that will match one of any character from the processed string.
-[[charWhere|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.charWhere]] is one of the leaf parsers that can be used for this;
+[[charWhere|name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.charWhere]] is one of the leaf parsers that can be used for this;
 `charWhere` takes a predicate and creates a parser in which,
 if the next character passes the predicate, the parser passes and the character is captured.
 Since we want this parser to match any character,
 we will use a predicate that always returns true.
 
 ```scala
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 extension (sc:StringContext)
   def s2(args:Any*):Char =
@@ -47,14 +47,14 @@ s2"" // throws
 Note that the parser matches the first character if there is one. Parsing starts at the start of the processed string.
 
 Using this parser that can match one of any character,
-we can create a parser that can match a sequence of characters using the [[repeat|com.rayrobdod.stringContextParserCombinator.Interpolator.repeat]] operator.
+we can create a parser that can match a sequence of characters using the [[repeat|name.rayrobdod.stringContextParserCombinator.Interpolator.repeat]] operator.
 The `repeat` operator creates a parser that will invoke the operand repeatedly until the operand parser fails,
 and then combine the results of the repeated operand runs into a new value.
 Using the default givens, since the operand is a `Interpolator[Char]`, the result is a `Interpolator[String]`.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import _root_.name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -71,7 +71,7 @@ s2"" // ""
 
 Next, lets handle processed string arguments.
 We will set aside `anyChars` for now.
-Of the leaf parsers that handle args, [[ofType|com.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.ofType]] is the most straightforward.
+Of the leaf parsers that handle args, [[ofType|name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.ofType]] is the most straightforward.
 `ofType` takes a type argument and type evidence (in this case a Class) and will match and capture any argument that is a subtype of that class.
 So, an `ofType[Int]` would match any argument that is an `Int` or a subclass of `Int`.
 Since we want to match any argument, we will use `ofType[Any]`.
@@ -79,7 +79,7 @@ The result of running this parser is the same as its type parameter, in this cas
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -93,11 +93,11 @@ s2"Hello" // throws: Expected ofType[Object]
 
 We don't want the result of the interpolator to be an Any here, though; we want the result to be a String.
 
-We can use the [[map|com.rayrobdod.stringContextParserCombinator.Interpolator.map]] operator to convert an interpolator on one type to an interpolator on another type.
+We can use the [[map|name.rayrobdod.stringContextParserCombinator.Interpolator.map]] operator to convert an interpolator on one type to an interpolator on another type.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -111,7 +111,7 @@ s2"Hello" // throws: Expected ofType[Object]
 ```
 
 Now that we have one parser that will match a sequence of characters and another that will match an arg,
-we can create a parser that will match either a sequence of characters or an arg by combing the two other parsers using the [[orElse|com.rayrobdod.stringContextParserCombinator.Interpolator.orElse]] operator.
+we can create a parser that will match either a sequence of characters or an arg by combing the two other parsers using the [[orElse|name.rayrobdod.stringContextParserCombinator.Interpolator.orElse]] operator.
 The `orElse` operator creates a parser that will attempt the left parser,
 passing the result of left parser if the result was a success,
 otherwise attempting the right parser and passing that result.
@@ -121,7 +121,7 @@ the result of the operator will also be a `Interpolator[String]`
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -148,7 +148,7 @@ and `segment` will try the `anyArg` branch after the `anyChars` branch fails.
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -172,7 +172,7 @@ the `Char` to `String` seen before was a built-in higher priority Repeated typec
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -194,7 +194,7 @@ We have a `Interpolator[Seq[String]]`, and we can map a `Seq[String]` to an `Str
 
 ```scala
 //{
-import com.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
 //}
 extension (sc:StringContext)
@@ -221,8 +221,8 @@ There are several advantages to using a macro-based interpolator,
 * `ofType` can work with types instead of classes,
 * The `Lifted` interpolator only works in the Quoted context
 
-The leaf interpolators used for a macro-based interpolator at provided in [[Interpolator.quotedInterpolators|com.rayrobdod.stringContextParserCombinator.Interpolator$#quotedInterpolators]]
-(or equivalently provided directly in the [[`Interpolator` companion object|com.rayrobdod.stringContextParserCombinator.Interpolator$]]).
+The leaf interpolators used for a macro-based interpolator at provided in [[Interpolator.quotedInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$#quotedInterpolators]]
+(or equivalently provided directly in the [[`Interpolator` companion object|name.rayrobdod.stringContextParserCombinator.Interpolator$]]).
 The extension method declaration changes to that of a [[macro definition|https://docs.scala-lang.org/scala3/guides/macros/macros.html]].
 
 Together the scaffolding of the string context extension method becomes
@@ -230,7 +230,7 @@ Together the scaffolding of the string context extension method becomes
 ```scala
 type Result
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
 
 extension (inline sc:StringContext)
   inline def prefix(inline args:Any*):Result =
@@ -247,7 +247,7 @@ Most of the changes involve changing return values to be wrapped in an Expr.
 The `charWhere` and the other character parsers capture `Char` values even in macro interpolators.
 However, the result must be wrapped in an `Expr`,
 so the parts must must be lifted into an Expr at some point.
-This can be done with the map operator, such as `.map(Expr(_))`, or equivalently with the [[mapToExpr|com.rayrobdod.stringContextParserCombinator.Interpolator.mapToExpr]] method.
+This can be done with the map operator, such as `.map(Expr(_))`, or equivalently with the [[mapToExpr|name.rayrobdod.stringContextParserCombinator.Interpolator.mapToExpr]] method.
 
 ```diff
  val anyChars = charWhere(_ => true)
@@ -286,7 +286,7 @@ Taken together, the macro-level reimplementation of the standard string interpol
 
 ```scala
 import scala.quoted.{Expr, Quotes}
-import com.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.Interpolator._
 
 extension (inline sc:StringContext)
   inline def s2(inline args:Any*):String =

@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 
 /**
  * Scala 2.12 and Scala 2.13 disagree about whether an unused `<:<` parameter begets an error.

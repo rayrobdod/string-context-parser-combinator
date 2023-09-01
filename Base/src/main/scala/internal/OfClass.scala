@@ -1,4 +1,4 @@
-package com.rayrobdod.stringContextParserCombinator
+package name.rayrobdod.stringContextParserCombinator
 package internal
 
 /** Succeeds if the next input element is an `arg` with the given type; captures the value */

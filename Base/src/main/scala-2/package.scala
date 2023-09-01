@@ -1,4 +1,4 @@
-package com.rayrobdod
+package name.rayrobdod
 
 import scala.Predef.refArrayOps
 import scala.reflect.api.Universe
