@@ -6,7 +6,7 @@ import scala.reflect.macros.blackbox.Context
 import scala.Predef._
 
 /**
- * A library for implementing StringContext methods via Interpolator Combinators
+ * A library for implementing custom string interpolation implementations using Parser Combinators
  */
 package object stringContextParserCombinator {
 	/** An identity context - for parsing outside of a macro */

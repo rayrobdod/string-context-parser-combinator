@@ -1,7 +1,7 @@
 ---
 ---
 
-StringContextParserCombinators is a library for writing String Context extension method implementations.
+This is a scala library for writing [custom string interpolation](https://docs.scala-lang.org/scala3/book/string-interpolation.html#advanced-usage) implementations via parser combinators.
 
 # Example
 
@@ -46,9 +46,3 @@ scala> math"1+A"
   |       ^
   |       Found "A" ; Expected CharIn("0123456789") | scala.Int
 ```
-
-# Entry Points
-
-Create leaf parsers using the methods in [[the Interpolator companion object|name.rayrobdod.stringContextParserCombinator.Interpolator$]],
-combine and manipulate them with the methods in [[name.rayrobdod.stringContextParserCombinator.Interpolator]], then interpolate
-using the [[Interpolator.interpolate|name.rayrobdod.stringContextParserCombinator.Interpolator#interpolate-fffff934]] method

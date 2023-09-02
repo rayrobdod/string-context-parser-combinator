@@ -293,7 +293,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	}
 
 	private[this] val jvalue:Parser[c.Expr[JValue]] = {
-		/**
+		/*
 		 * if this is replaced with `c.universe.reify(value.splice.isInstanceOf[A])`,
 		 * scalac complains, despite empirical evidence to the contrary, that `A` is unchecked and the WeakTypeTag is unused
 		 */
@@ -306,7 +306,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			)
 		}
 
-		/**
+		/*
 		 * if this is replaced with `c.universe.reify(value.splice.asInstanceOf[A])`,
 		 * scalac complains, despite empirical evidence to the contrary, that `A` is unchecked and the WeakTypeTag is unused
 		 */

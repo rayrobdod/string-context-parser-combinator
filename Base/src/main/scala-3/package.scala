@@ -6,7 +6,7 @@ import scala.quoted.Quotes
 import scala.quoted.Type
 
 /**
- * A library for implementing StringContext methods via Interpolator Combinators
+ * A library for implementing custom string interpolation implementations using Parser Combinators
  */
 package object stringContextParserCombinator {
 	private[stringContextParserCombinator] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {

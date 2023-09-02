@@ -35,15 +35,20 @@ lazy val sharedSettings = Seq(
 		case "2.12" | "2.13" => Seq(
 			"-doc-title", name.value,
 			"-doc-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
-			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.txt").toString,
+			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.md").toString,
 			"-implicits",
 			"-groups",
 			"-sourcepath", baseDirectory.value.toString,
 		)
 		case _ => Seq(
+			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.md").toString,
 			"-groups",
 			"-project-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-revision", git.gitHeadCommit.value.get,
+			"-scastie-configuration", Seq(
+				"resolvers ++= Resolver.sonatypeOssRepos(\"snapshots\")",
+				s"""libraryDependencies += "${organization.value}" %% "${name.value}" % "${version.value}""""
+			).mkString("\\n"),
 			"-siteroot", ((sourceDirectory).value / "docs").toString,
 			"-snippet-compiler:compile",
 			s"-social-links:github::https://github.com/${githubId}",

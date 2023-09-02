@@ -9,7 +9,7 @@ The crux of parser combinators is creating a parser by combining smaller parsers
 so we'll start with a small parser and build up to a parser with the desired properties.
 
 The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$#idInterpolators-0]].
-And we're [[defining a new string interpolation|https://docs.scala-lang.org/overviews/core/string-interpolation.html#advanced-usage]].
+And we're [[defining a new string interpolation|https://docs.scala-lang.org/scala3/book/string-interpolation.html#advanced-usage]].
 So, the scaffolding will look something like:
 
 ```scala
