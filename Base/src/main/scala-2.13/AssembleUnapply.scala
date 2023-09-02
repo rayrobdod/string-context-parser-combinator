@@ -12,7 +12,7 @@ object AssembleUnapply {
 		import c.universe.Quasiquote
 
 		val valueName = c.freshName(c.universe.TermName("value"))
-		val valueIdent = c.Expr[UnexprA](c.universe.Ident(valueName))
+		val valueIdent = c.Expr[UnexprA](c.universe.Ident(valueName))(valueType)
 
 		val condition = conditionFn(valueIdent)
 
@@ -34,7 +34,7 @@ object AssembleUnapply {
 		import c.universe.Quasiquote
 
 		val valueName = c.freshName(c.universe.TermName("value"))
-		val valueIdent = c.Expr[UnexprA](c.universe.Ident(valueName))
+		val valueIdent = c.Expr[UnexprA](c.universe.Ident(valueName))(valueType)
 
 		val condition = conditionFn(valueIdent)
 		val extractedType = extracted.typ
@@ -58,7 +58,7 @@ object AssembleUnapply {
 		import c.universe.Quasiquote
 
 		val valueName = c.freshName(c.universe.TermName("value"))
-		val valueIdent = c.Expr[UnexprA](c.universe.Ident(valueName))
+		val valueIdent = c.Expr[UnexprA](c.universe.Ident(valueName))(valueType)
 
 		val condition = conditionFn(valueIdent)
 		val extractedTypes = extracteds.map(_.typ.tpe)

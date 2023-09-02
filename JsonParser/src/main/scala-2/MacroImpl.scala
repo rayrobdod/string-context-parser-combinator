@@ -316,7 +316,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 					c.universe.Select(value.tree, c.universe.TermName("asInstanceOf")),
 					c.universe.TypeTree(typeTag.tpe) :: Nil
 				)
-			)
+			)(typeTag)
 		}
 
 		def widenToJValue[A <: JValue](parser:Parser[c.Expr[A]])(implicit typ:c.WeakTypeTag[A]):Parser[c.Expr[JValue]] = {
