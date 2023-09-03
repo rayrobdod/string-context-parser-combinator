@@ -10,6 +10,14 @@ private[typeclass] trait VersionSpecificEithered extends LowPrioEithered {
 }
 
 private[typeclass] trait LowPrioEithered {
+	/**
+	 * The fallback Eithered;
+	 * creates a union type of the two component types.
+	 *
+	 * Since the union of a type with itself is equivalent to that same type,
+	 * if this Eithered is used for two parsers of the same type,
+	 * then the result is a parser of that type.
+	 */
 	given generic[A, B]:Eithered[A, B, A | B] = Eithered.apply(Predef.identity _, Predef.identity _)
 }
 
