@@ -167,7 +167,7 @@ s2"${2 + 2} = 2 + 2" // "4"
 Now that we have a parser that can match either a run of characters or an argument,
 we can `repeat` that parser to create a parser that can match a sequence of character-sequences-or-arguments.
 This time, since the input to the repeat parser is a `Interpolator[String]`, the result will be a `Interpolator[List[String]]`.
-In general, unless a higher priority instance of the Repeated typeclass can be found, `repeat` will create a parser that produces a `Seq[A]`;
+In general, unless a higher priority instance of the Repeated typeclass can be found, `repeat` will create a parser that produces a `List[A]`;
 the `Char` to `String` seen before was a built-in higher priority Repeated typeclass instance.
 
 ```scala
@@ -190,7 +190,7 @@ s2"2 + 2 = ${2 + 2}" // List("2 + 2 = ", "4")
 s2"${2 + 2} = 2 + 2" // List("4", " = 2 + 2")
 ```
 
-We have a `Interpolator[Seq[String]]`, and we can map a `Seq[String]` to an `String` to create a simple string context reimplementation.
+We have a `Interpolator[Seq[String]]`, and we can map a `Seq[String]` to an `String` to finish the simple string context reimplementation.
 
 ```scala
 //{
@@ -217,7 +217,7 @@ This interpolator does work, however this interpolator works at run time.
 The library also supports creating marco-level parsers, that will instead run at compile time.
 There are several advantages to using a macro-based interpolator,
 
-* Interpolator parsing errors will fail at compile time, instead of being a runtime exception
+* Parsing errors will fail at compile time, instead of being a runtime exception
 * `ofType` can work with types instead of classes,
 * The `Lifted` interpolator only works in the Quoted context
 
