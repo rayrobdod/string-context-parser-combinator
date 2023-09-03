@@ -6,43 +6,33 @@ This is a scala library for writing [custom string interpolation](https://docs.s
 # Example
 
 ```scala
-import scala.quoted.{Expr, Quotes}
-import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 
-def eval1(folding:Expr[Int], elem:(Char, Expr[Int]))(using Quotes):Expr[Int] = elem._1 match {
-	case '+' => '{${folding} + ${elem._2}}
-	case '-' => '{${folding} - ${elem._2}}
-	case '*' => '{${folding} * ${elem._2}}
-	case '/' => '{${folding} / ${elem._2}}
-}
-def eval(head:Expr[Int], tail:Seq[(Char, Expr[Int])])(using Quotes):Expr[Int] = tail.foldLeft(head)(eval1 _)
+extension (sc: StringContext)
+  def math(args: Int*): Int =
+    def eval1(folding:Int, elem:(Char, Int)):Int = elem._1 match {
+      case '+' => folding + elem._2
+      case '-' => folding - elem._2
+      case '*' => folding * elem._2
+      case '/' => folding / elem._2
+    }
+    def eval(head:Int, tail:Seq[(Char, Int)]):Int = tail.foldLeft(head)(eval1 _)
+    //
+    def numberLiteral:Interpolator[Int] = charIn('0' to '9').repeat(1).map({x => x.toInt})
+    def numberProvided:Interpolator[Int] = ofType(using classOf[Integer]).map({x => x:Int})
+    def parens:Interpolator[Int] = `lazy`(() => isString("(") andThen addSub andThen isString(")"))
+    def factor:Interpolator[Int] = numberLiteral orElse numberProvided orElse parens
+    def divMul:Interpolator[Int] = (factor andThen (charIn("*/") andThen factor).repeat()).map(eval _)
+    def addSub:Interpolator[Int] = (divMul andThen (charIn("+-") andThen divMul).repeat()).map(eval _)
+    def expr:Interpolator[Int] = addSub andThen end
+    //
+    expr.interpolate(sc, args)
 
-def numberLiteral(using Quotes):Interpolator[Expr[Int]] = charIn('0' to '9').repeat(1).map({x => Expr[Int](x.toInt)})
-def numberProvided(using Quotes):Interpolator[Expr[Int]] = ofType[Int]
-def parens(using Quotes):Interpolator[Expr[Int]] = `lazy`(() => isString("(") andThen addSub andThen isString(")"))
-def factor(using Quotes):Interpolator[Expr[Int]] = numberLiteral orElse numberProvided orElse parens
 
-def divMul(using Quotes):Interpolator[Expr[Int]] = (factor andThen (charIn("*/") andThen factor).repeat()).map(eval _)
-def addSub(using Quotes):Interpolator[Expr[Int]] = (divMul andThen (charIn("+-") andThen divMul).repeat()).map(eval _)
-def expr(using Quotes):Interpolator[Expr[Int]] = addSub andThen end
-
-def stringContext_math_impl(sc:Expr[StringContext], args:Expr[Seq[Int]])(using Quotes):Expr[Int] = expr.interpolate(sc, args)
+math"1+2*3+4" // 11: Int
+math"(1+2)*(3+4)" // 21: Int
+math"1+${' '.toInt}" // 33: Int
+math"1+A" // Expected "(" or CharIn("0123456789") or OfType(java.lang.Integer)
 ```
 
-```scala sc:nocompile
-extension (inline sc:StringContext) inline def math(inline args:Int*):Int =
-    ${stringContext_math_impl('sc, 'args)}
-```
-
-```
-scala> math"1+2*3+4"
-val res2: Int = 11
-
-scala> math"1+${' '.toInt}"
-val res3: Int = 33
-
-scala> math"1+A"
-1 |math"1+A"
-  |       ^
-  |       Found "A" ; Expected CharIn("0123456789") | scala.Int
-```
+More complicated examples are available as subprojects of the repository
