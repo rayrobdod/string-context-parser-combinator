@@ -24,7 +24,6 @@ object IdImpl {
 	}
 
 	private val timeParsers = TimeParsers[Id, IdToExpr, Class](leafParsers)(
-		0,
 		(ym) => intTwoDigits(1, ym.lengthOfMonth).map(day => ym.atDay(day)),
 		java.time.LocalTime.of _
 	)(

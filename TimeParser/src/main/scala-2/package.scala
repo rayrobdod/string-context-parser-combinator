@@ -60,7 +60,6 @@ package datetime {
 		}
 
 		private val timeParsers = TimeParsers(leafParsers)(
-			c.Expr(c.universe.Literal(c.universe.Constant(0))),
 			{(ymExpr) => ymExpr match {
 				case c.Expr(`unliftYearMonth`(ym)) => {
 					intTwoDigits(1, ym.lengthOfMonth).map(day => c.Expr[LocalDate](liftLocalDate(ym.atDay(day))))

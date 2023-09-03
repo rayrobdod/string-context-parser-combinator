@@ -29,7 +29,6 @@ object TimeParsers {
 	def apply[Expr[+_], ToExpr[_], Type[_]](
 		leaves:Parser.Parsers[Expr, ToExpr, Type]
 	)(
-		exprConstZero: Expr[Int],
 		yearMonthFlatMap: Expr[YearMonth] => leaves.Interpolator[Expr[LocalDate]],
 		partsToLocalTime: (Expr[Int], Expr[Int], Expr[Int], Expr[Int]) => Expr[LocalTime]
 	)(implicit
@@ -53,6 +52,8 @@ object TimeParsers {
 		sequenced_LocalDateTime: typeclass.BiSequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]]
 	):TimeParsers[Expr, Type] = new TimeParsers[Expr, Type] {
 		import leaves._
+
+		val exprConstZero = toExprMapping(0, toExpr_Int, type_Int)
 
 		implicit def str2parser(str:String):Parser[Unit] = isString(str)
 		implicit def str2interpolator(str:String):Interpolator[Unit] = isString(str).toInterpolator

@@ -64,7 +64,6 @@ object MacroImpl {
 					Parser.quotedParsers
 
 		TimeParsers(leafParsers)(
-			Expr(0),
 			_ match {
 				case Expr(ym) => intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day)))
 				case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => intTwoDigits(1, Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, ${Expr(day)})})
