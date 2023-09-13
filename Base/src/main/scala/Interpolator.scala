@@ -374,8 +374,8 @@ object Interpolator
 			override def `lazy`[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
 				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
-			override def ofType[A](implicit tpe: Class[A]): Interpolator[A] =
-				new Interpolator(new internal.OfClass(tpe))
+			override def ofType[A](implicit tpe: Class[A]): this.Interpolator[A] =
+				new this.Interpolator(new internal.OfClass(tpe))
 		}
 	}
 }

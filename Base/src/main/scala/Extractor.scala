@@ -331,11 +331,11 @@ object Extractor
 	 */
 	def idExtractors: Extractors[Id, Class] = {
 		new Extractors[Id, Class] with ExprIndependentExtractors[Id, Class] {
-			override def `lazy`[A](fn:Function0[Extractor[A]]):Extractor[A] =
+			override def `lazy`[A](fn:Function0[this.Extractor[A]]):this.Extractor[A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def ofType[A](implicit tpe: Class[A]): Extractor[A] =
-				new Extractor(new internal.OfClass(tpe))
+			override def ofType[A](implicit tpe: Class[A]): this.Extractor[A] =
+				new this.Extractor(new internal.OfClass(tpe))
 		}
 	}
 }

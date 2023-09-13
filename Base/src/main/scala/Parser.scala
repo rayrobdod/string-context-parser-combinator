@@ -351,14 +351,14 @@ object Parser
 	 */
 	def idParsers: Parsers[Id, IdToExpr, Class] = {
 		new Parsers[Id, IdToExpr, Class] with ExprIndependentParsers[Id, Class] {
-			override def `lazy`[A](fn:Function0[Parser[A]]):Parser[A] =
-				new Parser(internal.DelayedConstruction.parser(() => fn().impl))
+			override def `lazy`[A](fn:Function0[this.Parser[A]]):this.Parser[A] =
+				new this.Parser(internal.DelayedConstruction.parser(() => fn().impl))
 
-			override def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):Parser[A] =
-				new Parser(new internal.Paired(interpolator.impl, extractor.impl))
+			override def paired[A](interpolator:this.Interpolator[A], extractor:this.Extractor[A]):this.Parser[A] =
+				new this.Parser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def ofType[A](implicit tpe: Class[A]): Parser[A] =
-				new Parser(new internal.OfClass(tpe))
+			override def ofType[A](implicit tpe: Class[A]): this.Parser[A] =
+				new this.Parser(new internal.OfClass(tpe))
 		}
 	}
 }
