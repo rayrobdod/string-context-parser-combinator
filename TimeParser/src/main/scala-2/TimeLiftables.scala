@@ -15,16 +15,8 @@ private[datetime] trait TimeLiftables {
 
 	implicit object liftMonth extends ctx.universe.Liftable[Month] {
 		def apply(value:Month):ctx.universe.Tree = {
-			ctx.universe.Select(
-				ctx.universe.Select(
-					ctx.universe.Select(
-						ctx.universe.Ident(ctx.universe.TermName("java")),
-						ctx.universe.TermName("time")
-					),
-					ctx.universe.TermName("Month")
-				),
-				ctx.universe.TermName(value.name())
-			)
+			val monthName = ctx.universe.TermName(value.name())
+			q"java.time.Month.${monthName}"
 		}
 	}
 
