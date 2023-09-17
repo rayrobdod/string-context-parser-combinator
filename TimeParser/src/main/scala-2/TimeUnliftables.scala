@@ -7,13 +7,6 @@ private[datetime] trait TimeUnliftables {
 	val ctx:Context
 	import ctx.universe.Tree
 
-	private[this] trait NameType {
-		def unapply(input:scala.reflect.api.Universe#Name):Option[String]
-	}
-	private[this] val Name = new NameType {
-		def unapply(input:scala.reflect.api.Universe#Name):Option[String] = Option(input.decodedName.toString)
-	}
-
 	implicit object unliftYear extends ctx.universe.Unliftable[Year] {
 		def unapply(tree:Tree):Option[Year] = {
 			import ctx.universe._

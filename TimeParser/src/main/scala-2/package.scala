@@ -8,10 +8,6 @@ package datetime {
 	final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		import c.universe._
 
-		private[this] object Name {
-			def unapply(input:scala.reflect.api.Universe#Name):Option[String] = Option(input.decodedName.toString)
-		}
-
 		private[this] val leafParsers = Parser.contextParsers(c)
 		import leafParsers._
 		private[this] val bieithereds = typeclass.BiEithered.forContext(c)
