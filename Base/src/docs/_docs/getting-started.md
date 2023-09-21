@@ -8,7 +8,7 @@ That is, an interpolator that builds a string consisting of the concatenation of
 The crux of parser combinators is creating a parser by combining smaller parsers together,
 so we'll start with a small parser and build up to a parser with the desired properties.
 
-The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$#idInterpolators-0]].
+The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$.idInterpolators]].
 And we're [[defining a new string interpolation|https://docs.scala-lang.org/scala3/book/string-interpolation.html#advanced-usage]].
 So, the scaffolding will look something like:
 
@@ -221,7 +221,7 @@ There are several advantages to using a macro-based interpolator,
 * `ofType` can work with types instead of classes,
 * The `Lifted` interpolator only works in the Quoted context
 
-The leaf interpolators used for a macro-based interpolator at provided in [[Interpolator.quotedInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$#quotedInterpolators]]
+The leaf interpolators used for a macro-based interpolator at provided in [[Interpolator.quotedInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$.quotedInterpolators]]
 (or equivalently provided directly in the [[`Interpolator` companion object|name.rayrobdod.stringContextParserCombinator.Interpolator$]]).
 The extension method declaration changes to that of a [[macro definition|https://docs.scala-lang.org/scala3/guides/macros/macros.html]].
 
