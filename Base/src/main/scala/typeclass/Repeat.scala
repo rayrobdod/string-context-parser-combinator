@@ -7,9 +7,13 @@ import scala.collection.mutable.Builder
  * Describes how to combine a homogeneous sequence of zero-or-more values.
  *
  * When a Repeated is used:
- *  * first, `init` is called to create a new mutable builder
- *  * then, `append` is called once for each component item in order, using the `init`-created builder and the component item as parameters
- *  * lastly, `result` is called with the builder, and the result of this call is overall result.
+ *  * first, `init` to create an initial value for the accumulator
+ *  * then, `append` is called once for each component item in order, using the accumulator and the component item as parameters and returning the next accumulator value
+ *  * lastly, `result` is called with the final accumulator value, and the result of this call is overall result.
+ *
+ * `init` will be called anew on each use, so it is possible to use a mutable accumulator
+ * by creating a new builder in the `init` method
+ * and returning the `acc` parameter in the append method.
  *
  * Below is an example of implementing and using a custom `Repeated`:
  * ```scala
@@ -23,11 +27,10 @@ import scala.collection.mutable.Builder
  *
  * // define the given instance
  * given Repeated[Digit, Digits] with {
- * 	final class Box(var value:Int)
- * 	type Acc = Box
- * 	def init():Acc = new Box(0)
- * 	def append(acc:Acc, elem:Digit):Unit = {acc.value *= 10; acc.value += elem.value}
- * 	def result(acc:Acc):Digits = new Digits(acc.value)
+ *  type Acc = Int
+ *  def init():Acc = 0
+ *  def append(acc:Acc, elem:Digit):Acc = (acc * 10) + elem.value
+ *  def result(acc:Acc):Digits = new Digits(acc)
  * }
  *
  * // create the parsers
@@ -43,13 +46,13 @@ import scala.collection.mutable.Builder
  * @tparam Z the result container
  */
 trait Repeated[-A, +Z] {
-	/** A mutable accumulator appropriate for holding `A` and transforming into `Z` */
+	/** The accumulator */
 	type Acc
 	/** Returns a new empty accumulator */
 	def init():Acc
 	/** Inserts `elem` into `acc` */
-	def append(acc:Acc, elem:A):Unit
-	/** Transforms `acc` into Z */
+	def append(acc:Acc, elem:A):Acc
+	/** Transforms `acc` into a Z */
 	def result(acc:Acc):Z
 }
 
@@ -103,7 +106,7 @@ object Repeated extends LowPrioRepeated {
 		final class RepeatedChar extends Repeated[Char, String] {
 			type Acc = StringBuilder
 			def init():Acc = new StringBuilder
-			def append(acc:Acc, elem:Char):Unit = {acc += elem; ()}
+			def append(acc:Acc, elem:Char):Acc = {acc += elem}
 			def result(acc:Acc):String = acc.toString
 		}
 		new RepeatedChar()
@@ -116,7 +119,7 @@ object Repeated extends LowPrioRepeated {
 		final class RepeatedCodepoint extends Repeated[CodePoint, String] {
 			type Acc = java.lang.StringBuilder
 			def init():Acc = new java.lang.StringBuilder
-			def append(acc:Acc, elem:CodePoint):Unit = {acc.appendCodePoint(elem.intValue); ()}
+			def append(acc:Acc, elem:CodePoint):Acc = {acc.appendCodePoint(elem.intValue)}
 			def result(acc:Acc):String = acc.toString
 		}
 		new RepeatedCodepoint()
@@ -132,7 +135,7 @@ private[typeclass] trait LowPrioRepeated {
 		final class RepeatedGenericToList extends Repeated[A, List[A]] {
 			type Acc = Builder[A, List[A]]
 			def init():Acc = List.newBuilder[A]
-			def append(acc:Acc, elem:A):Unit = {acc += elem; ()}
+			def append(acc:Acc, elem:A):Acc = {acc += elem}
 			def result(acc:Acc):List[A] = acc.result()
 		}
 		new RepeatedGenericToList()
@@ -173,7 +176,7 @@ private[typeclass] trait LowPrioBiRepeated extends VersionSpecificLowPrioBiRepea
 		new BiRepeated[Id, A, List[A]] {
 			type Acc = Builder[A, List[A]]
 			def init():Acc = List.newBuilder[A]
-			def append(acc:Acc, elem:A):Unit = {acc += elem; ()}
+			def append(acc:Acc, elem:A):Acc = {acc += elem}
 			def result(acc:Acc):List[A] = acc.result()
 
 			def headTail:PartialExprFunction[Id, List[A], (A, List[A])] = {

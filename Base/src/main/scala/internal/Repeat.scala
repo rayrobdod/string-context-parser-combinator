@@ -26,9 +26,7 @@ object Repeat {
 					true,
 					input
 				).mapValues({parts =>
-					val acc = ev.init()
-					parts.foreach(part => ev.append(acc, part))
-					ev.result(acc)
+					ev.result(parts.foldLeft(ev.init())((acc, part) => ev.append(acc, part)))
 				})
 			}
 		}

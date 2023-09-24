@@ -154,7 +154,7 @@ object MacroImpl {
 			given [A]:typeclass.Repeated[List[A], List[A]] = new typeclass.Repeated[List[A], List[A]] {
 				type Acc = scala.collection.mutable.Builder[A, List[A]]
 				def init():Acc = List.newBuilder
-				def append(acc:Acc, elem:List[A]):Unit = {acc ++= elem}
+				def append(acc:Acc, elem:List[A]):Acc = {acc ++= elem}
 				def result(acc:Acc):List[A] = acc.result
 			}
 

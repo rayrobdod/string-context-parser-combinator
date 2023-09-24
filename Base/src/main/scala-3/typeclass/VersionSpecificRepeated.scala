@@ -37,7 +37,7 @@ trait VersionSpecificBiRepeated {
 		new BiRepeated[Expr, Expr[A], Expr[List[A]]] {
 			type Acc = Builder[Expr[A], List[Expr[A]]]
 			override def init():Acc = List.newBuilder[Expr[A]]
-			override def append(acc:Acc, elem:Expr[A]):Unit = {acc += elem}
+			override def append(acc:Acc, elem:Expr[A]):Acc = {acc += elem}
 			override def result(acc:Acc):Expr[List[A]] = Expr.ofList(acc.result())
 
 			override def headTail:PartialExprFunction[Expr, Expr[List[A]], (Expr[A], Expr[List[A]])] = {

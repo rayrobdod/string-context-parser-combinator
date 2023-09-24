@@ -9,11 +9,10 @@ object Optionally {
 		ev:typeclass.Optionally[A, Z]
 	):Interpolator[Expr, Z] = {
 		Repeat.interpolator(backing, 0, 1, new Pass[Id, Id], strategy, new typeclass.Repeated[A, Z] {
-			final class Box[BoxType](var value:BoxType)
-			type Acc = Box[Z]
-			def init():Acc = new Box(ev.none)
-			def append(acc:Acc, elem:A):Unit = acc.value = ev.some(elem)
-			def result(acc:Acc):Z = acc.value
+			type Acc = Z
+			def init():Acc = ev.none
+			def append(acc:Acc, elem:A):Acc = ev.some(elem)
+			def result(acc:Acc):Z = acc
 		})
 	}
 

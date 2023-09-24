@@ -17,9 +17,9 @@ object Digit {
 	}
 
 	implicit def given_Repeated:Repeated[Digit, Digits] = new Repeated[Digit, Digits]{
-		final class Acc(var value:Int)
-		def init():Acc = new Acc(0)
-		def append(acc:Acc, elem:Digit):Unit = {acc.value *= 10; acc.value += elem.value}
-		def result(acc:Acc):Digits = new Digits(acc.value)
+		type Acc = Int
+		def init():Acc = 0
+		def append(acc:Acc, elem:Digit):Acc = (acc * 10) + elem.value
+		def result(acc:Acc):Digits = new Digits(acc)
 	}
 }

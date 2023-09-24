@@ -26,7 +26,7 @@ object ConcatenateStringImplicits {
 	implicit val StringRepeatTypes: Repeated[String, String] = new Repeated[String, String] {
 		type Acc = StringBuilder
 		def init():Acc = new StringBuilder
-		def append(acc:Acc, elem:String):Unit = {acc ++= elem}
+		def append(acc:Acc, elem:String):Acc = {acc ++= elem}
 		def result(acc:Acc):String = acc.toString
 	}
 }

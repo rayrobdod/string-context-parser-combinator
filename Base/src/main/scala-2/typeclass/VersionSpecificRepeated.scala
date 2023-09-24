@@ -66,7 +66,7 @@ trait VersionSpecificBiRepeated {
 				new BiRepeated[c.Expr, c.Expr[A], c.Expr[List[A]]] {
 					type Acc = Builder[c.Tree, List[c.Tree]]
 					override def init():Acc = List.newBuilder[c.Tree]
-					override def append(acc:Acc, elem:c.Expr[A]):Unit = {acc += elem.tree; ()}
+					override def append(acc:Acc, elem:c.Expr[A]):Acc = {acc += elem.tree}
 					override def result(acc:Acc):c.Expr[List[A]] = {
 						c.Expr[List[A]](
 							c.universe.Apply(
