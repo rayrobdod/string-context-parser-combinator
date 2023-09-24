@@ -35,6 +35,9 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 	 * @group Parse
 	 */
 	final def interpolate(c:Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
+		implicit val given_Position:Position[c.universe.Position] = PositionGivens.given_ExprPosition_Position(c)
+		implicit val given_Ordering:Ordering[c.universe.Position] = PositionGivens.given_ExprPosition_Ordering(c)
+
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
 		val StringContextApply = stringContextApply(c)
 
@@ -46,7 +49,7 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 				ExtensionClassSelectChain(),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => (c.eval(x), Position(x.tree.pos))})
+				strings.map({x => (c.eval(x), x.tree.pos)})
 			}
 			// for `apply` methods on an object in the extension object
 			case c.universe.Select(
@@ -56,18 +59,18 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 				),
 				Name(_)
 			) => {
-				strings.map({x => (c.eval(x), Position(x.tree.pos))})
+				strings.map({x => (c.eval(x), x.tree.pos)})
 			}
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[Expr, Position.Impl](strings, args.toList.map(arg => (ev(arg), Position(arg.tree.pos))))
+		val input = new Input[Expr, c.universe.Position](strings, args.toList.map(arg => (ev(arg), arg.tree.pos)))
 
 		impl.interpolate(input) match {
 			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
-			case f:Failure[Position.Impl] => {
+			case f:Failure[c.universe.Position] => {
 				reportFailure(c)(f)
 			}
 		}

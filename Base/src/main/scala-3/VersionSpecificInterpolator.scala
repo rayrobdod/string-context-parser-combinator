@@ -28,20 +28,23 @@ trait VersionSpecificInterpolator[-Expr, +A] {
 	 */
 	final def interpolate(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(using q:quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
 		import scala.quoted.{Expr => _, _}
+		import q.reflect.asTerm
+		import PositionGivens.given
+
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
 			case _ => scala.quoted.quotes.reflect.report.errorAndAbort(s"Do not know how to process this tree", sc)
 		}
-		val strings2 = strings.map(x => ((x.valueOrAbort, Position(x)))).toList
-		val args2 = Varargs.unapply(args).get.toList.map(arg => (ev(arg), Position(arg)))
+		val strings2 = strings.map(x => ((x.valueOrAbort, x.asTerm.pos))).toList
+		val args2 = Varargs.unapply(args).get.toList.map(arg => (ev(arg), arg.asTerm.pos))
 
-		val input = new Input[Expr, Position.Impl](strings2, args2)
+		val input = new Input[Expr, q.reflect.Position](strings2, args2)
 
 		impl.interpolate(input) match {
 			case s:Success[_, _, _] => {
 				s.choicesHead.value
 			}
-			case f:Failure[Position.Impl] => {
+			case f:Failure[q.reflect.Position] => {
 				reportFailure(f)
 			}
 		}

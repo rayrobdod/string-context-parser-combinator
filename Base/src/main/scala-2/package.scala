@@ -68,7 +68,7 @@ package object stringContextParserCombinator {
 	}
 
 	private[stringContextParserCombinator]
-	def reportFailure(c:Context)(failure:Failure[Position.Impl]):Nothing = {
+	def reportFailure(c:Context)(failure:Failure[c.universe.Position]):Nothing = {
 		failure.expecting match {
 			case ExpectingSet.Empty() => {
 				c.abort(c.enclosingPosition, "Parsing failed")
@@ -76,7 +76,7 @@ package object stringContextParserCombinator {
 			case ExpectingSet.NonEmpty(position, descriptions) => {
 				// `sorted` to make result deterministic
 				val descriptions2 = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
-				position.errorAndAbort(c)(descriptions2)
+				c.abort(position, descriptions2)
 			}
 		}
 	}
@@ -85,51 +85,4 @@ package object stringContextParserCombinator {
 package stringContextParserCombinator {
 	/** Support for Interpolator.contextInterpolators.lifted; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
-
-
-
-	/*
-	 * All this complexity with Position is so that the unit tests don't have to find a
-	 * scala.quoted.Quotes or blackbox.Context in order to execute parsers
-	 */
-	/** Represents a position in a source file. Indicates where to point to in compile error messages */
-	private[stringContextParserCombinator]
-	trait Position[Pos] {
-		def offset(pos:Pos, offset:Int):Pos
-	}
-	private[stringContextParserCombinator]
-	object Position {
-		private[this] val interned = scala.collection.mutable.Map.empty[Int, Position.Impl]
-
-		def apply(x:scala.reflect.api.Position):Position.Impl = {
-			if (! interned.contains(x.point)) {
-				interned(x.point) = new Position.Impl(x.point)
-			}
-			interned(x.point)
-		}
-
-		/** The canonical production-use Position type */
-		final class Impl(private[Position] val point:Int) {
-			def errorAndAbort(c:Context)(msg:String):Nothing = c.abort(c.enclosingPosition.withPoint(point), msg)
-			override def toString:String = s"Position.Impl($point)"
-			override def hashCode:Int = point
-			override def equals(other:Any):Boolean = other match {
-				case x:Impl => this.point == x.point
-				case _ => false
-			}
-		}
-
-		object Impl {
-			implicit val given_PositionImpl_Ordering:Ordering[Impl] = Ordering.by(_.point)
-			implicit val given_PositionImpl_Position:Position[Impl] = new Position[Impl] {
-				def offset(pos:Impl, offset:Int):Impl = {
-					val newPoint = pos.point + offset
-					if (! interned.contains(newPoint)) {
-						interned(newPoint) = new Position.Impl(newPoint)
-					}
-					interned(newPoint)
-				}
-			}
-		}
-	}
 }

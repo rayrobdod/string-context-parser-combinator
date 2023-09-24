@@ -36,14 +36,18 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		quoted.Expr[Boolean] =:= Expr[Boolean],
 		quoted.Type[Boolean] =:= Type[Boolean],
 	):quoted.Expr[Unapply[UnexprA]] = {
+		import scala.quoted.{Expr => _, _}
+		import quotes.reflect.asTerm
+		import PositionGivens.given
+
 		val strings = sc match {
 			case '{ _root_.scala.StringContext(${Varargs(args)}: _*) } => args
 			case _ => scala.quoted.quotes.reflect.report.errorAndAbort(s"Do not know how to process this tree", sc)
 		}
-		val strings2 = strings.map(x => ((x.valueOrAbort, Position(x)))).toList
+		val strings2 = strings.map(x => ((x.valueOrAbort, x.asTerm.pos))).toList
 		val args2 = strings2.init.map(x => (((), x._2 + x._1.size)))
 
-		val input = new Input[Unit, Position.Impl](strings2, args2)
+		val input = new Input[Unit, quotes.reflect.Position](strings2, args2)
 		implicit val exprs:UnapplyExprs[quoted.Expr, quoted.Type] = UnapplyExprs.forQuoted
 
 		impl.asInstanceOf[internal.Extractor[quoted.Expr, quoted.Type, A]].extractor(input) match {
@@ -121,7 +125,7 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 						.asExprOf[SCUnapply[UnexprA]]
 				}
 			}
-			case f:Failure[Position.Impl] => {
+			case f:Failure[quotes.reflect.Position] => {
 				reportFailure(f)
 			}
 		}

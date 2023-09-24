@@ -43,9 +43,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Parse
 	 */
 	def interpolate(sc:StringContext, args:Seq[Any])(implicit ev: Any <:< Expr):A = {
-		implicit val given_Int_Position:Position[Int] = new Position[Int] {
-			def offset(pos:Int, offset:Int):Int = pos + offset
-		}
+		implicit val given_Int_Position:Position[Int] = PositionGivens.given_IdPosition_Position
 
 		val argString = "${}"
 		val strings = sc.parts.foldLeft((List.empty[(String, Int)], 0)){(folding, part) =>

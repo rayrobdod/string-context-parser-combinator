@@ -9,7 +9,10 @@ import scala.quoted.Type
  * A library for implementing custom string interpolation implementations using Parser Combinators
  */
 package object stringContextParserCombinator {
-	private[stringContextParserCombinator] def reportFailure(failure:Failure[Position.Impl])(using Quotes):Nothing = {
+	private[stringContextParserCombinator]
+	def reportFailure(using q:Quotes)(failure:Failure[q.reflect.Position]):Nothing = {
+		import PositionGivens.given
+
 		failure.expecting match {
 			case ExpectingSet.Empty() => {
 				scala.quoted.quotes.reflect.report.errorAndAbort("Parsing failed")
@@ -17,7 +20,7 @@ package object stringContextParserCombinator {
 			case ExpectingSet.NonEmpty(position, descriptions) => {
 				// `sorted` to make result deterministic
 				val descriptions2 = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
-				(position + 1).errorAndAbort(descriptions2)
+				q.reflect.report.errorAndAbort(descriptions2, position + 1)
 			}
 		}
 	}
@@ -30,46 +33,4 @@ package stringContextParserCombinator {
 	type Id[+A] = A
 	/** An identity function for lifting into the identity context */
 	type IdToExpr[A] = =:=[A, A]
-
-
-	/*
-	 * All this complexity with Position is so that the unit tests don't have to find a
-	 * scala.quoted.Quotes or blackbox.Context in order to check how the position has
-	 * advanced after a parser has run
-	 */
-	/** Represents a position in a source file. Indicates where to point to in compile error messages */
-	private[stringContextParserCombinator]
-	trait Position[Pos] {
-		extension (pos:Pos) def +(offset:Int):Pos = this.offset(pos, offset)
-		def offset(pos:Pos, offset:Int):Pos
-	}
-
-	private[stringContextParserCombinator]
-	object Position {
-		/** The canonical production-use Position type */
-		final class Impl(private[Position] val q:Quotes)(private[Position] val file:q.reflect.SourceFile, private[Position] val start:Int, private[Position] val end:Int) {
-			def errorAndAbort(msg:String):Nothing = {
-				q.reflect.report.errorAndAbort(msg, q.reflect.Position(file, start, end))
-			}
-			override def toString:String = s"Position.Impl($file, $start, $end)"
-			override def hashCode:Int = this.start * 31 + this.end
-			override def equals(other:Any):Boolean = other match {
-				case x:Impl => this.file == x.file && this.start == x.start && this.end == x.end
-				case _ => false
-			}
-
-		}
-
-		object Impl {
-			// Probably can assume that any positions compared will have the same sourceFile
-			given Ordering[Impl] = Ordering.by(_.start)
-			given Position[Impl] = (pos:Impl, offset:Int) => new Impl(pos.q)(pos.file, pos.start + offset, pos.end)
-		}
-
-		def apply(expr:Expr[_])(using q:Quotes):Impl = {
-			import q.reflect._
-			val pos = expr.asTerm.pos
-			new Impl(q)(pos.sourceFile, pos.start, pos.end)
-		}
-	}
 }

@@ -44,9 +44,7 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		@nowarn("msg=never used") ev:Id[Any] =:= Expr[Any],
 		@nowarn("msg=never used") ev2:Class[Any] =:= Type[Any]
 	):Option[Seq[Any]] = {
-		implicit val given_Int_Position:Position[Int] = new Position[Int] {
-			def offset(pos:Int, offset:Int):Int = pos + offset
-		}
+		implicit val given_Int_Position:Position[Int] = PositionGivens.given_IdPosition_Position
 
 		val argString = "${}"
 		val strings = sc.parts.foldLeft((List.empty[(String, Int)], 0)){(folding, part) =>

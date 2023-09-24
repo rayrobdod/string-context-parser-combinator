@@ -25,6 +25,9 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		@nowarn("msg=never used") ev3:c.TypeTag[_] =:= Type[_],
 		ttUnexprA:c.TypeTag[UnexprA]
 	):c.Expr[Any] = {
+		implicit val given_Position:Position[c.universe.Position] = PositionGivens.given_ExprPosition_Position(c)
+		implicit val given_Ordering:Ordering[c.universe.Position] = PositionGivens.given_ExprPosition_Ordering(c)
+
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
 		val StringContextApply = stringContextApply(c)
 
@@ -35,7 +38,7 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 				ExtensionClassSelectChain(),
 				List(StringContextApply(strings))
 			) => {
-				strings.map({x => (c.eval(x), Position(x.tree.pos))})
+				strings.map({x => (c.eval(x), x.tree.pos)})
 			}
 			case c.universe.Select(
 				c.universe.Apply(
@@ -44,13 +47,13 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 				),
 				Name(_)
 			) => {
-				strings.map({x => (c.eval(x), Position(x.tree.pos))})
+				strings.map({x => (c.eval(x), x.tree.pos)})
 			}
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 		val args = strings.init.map(x => (((), x._2 + x._1.size)))
 
-		val input = new Input[Unit, Position.Impl](strings, args)
+		val input = new Input[Unit, c.universe.Position](strings, args)
 		implicit val exprs:UnapplyExprs[c.Expr, c.TypeTag] = UnapplyExprs.forContext(c)
 
 		impl.asInstanceOf[internal.Extractor[c.Expr, c.TypeTag, A]].extractor(input)(implicitly, exprs) match {
@@ -68,7 +71,7 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 						AssembleUnapply.many(c)(value, ttUnexprA, condition, parts)
 				}
 			}
-			case f:Failure[Position.Impl] => {
+			case f:Failure[c.universe.Position] => {
 				reportFailure(c)(f)
 			}
 		}
