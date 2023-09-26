@@ -52,6 +52,8 @@ trait VersionSpecificBiRepeated {
 					override def append(acc:Acc, elem:Unit):Unit = {}
 					override def result(acc:Acc):Unit = ()
 
+					type Dec = Unit
+					def contraInit(z:Unit):Unit = z
 					override def headTail:PartialExprFunction[c.Expr, Unit, (Unit, Unit)] = {
 						PartialExprFunction[c.Expr, Unit, (Unit, Unit)](
 							_ => exprTrue,
@@ -76,6 +78,8 @@ trait VersionSpecificBiRepeated {
 						)
 					}
 
+					type Dec = c.Expr[List[A]]
+					def contraInit(z:c.Expr[List[A]]):c.Expr[List[A]] = z
 					override def headTail:PartialExprFunction[c.Expr, c.Expr[List[A]], (c.Expr[A], c.Expr[List[A]])] = {
 						PartialExprFunction(
 							it => select[List[A], Boolean](it, "nonEmpty"),

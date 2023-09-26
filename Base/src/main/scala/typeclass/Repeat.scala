@@ -67,9 +67,11 @@ trait Repeated[-A, +Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait ContraRepeated[+Expr[_], +A, Z] {
-	def headTail:PartialExprFunction[Expr, Z, (A, Z)]
-	def isEmpty(it:Z):Expr[Boolean]
+trait ContraRepeated[+Expr[_], +A, -Z] {
+	type Dec
+	def contraInit(z:Z):Dec
+	def headTail:PartialExprFunction[Expr, Dec, (A, Dec)]
+	def isEmpty(it:Dec):Expr[Boolean]
 }
 
 /**
@@ -160,6 +162,8 @@ object BiRepeated extends VersionSpecificBiRepeated with LowPrioBiRepeated {
 			def append(acc:Acc, elem:Unit):Unit = {}
 			def result(acc:Acc):Unit = ()
 
+			type Dec = Unit
+			def contraInit(z:Unit):Unit = z
 			def headTail:PartialExprFunction[Id, Unit, (Unit, Unit)] = {
 				PartialExprFunction[Id, Unit, (Unit, Unit)](
 					_ => true,
@@ -179,6 +183,8 @@ private[typeclass] trait LowPrioBiRepeated extends VersionSpecificLowPrioBiRepea
 			def append(acc:Acc, elem:A):Acc = {acc += elem}
 			def result(acc:Acc):List[A] = acc.result()
 
+			type Dec = List[A]
+			def contraInit(z:List[A]):Dec = z
 			def headTail:PartialExprFunction[Id, List[A], (A, List[A])] = {
 				PartialExprFunction[Id, List[A], (A, List[A])](
 					it => it.nonEmpty,

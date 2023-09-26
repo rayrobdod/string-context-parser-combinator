@@ -165,8 +165,8 @@ object UnapplyExprs extends VersionSpecificUnapplyExprs {
 			UnapplyExpr[Expr, Type, Z](
 				{(value:Z) =>
 					val (foldingCondition, foldingValueFn) = {
-						childUnapplyExprs.foldLeft[(Expr[Boolean], () => Z)](
-							(`true`, () => value)
+						childUnapplyExprs.foldLeft[(Expr[Boolean], () => separator.Dec)](
+							(`true`, () => separator.contraInit(value))
 						)({(folding, childUnapplyExpr) =>
 							val (foldingCondition, foldingValueFn) = folding
 
@@ -185,17 +185,17 @@ object UnapplyExprs extends VersionSpecificUnapplyExprs {
 					andBooleans(foldingCondition, () => separator.isEmpty(foldingValueFn()))
 				},
 				{
-					childUnapplyExprs.foldLeft[(List[UnapplyExpr.Part[Expr, Type, Z, _]], Z => Z)](
+					childUnapplyExprs.foldLeft[(List[UnapplyExpr.Part[Expr, Type, separator.Dec, _]], separator.Dec => separator.Dec)](
 						(Nil, {z => z})
 					)({(folding, childUnapplyExpr) =>
 						val (previousParts, previousList) = folding
-						val nextList:Z => Z = {(z:Z) => separator.headTail(previousList(z))._2}
-						val childValue:Z => A = {(z:Z) => separator.headTail(previousList(z))._1}
+						val nextList:separator.Dec => separator.Dec = {(z:separator.Dec) => separator.headTail(previousList(z))._2}
+						val childValue:separator.Dec => A = {(z:separator.Dec) => separator.headTail(previousList(z))._1}
 
 						val childParts = childUnapplyExpr.parts.map({part => part.contramapValue(childValue)})
 
 						(previousParts ::: childParts, nextList)
-					})._1
+					})._1.map(parts => parts.contramapValue({(z:Z) => separator.contraInit(z)}))
 				}
 			)
 		}
