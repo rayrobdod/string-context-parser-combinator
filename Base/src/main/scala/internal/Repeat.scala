@@ -32,7 +32,7 @@ object Repeat {
 		}
 	}
 
-	def extractor[Expr[_], Type[_], A, Z](
+	def extractor[Expr[+_], Type[_], A, Z](
 		inner:Extractor[Expr, Type, A],
 		min:Int,
 		max:Int,
@@ -45,7 +45,7 @@ object Repeat {
 		require(max >= min)
 
 		new Extractor[Expr, Type, Z] {
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
 				Repeat.parse(
 					{(x:Input[Unit, Pos]) => inner.extractor(x)},
 					min,
@@ -54,12 +54,12 @@ object Repeat {
 					strategy,
 					true,
 					input
-				).mapValues({parts => exprs.repeated(parts, ev)})
+				).mapValues({parts => UnapplyExpr.Repeated(parts, ev)})
 			}
 		}
 	}
 
-	def parser[Expr[_], Type[_], A, Z](
+	def parser[Expr[+_], Type[_], A, Z](
 		inner:Parser[Expr, Type, A],
 		min:Int,
 		max:Int,
@@ -87,7 +87,7 @@ object Repeat {
 					ev.result(acc)
 				})
 			}
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
 				Repeat.parse(
 					{(x:Input[Unit, Pos]) => inner.extractor(x)},
 					min,
@@ -96,7 +96,7 @@ object Repeat {
 					strategy,
 					true,
 					input
-				).mapValues({parts => exprs.repeated(parts, ev)})
+				).mapValues({parts => UnapplyExpr.Repeated(parts, ev)})
 			}
 		}
 	}

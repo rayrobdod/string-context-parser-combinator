@@ -29,7 +29,7 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinator] (
+final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinator] (
 		protected[stringContextParserCombinator] override val impl: internal.Extractor[Expr, Type, A]
 ) extends VersionSpecificExtractor[Expr, Type, A] {
 
@@ -44,6 +44,75 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		@nowarn("msg=never used") ev:Id[Any] =:= Expr[Any],
 		@nowarn("msg=never used") ev2:Class[Any] =:= Type[Any]
 	):Option[Seq[Any]] = {
+		def unapplyExprEval[Z](value:Z, expr:UnapplyExpr[Id, Class, Z]):Option[List[Any]] = {
+			expr match {
+				case UnapplyExpr.Empty => Some(Nil)
+				case UnapplyExpr.IsEqualTo(other, typ@_) => if (value == other) {Some(Nil)} else {None}
+				case UnapplyExpr.OfType(typ@_) => Some(value :: Nil)
+				case UnapplyExpr.Contramap(backing, mapping) => {
+					unapplyExprEval(mapping(value), backing)
+				}
+				case UnapplyExpr.WidenWith(backing, mapping) => {
+					if (mapping.isDefinedAt(value)) {
+						unapplyExprEval(mapping(value), backing)
+					} else {
+						None
+					}
+				}
+				case UnapplyExpr.OptionallyNone(ev) => {
+					if (ev.contraNone(value)) {
+						Some(Nil)
+					} else {
+						None
+					}
+				}
+				case UnapplyExpr.Sequenced(leftBacking, rightBacking, ev) => {
+					val (leftValue, rightValue) = ev.separate(value)
+
+					(unapplyExprEval(leftValue, leftBacking), unapplyExprEval(rightValue, rightBacking)) match {
+						case ((Some(a), Some(b))) => Some(a ::: b)
+						case _ => None
+					}
+				}
+				case UnapplyExpr.Repeated(childBackings, ev2) => {
+					// I do not know why, for Repeated specifically, the typer drops the Z and decides that it is Any instead
+					val ev = ev2.asInstanceOf[typeclass.ContraRepeated[Id, Any, Z]]
+
+					val (finalRetval, finalValue) = childBackings.foldLeft[(Option[List[Any]], ev.Dec)](
+						(Some(Nil), ev.contraInit(value))
+					)({(folding, childBacking) =>
+						val (foldingRetvalOpt, foldingValue) = folding
+						foldingRetvalOpt match {
+							case None => (None, foldingValue)
+							case Some(foldingRetval) => {
+								val stopCondition = ev.headTail.isDefinedAt(foldingValue)
+
+								if (!stopCondition) {
+									(None, foldingValue)
+								} else {
+									val (child, newValue) = ev.headTail.apply(foldingValue)
+
+									val childRetval = unapplyExprEval(child, childBacking.asInstanceOf[UnapplyExpr[Id, Class, Any]])
+
+									((
+										childRetval.map(_ reverse_::: foldingRetval),
+										newValue
+									))
+								}
+							}
+						}
+					})
+
+					if (ev.isEmpty(finalValue)) {
+						finalRetval.map(_.reverse)
+					} else {
+						None
+					}
+				}
+			}
+		}
+
+
 		implicit val given_Int_Position:Position[Int] = PositionGivens.given_IdPosition_Position
 
 		val argString = "${}"
@@ -54,16 +123,11 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		val argWithPoss = strings.init.map(x => (((), x._2 + x._1.size)))
 
 		val input = new Input[Unit, Int](strings, argWithPoss)
-		implicit val exprs:UnapplyExprs[Id, Class] = UnapplyExprs.forId
 
-		impl.asInstanceOf[internal.Extractor[Id, Class, A]].extractor(input)(implicitly, exprs) match {
+		impl.asInstanceOf[internal.Extractor[Id, Class, A]].extractor(input) match {
 			case s:Success[_, _, _] => {
 				val expr:UnapplyExpr[Id, Class, A] = s.choicesHead.value
-				if (expr.condition(scrutinee)) {
-					Some(expr.parts.map(_.value(scrutinee)))
-				} else {
-					None
-				}
+				unapplyExprEval(scrutinee, expr)
 			}
 			case f:Failure[Int] => {
 				val msg = f.expecting match {
@@ -206,7 +270,7 @@ object Extractor
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
 	/**
@@ -341,7 +405,7 @@ object Extractor
 /**
  * Extractors that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[+_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar

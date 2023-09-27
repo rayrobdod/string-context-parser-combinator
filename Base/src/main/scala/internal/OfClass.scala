@@ -16,10 +16,10 @@ final class OfClass[A](
 		)
 	}
 
-	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Id, Class]):Result[Unit, Pos, UnapplyExpr[Id, Class, Id[A]]] = {
+	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Id, Class, Id[A]]] = {
 		input.consume(
 			_ => None,
-			(_:Unit) => Some(exprs.ofType(clazz)),
+			(_:Unit) => Some(UnapplyExpr.OfType(clazz)),
 			expecting
 		)
 	}

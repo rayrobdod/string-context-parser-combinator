@@ -20,18 +20,18 @@ object AndThen {
 		}
 	}
 
-	def extractor[Expr[_], Type[_], A, B, Z](
+	def extractor[Expr[+_], Type[_], A, B, Z](
 		left:Extractor[Expr, Type, A],
 		right:Extractor[Expr, Type, B],
 		combiner:typeclass.ContraSequenced[A, B, Z]
 	):Extractor[Expr, Type, Z] = {
 		new Extractor[Expr, Type, Z] {
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
 				AndThen.parse(
 					{(x:Input[Unit, Pos]) => left.extractor(x)},
 					{(x:Input[Unit, Pos]) => right.extractor(x)},
 					{(leftVal:UnapplyExpr[Expr, Type, A], rightVal:UnapplyExpr[Expr, Type, B]) =>
-						exprs.sequenced(leftVal, rightVal, combiner)
+						UnapplyExpr.Sequenced(leftVal, rightVal, combiner)
 					},
 					input
 				)
@@ -39,7 +39,7 @@ object AndThen {
 		}
 	}
 
-	def parser[Expr[_], Type[_], A, B, Z](
+	def parser[Expr[+_], Type[_], A, B, Z](
 		left:Parser[Expr, Type, A],
 		right:Parser[Expr, Type, B],
 		combiner:typeclass.BiSequenced[A, B, Z]
@@ -53,12 +53,12 @@ object AndThen {
 					input
 				)
 			}
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
 				AndThen.parse(
 					{(x:Input[Unit, Pos]) => left.extractor(x)},
 					{(x:Input[Unit, Pos]) => right.extractor(x)},
 					{(leftVal:UnapplyExpr[Expr, Type, A], rightVal:UnapplyExpr[Expr, Type, B]) =>
-						exprs.sequenced(leftVal, rightVal, combiner)
+						UnapplyExpr.Sequenced(leftVal, rightVal, combiner)
 					},
 					input
 				)

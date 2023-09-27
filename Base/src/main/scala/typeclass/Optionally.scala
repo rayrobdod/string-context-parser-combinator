@@ -26,7 +26,7 @@ trait Optionally[-A, +Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait ContraOptionally[+Expr[_], +A, -Z] {
+trait ContraOptionally[+Expr[+_], +A, -Z] {
 	/** Returns whether the `Z` value represents a missing `A` */
 	def contraNone(elem:Z):Expr[Boolean]
 	/** Returns a PartialExprFunction that indicates whether the `Z` value represents a present `A` and, if so, that `A` value  */
@@ -41,7 +41,7 @@ trait ContraOptionally[+Expr[_], +A, -Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait BiOptionally[Expr[_], A, Z]
+trait BiOptionally[Expr[+_], A, Z]
 	extends Optionally[A, Z]
 	with ContraOptionally[Expr, A, Z]
 
@@ -117,7 +117,7 @@ object ContraOptionally extends VersionSpecificContraOptionally with LowPrioCont
 	/**
 	 * Constructs an `ContraOptionally` from a set of functions corresponding to each of ContraOptionally's methods
 	 */
-	def apply[Expr[_], A, Z](
+	def apply[Expr[+_], A, Z](
 		contraNoneFn:Z => Expr[Boolean],
 		contraSomeFn:PartialExprFunction[Expr, Z, A]
 	):ContraOptionally[Expr, A, Z] = {
@@ -143,7 +143,7 @@ object BiOptionally extends VersionSpecificBiOptionally with LowPrioBiOptionally
 	/**
 	 * Constructs an `BiOptionally` from a set of functions corresponding to each of BiOptionally's methods
 	 */
-	def apply[Expr[_], A, Z](
+	def apply[Expr[+_], A, Z](
 		noneFn: => Z,
 		someFn:A => Z,
 		contraNoneFn:Z => Expr[Boolean],

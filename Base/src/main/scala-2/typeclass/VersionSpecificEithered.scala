@@ -14,11 +14,11 @@ private[typeclass] trait LowPrioEithered {
 }
 
 private[typeclass] trait VersionSpecificContraEithered extends LowPrioContraEithered {
-	trait ContraEithereds[Expr[_]] extends LowPrioContraEithereds[Expr] {
+	trait ContraEithereds[Expr[+_]] extends LowPrioContraEithereds[Expr] {
 		implicit def unitUnit:ContraEithered[Expr, Unit, Unit, Unit]
 	}
 	private[typeclass]
-	trait LowPrioContraEithereds[Expr[_]] {
+	trait LowPrioContraEithereds[Expr[+_]] {
 		implicit def symmetric[A]:ContraEithered[Expr, A, A, A]
 	}
 
@@ -37,11 +37,11 @@ private[typeclass] trait LowPrioContraEithered {
 }
 
 private[typeclass] trait VersionSpecificBiEithered extends LowPrioBiEithered {
-	trait BiEithereds[Expr[_]] extends LowPrioBiEithereds[Expr] {
+	trait BiEithereds[Expr[+_]] extends LowPrioBiEithereds[Expr] {
 		implicit def unitUnit:BiEithered[Expr, Unit, Unit, Unit]
 	}
 	private[typeclass]
-	trait LowPrioBiEithereds[Expr[_]] {
+	trait LowPrioBiEithereds[Expr[+_]] {
 		implicit def symmetric[A]:BiEithered[Expr, A, A, A]
 	}
 

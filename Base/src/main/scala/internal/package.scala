@@ -4,7 +4,7 @@ import scala.collection.immutable.{Seq, Set}
 
 package internal {
 	/** A parser that extracts a value from an input's parts, and returns None for all args */
-	private[internal] final class PartsParser[Expr[_], Type[_], A](
+	private[internal] final class PartsParser[Expr[+_], Type[_], A](
 		partsFn:String => Option[(A, Int)],
 		expecting: ExpectingDescription
 	) extends Parser[Expr, Type, A] {
@@ -16,9 +16,9 @@ package internal {
 			)
 		}
 
-		override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
+		override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
 			input.consume(
-				partsFn.andThen(_.map({case (_, charCount) => (exprs.empty, charCount)})),
+				partsFn.andThen(_.map({case (_, charCount) => (UnapplyExpr.Empty, charCount)})),
 				_ => None,
 				expecting
 			)
@@ -98,7 +98,7 @@ package object internal {
 
 	/** Succeeds if the next character is a member of the given Set; captures that character */
 	private[stringContextParserCombinator]
-	def CharIn[Expr[_], Type[_]](
+	def CharIn[Expr[+_], Type[_]](
 		chooseFrom:Set[Char]
 	):Parser[Expr, Type, Char] = CharWhere(
 		chooseFrom.contains _,
@@ -107,7 +107,7 @@ package object internal {
 
 	/** Succeeds if the next character is a member of the given Seq; captures that character */
 	private[stringContextParserCombinator]
-	def CharIn[Expr[_], Type[_]](
+	def CharIn[Expr[+_], Type[_]](
 		chooseFrom:Seq[Char]
 	):Parser[Expr, Type, Char] = CharWhere(
 		chooseFrom.contains _,
@@ -116,7 +116,7 @@ package object internal {
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
-	def CharWhere[Expr[_], Type[_]](
+	def CharWhere[Expr[+_], Type[_]](
 		predicate:Function1[Char, Boolean]
 	):Parser[Expr, Type, Char] = {
 		val description = describeCodepointPredicate(c => predicate(c.toChar), Character.MAX_VALUE)
@@ -128,7 +128,7 @@ package object internal {
 
 	/** Succeeds if the next character matches the given predicate; captures that character */
 	private[stringContextParserCombinator]
-	def CharWhere[Expr[_], Type[_]](
+	def CharWhere[Expr[+_], Type[_]](
 		predicate:Function1[Char, Boolean],
 		description: ExpectingDescription
 	):Parser[Expr, Type, Char] = new PartsParser(
@@ -138,7 +138,7 @@ package object internal {
 
 	/** Succeeds if the next codepoint is a member of the given string; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn[Expr[_], Type[_]](
+	def CodePointIn[Expr[+_], Type[_]](
 		chooseFrom:String
 	):Parser[Expr, Type, CodePoint] = {
 		def IntEqualsCodePoint(x:CodePoint) = new java.util.function.IntPredicate{def test(y:Int) = {y == x.intValue}}
@@ -150,7 +150,7 @@ package object internal {
 
 	/** Succeeds if the next codepoint is a member of the given Set; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn[Expr[_], Type[_]](
+	def CodePointIn[Expr[+_], Type[_]](
 		chooseFrom:Set[CodePoint]
 	):Parser[Expr, Type, CodePoint] = {
 		this.CodePointWhere(
@@ -161,7 +161,7 @@ package object internal {
 
 	/** Succeeds if the next codepoint is a member of the given Seq; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointIn[Expr[_], Type[_]](
+	def CodePointIn[Expr[+_], Type[_]](
 		chooseFrom:Seq[CodePoint]
 	):Parser[Expr, Type, CodePoint] = {
 		this.CodePointWhere(
@@ -172,7 +172,7 @@ package object internal {
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointWhere[Expr[_], Type[_]](
+	def CodePointWhere[Expr[+_], Type[_]](
 		predicate:Function1[CodePoint, Boolean]
 	):Parser[Expr, Type, CodePoint] = {
 		val description = describeCodepointPredicate(c => predicate(CodePoint(c)), Character.MAX_CODE_POINT)
@@ -184,7 +184,7 @@ package object internal {
 
 	/** Succeeds if the next codepoint matches the given predicate; captures that code point */
 	private[stringContextParserCombinator]
-	def CodePointWhere[Expr[_], Type[_]](
+	def CodePointWhere[Expr[+_], Type[_]](
 		predicate:Function1[CodePoint, Boolean], description:ExpectingDescription
 	):Parser[Expr, Type, CodePoint] = new PartsParser(
 		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
@@ -193,7 +193,7 @@ package object internal {
 
 	/** Succeeds if the next set of characters in the input is equal to the given string */
 	private[stringContextParserCombinator]
-	def IsString[Expr[_], Type[_]](
+	def IsString[Expr[+_], Type[_]](
 		value:String
 	):Parser[Expr, Type, Unit] = new PartsParser(
 		pt => Option(((), value.length())).filter(_ => pt.startsWith(value)),
@@ -202,7 +202,7 @@ package object internal {
 
 	/** Succeeds if the net character data matches the given regex; captures the matched string */
 	private[stringContextParserCombinator]
-	def Regex[Expr[_], Type[_]](
+	def Regex[Expr[+_], Type[_]](
 		reg:scala.util.matching.Regex
 	):Parser[Expr, Type, String] = new PartsParser(
 		pt => reg.findPrefixMatchOf(pt).map(m => (m.matched, m.end - m.start)),

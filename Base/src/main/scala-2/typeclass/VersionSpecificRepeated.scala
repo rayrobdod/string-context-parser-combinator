@@ -6,7 +6,7 @@ import scala.reflect.macros.blackbox.Context
 
 private[typeclass]
 trait VersionSpecificContraRepeated {
-	trait ContraRepeateds[Expr[_], Type[_]] {
+	trait ContraRepeateds[Expr[+_], Type[_]] {
 		implicit def unit:ContraRepeated[Expr, Unit, Unit]
 		implicit def toExprList[A](implicit tt:Type[A]):ContraRepeated[Expr, Expr[A], Expr[List[A]]]
 	}
@@ -28,7 +28,7 @@ trait VersionSpecificLowPrioContraRepeated {
 
 private[typeclass]
 trait VersionSpecificBiRepeated {
-	trait BiRepeateds[Expr[_], Type[_]] {
+	trait BiRepeateds[Expr[+_], Type[_]] {
 		implicit def unit:BiRepeated[Expr, Unit, Unit]
 		implicit def toExprList[A](implicit typA:Type[A]):BiRepeated[Expr, Expr[A], Expr[List[A]]]
 	}

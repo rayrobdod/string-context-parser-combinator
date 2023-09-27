@@ -18,10 +18,10 @@ final class OfType[A](using Type[A], Quotes) extends Parser[Expr, Type, Expr[A]]
 		)
 	}
 
-	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Expr[A]]] = {
+	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Expr[A]]] = {
 		input.consume(
 			_ => None,
-			(_:Unit) => Some(exprs.ofType(implicitly[Type[A]])),
+			(_:Unit) => Some(UnapplyExpr.OfType(implicitly[Type[A]])),
 			expecting
 		)
 	}

@@ -3,7 +3,7 @@ package internal
 
 /** Acts like the Interpolator when interpolating, and like the Extractor when extracting */
 private[stringContextParserCombinator]
-final class Paired[Expr[_], Type[_], A](
+final class Paired[Expr[+_], Type[_], A](
 	val interpolator:Interpolator[Expr[Any], A],
 	val extractor:Extractor[Expr, Type, A]
 ) extends Parser[Expr, Type, A] {
@@ -11,7 +11,7 @@ final class Paired[Expr[_], Type[_], A](
 		interpolator.interpolate(input)
 	}
 
-	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
+	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
 		extractor.extractor(input)
 	}
 }

@@ -18,10 +18,10 @@ final class OfType[Ctx <: Context with Singleton, A](
 		)
 	}
 
-	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx#Expr, Ctx#TypeTag]):Result[Unit, Pos, UnapplyExpr[Ctx#Expr, Ctx#TypeTag, Ctx#Expr[A]]] = {
+	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos]):Result[Unit, Pos, UnapplyExpr[Ctx#Expr, Ctx#TypeTag, Ctx#Expr[A]]] = {
 		input.consume(
 			_ => None,
-			(_:Unit) => Some(exprs.ofType(tpetag)),
+			(_:Unit) => Some(UnapplyExpr.OfType(tpetag)),
 			expecting
 		)
 	}

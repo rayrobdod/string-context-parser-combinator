@@ -7,7 +7,7 @@ import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
  * Parts of [[Parser]] that use types specific to scala 3
  */
 private[stringContextParserCombinator]
-trait VersionSpecificParser[Expr[_], Type[_], A] {
+trait VersionSpecificParser[Expr[+_], Type[_], A] {
 	protected[stringContextParserCombinator]
 	def impl: internal.Parser[Expr, Type, A]
 

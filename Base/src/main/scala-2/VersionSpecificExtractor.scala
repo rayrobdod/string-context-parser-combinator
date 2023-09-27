@@ -8,7 +8,7 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * Parts of [[Extractor]] that use types specific to scala 3
  */
 private[stringContextParserCombinator]
-trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
+trait VersionSpecificExtractor[Expr[+_], Type[_], -A] {
 	protected[stringContextParserCombinator]
 	def impl: internal.Extractor[Expr, Type, A]
 
@@ -25,6 +25,118 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		@nowarn("msg=never used") ev3:c.TypeTag[_] =:= Type[_],
 		ttUnexprA:c.TypeTag[UnexprA]
 	):c.Expr[Any] = {
+		def selectApply[Z](lhs:c.Expr[_], op:String, rhs:c.Expr[_])(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+			c.Expr[Z](
+				c.universe.Apply(
+					c.universe.Select(
+						lhs.tree,
+						c.universe.TermName(op)
+					),
+					List(rhs.tree)
+				)
+			)
+		}
+		val exprTrue = c.Expr[Boolean](c.universe.Liftable.liftBoolean(true))
+		val exprFalse = c.Expr[Boolean](c.universe.Liftable.liftBoolean(false))
+		def andBooleans(left:c.Expr[Boolean], right:c.Expr[Boolean]):c.Expr[Boolean] = {
+			val B = c.universe.Unliftable.unliftBoolean
+			(left.tree, right.tree) match {
+				case (B(true), _) => right
+				case (B(false), _) => exprFalse
+				case (_, B(true)) => left
+				case (_, B(false)) => exprFalse
+				case (_, _) => selectApply[Boolean](left, "$amp$amp", right)
+			}
+		}
+
+		def unapplyExprFlatten[Z](expr:UnapplyExpr[c.Expr, c.TypeTag, Z]):(Z => c.Expr[Boolean], List[UnapplyExpr.Part[c.Expr, c.TypeTag, Z, _]]) = {
+			expr match {
+				case UnapplyExpr.Empty => (_ => exprTrue, Nil)
+				case UnapplyExpr.IsEqualTo(other, typ@_) => (
+					value => selectApply[Boolean](value, "$eq$eq", other),
+					Nil
+				)
+				case UnapplyExpr.OfType(typ@_) => (
+					_ => exprTrue,
+					UnapplyExpr.Part(typ, (value:Z) => value) :: Nil
+				)
+				case UnapplyExpr.Contramap(backing, mapping) => {
+					val (condition, parts) = unapplyExprFlatten(backing)
+					((
+						mapping.andThen(condition),
+						parts.map(_.contramapValue(mapping))
+					))
+				}
+				case UnapplyExpr.WidenWith(backing, mapping) => {
+					val (condition, parts) = unapplyExprFlatten(backing)
+					((
+						{(value:Z) =>
+							val newCondition = mapping.isDefinedAt(value)
+							val backingCondition = condition(mapping(value))
+							andBooleans(newCondition, backingCondition)
+						},
+						parts.map(_.contramapValue(mapping.apply _))
+					))
+				}
+				case UnapplyExpr.OptionallyNone(ev) => ((
+					(z:Z) => ev.contraNone(z),
+					Nil,
+				))
+				case UnapplyExpr.Sequenced(leftBacking, rightBacking, ev) => {
+					val (leftCondition, leftParts) = unapplyExprFlatten(leftBacking)
+					val (rightCondition, rightParts) = unapplyExprFlatten(rightBacking)
+					((
+						{(value:Z) =>
+							val (leftValue, rightValue) = ev.separate(value)
+
+							andBooleans(leftCondition(leftValue), rightCondition(rightValue))
+						},
+						leftParts.map({part => part.contramapValue((ev.separate _).andThen(_._1))}) :::
+								rightParts.map({part => part.contramapValue((ev.separate _).andThen(_._2))})
+					))
+				}
+				case UnapplyExpr.Repeated(childBackings, ev) => {
+					((
+						{(value:Z) =>
+							val (foldingCondition, foldingValueFn) = {
+								childBackings.foldLeft[(c.Expr[Boolean], () => ev.Dec)](
+									(exprTrue, () => ev.contraInit(value))
+								)({(folding, childBacking) =>
+									val (foldingCondition, foldingValueFn) = folding
+
+									val stopCondition = {() => ev.headTail.isDefinedAt(foldingValueFn())}
+
+									val childAndNewValue = {() => ev.headTail.apply(foldingValueFn())}
+									val childValue = {() => childAndNewValue()._1}
+									val newValue = {() => childAndNewValue()._2}
+
+									val childCondition = unapplyExprFlatten(childBacking)._1(childValue())
+									val newCondition = andBooleans(foldingCondition, andBooleans(stopCondition(), childCondition))
+
+									(newCondition, newValue)
+								})
+							}
+							andBooleans(foldingCondition, ev.isEmpty(foldingValueFn()))
+						},
+						{
+							childBackings.foldLeft[(List[UnapplyExpr.Part[c.Expr, c.TypeTag, ev.Dec, _]], ev.Dec => ev.Dec)](
+								(Nil, {z => z})
+							)({(folding, childBacking) =>
+								val (previousParts, previousList) = folding
+								val nextList:ev.Dec => ev.Dec = {(z:ev.Dec) => ev.headTail(previousList(z))._2}
+								val childValue:ev.Dec => Any = {(z:ev.Dec) => ev.headTail(previousList(z))._1}
+
+								val childParts = unapplyExprFlatten(childBacking)._2
+										.map({part => part.contramapValue(childValue)})
+
+								(previousParts ::: childParts, nextList)
+							})._1.map(_.contramapValue({(z:Z) => ev.contraInit(z)}))
+						}
+					))
+				}
+			}
+		}
+
 		implicit val given_Position:Position[c.universe.Position] = PositionGivens.given_ExprPosition_Position(c)
 		implicit val given_Ordering:Ordering[c.universe.Position] = PositionGivens.given_ExprPosition_Ordering(c)
 
@@ -54,13 +166,13 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 		val args = strings.init.map(x => (((), x._2 + x._1.size)))
 
 		val input = new Input[Unit, c.universe.Position](strings, args)
-		implicit val exprs:UnapplyExprs[c.Expr, c.TypeTag] = UnapplyExprs.forContext(c)
 
-		impl.asInstanceOf[internal.Extractor[c.Expr, c.TypeTag, A]].extractor(input)(implicitly, exprs) match {
+		impl.asInstanceOf[internal.Extractor[c.Expr, c.TypeTag, A]].extractor(input) match {
 			case s:Success[_, _, _] => {
 				val expr:UnapplyExpr[c.Expr, c.TypeTag, A] = s.choicesHead.value
-				val condition = ev.andThen(expr.condition)
-				val parts = expr.parts.map(_.contramapValue(ev))
+				val (condition2, parts2) = unapplyExprFlatten(expr)
+				val condition = ev.andThen(condition2)
+				val parts = parts2.map(_.contramapValue(ev))
 
 				parts.size match {
 					case 0 =>

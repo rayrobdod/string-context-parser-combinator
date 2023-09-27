@@ -5,7 +5,7 @@ import name.rayrobdod.stringContextParserCombinator._
 import name.rayrobdod.stringContextParserCombinatorExample.datetime.Digit.given_Repeated
 import name.rayrobdod.stringContextParserCombinatorExample.datetime.Sign.given_Sequenced_Sign_Digit
 
-trait TimeParsers[Expr[_], Type[_]] {
+trait TimeParsers[Expr[+_], Type[_]] {
 	def localDate: Parser[Expr, Type, Expr[LocalDate]]
 	def localTime: Parser[Expr, Type, Expr[LocalTime]]
 	def localDateTime: Parser[Expr, Type, Expr[LocalDateTime]]
