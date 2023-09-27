@@ -7,7 +7,7 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor, U
  * Parts of [[Extractor]] that use types specific to scala 3
  */
 private[stringContextParserCombinator]
-trait VersionSpecificExtractor[Expr[+_], Type[_], -A] {
+trait VersionSpecificExtractor[+Expr[_], +Type[_], -A] {
 	protected[stringContextParserCombinator]
 	def impl: internal.Extractor[Expr, Type, A]
 
@@ -33,8 +33,8 @@ trait VersionSpecificExtractor[Expr[+_], Type[_], -A] {
 		quoted.Quotes,
 		quoted.Type[UnexprA],
 		quoted.Expr[UnexprA] <:< A,
-		quoted.Expr[Boolean] =:= Expr[Boolean],
-		quoted.Type[Boolean] =:= Type[Boolean],
+		Expr[Boolean] <:< quoted.Expr[Boolean],
+		Type[Boolean] <:< quoted.Type[Boolean],
 	):quoted.Expr[Unapply[UnexprA]] = {
 		import scala.quoted.{Expr => _, _}
 		import quotes.reflect.asTerm
@@ -233,7 +233,7 @@ trait VersionSpecificExtractor[Expr[+_], Type[_], -A] {
 }
 
 private[stringContextParserCombinator]
-trait VersionSpecificExtractorModule extends ExprIndependentExtractors[Expr, Type] {
+trait VersionSpecificExtractorModule {
 	type Extractor[A] = SCExtractor[quoted.Expr, quoted.Type, A]
 
 	/**

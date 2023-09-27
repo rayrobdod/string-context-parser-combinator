@@ -9,7 +9,7 @@ import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpo
  * Parts of [[Parser]] that use types specific to scala 3
  */
 private[stringContextParserCombinator]
-trait VersionSpecificParser[Expr[+_], Type[_], A] {
+trait VersionSpecificParser[Expr[_], Type[_], A] {
 	protected[stringContextParserCombinator]
 	def impl: internal.Parser[Expr, Type, A]
 
@@ -56,8 +56,8 @@ trait VersionSpecificParser[Expr[+_], Type[_], A] {
 		quoted.Quotes,
 		quoted.Type[UnexprA],
 		quoted.Expr[UnexprA] <:< A,
-		quoted.Expr[Boolean] =:= Expr[Boolean],
-		quoted.Type[Boolean] =:= Type[Boolean],
+		Expr[Boolean] <:< quoted.Expr[Boolean],
+		Type[Boolean] <:< quoted.Type[Boolean],
 	):quoted.Expr[Unapply[UnexprA]] = {
 		new Extractor(this.impl).extractor(sc)
 	}

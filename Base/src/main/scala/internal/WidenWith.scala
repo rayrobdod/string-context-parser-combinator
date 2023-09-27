@@ -2,7 +2,7 @@ package name.rayrobdod.stringContextParserCombinator
 package internal
 
 private[stringContextParserCombinator]
-final class WidenWith[Expr[+_], Type[_], A, Z](
+final class WidenWith[+Expr[_], +Type[_], +A, -Z](
 	backing:Extractor[Expr, Type, A],
 	contramapping:PartialExprFunction[Expr, Z, A]
 ) extends Extractor[Expr, Type, Z] {

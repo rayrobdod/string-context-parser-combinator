@@ -14,7 +14,7 @@ object Map {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A, Z](
+	def extractor[Expr[_], Type[_], A, Z](
 		backing:Extractor[Expr, Type, A],
 		contramapping: Z => A
 	):Extractor[Expr, Type, Z] = {
@@ -25,7 +25,7 @@ object Map {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A, Z](
+	def parser[Expr[_], Type[_], A, Z](
 		backing:Parser[Expr, Type, A],
 		mapping: A => Z,
 		contramapping: Z => A

@@ -15,7 +15,7 @@ object OrElse {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A, B, Z](
+	def extractor[Expr[_], Type[_], A, B, Z](
 		left:Extractor[Expr, Type, A],
 		right:Extractor[Expr, Type, B],
 		combiner:typeclass.ContraEithered[Expr, A, B, Z]
@@ -27,7 +27,7 @@ object OrElse {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A, B, Z](
+	def parser[Expr[_], Type[_], A, B, Z](
 		left:Parser[Expr, Type, A],
 		right:Parser[Expr, Type, B],
 		combiner:typeclass.BiEithered[Expr, A, B, Z]
@@ -66,7 +66,7 @@ object OrElse {
 		}
 	}
 
-	private def extractor[Expr[+_], Type[_], A, B, Z, Pos](
+	private def extractor[Expr[_], Type[_], A, B, Z, Pos](
 		left:Extractor[Expr, Type, A],
 		right:Extractor[Expr, Type, B],
 		combiner:typeclass.ContraEithered[Expr, A, B, Z],

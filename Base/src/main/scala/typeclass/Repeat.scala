@@ -67,7 +67,7 @@ trait Repeated[-A, +Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait ContraRepeated[+Expr[+_], +A, -Z] {
+trait ContraRepeated[+Expr[_], +A, -Z] {
 	type Dec
 	def contraInit(z:Z):Dec
 	def headTail:PartialExprFunction[Expr, Dec, (A, Dec)]
@@ -82,7 +82,7 @@ trait ContraRepeated[+Expr[+_], +A, -Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait BiRepeated[Expr[+_], A, Z]
+trait BiRepeated[Expr[_], A, Z]
 	extends Repeated[A, Z]
 	with ContraRepeated[Expr, A, Z]
 

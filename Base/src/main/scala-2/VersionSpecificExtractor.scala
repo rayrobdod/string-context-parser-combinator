@@ -8,7 +8,7 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * Parts of [[Extractor]] that use types specific to scala 3
  */
 private[stringContextParserCombinator]
-trait VersionSpecificExtractor[Expr[+_], Type[_], -A] {
+trait VersionSpecificExtractor[+Expr[_], +Type[_], -A] {
 	protected[stringContextParserCombinator]
 	def impl: internal.Extractor[Expr, Type, A]
 
@@ -21,8 +21,8 @@ trait VersionSpecificExtractor[Expr[+_], Type[_], -A] {
 		extensionClassName:String)(
 		value:c.Expr[UnexprA])(
 		implicit ev:c.Expr[UnexprA] <:< A,
-		@nowarn("msg=never used") ev2:c.Expr[_] =:= Expr[_],
-		@nowarn("msg=never used") ev3:c.TypeTag[_] =:= Type[_],
+		@nowarn("msg=never used") ev2:Expr[_] <:< c.Expr[_],
+		@nowarn("msg=never used") ev3:Type[_] <:< c.TypeTag[_],
 		ttUnexprA:c.TypeTag[UnexprA]
 	):c.Expr[Any] = {
 		def selectApply[Z](lhs:c.Expr[_], op:String, rhs:c.Expr[_])(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {

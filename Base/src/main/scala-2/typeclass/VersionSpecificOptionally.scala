@@ -5,10 +5,10 @@ import scala.reflect.macros.blackbox.Context
 
 private[typeclass]
 trait VersionSpecificContraOptionally {
-	trait ContraOptionallys[Expr[+_], Type[_]] extends LowPrioContraOptionallys[Expr, Type] {
+	trait ContraOptionallys[Expr[_], Type[_]] extends LowPrioContraOptionallys[Expr, Type] {
 		implicit def unit:ContraOptionally[Expr, Unit, Unit]
 	}
-	trait LowPrioContraOptionallys[Expr[+_], Type[_]] {
+	trait LowPrioContraOptionallys[Expr[_], Type[_]] {
 		implicit def toExprOption[A](implicit typA:Type[A]):ContraOptionally[Expr, Expr[A], Expr[Option[A]]]
 	}
 
@@ -28,10 +28,10 @@ trait VersionSpecificLowPrioContraOptionally {
 
 private[typeclass]
 trait VersionSpecificBiOptionally {
-	trait BiOptionallys[Expr[+_], Type[_]] extends LowPrioBiOptionallys[Expr, Type] {
+	trait BiOptionallys[Expr[_], Type[_]] extends LowPrioBiOptionallys[Expr, Type] {
 		implicit def unit:BiOptionally[Expr, Unit, Unit]
 	}
-	trait LowPrioBiOptionallys[Expr[+_], Type[_]] {
+	trait LowPrioBiOptionallys[Expr[_], Type[_]] {
 		implicit def toExprOption[A](implicit typA:Type[A]):BiOptionally[Expr, Expr[A], Expr[Option[A]]]
 	}
 

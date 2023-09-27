@@ -232,7 +232,7 @@ package ExtractorTest {
 
 		final class IsInstanceOf extends BaseExtractorSuite {
 			val dut = Extractor.idExtractors.ofType(classOf[Subclass1])
-					.widenWith[Superclass](PartialExprFunction[Id, Superclass, Subclass1]({(x:Superclass) => x.isInstanceOf[Subclass1]}, {(x:Superclass) => x.asInstanceOf[Subclass1]}))
+					.widenWith[Id, Superclass](PartialExprFunction[Id, Superclass, Subclass1]({(x:Superclass) => x.isInstanceOf[Subclass1]}, {(x:Superclass) => x.asInstanceOf[Subclass1]}))
 
 			test ("on match") {
 				assertParseSuccess(dut, ("" :: "" :: Nil, Subclass1(42)), Option(List(Subclass1(42))))
@@ -249,7 +249,7 @@ package ExtractorTest {
 			val digitParser = Extractor.idExtractors.charWhere(c => '0' <= c && c <= '9')
 			val alphaParser = Extractor.idExtractors.charWhere(c => 'a' <= c && c <= 'z')
 
-			val dut:Extractor[Id, Class, (Char, Char)] = digitParser andThen alphaParser
+			val dut:Extractor[Id, Class, (Char, Char)] = digitParser.andThen[Id, Class, Char, (Char, Char)](alphaParser)
 
 			assertParseFailureOnEmptyInput(dut, ('\u0000', '\u0000'), digitExpectingLine)
 			test ("throws when expression has only one char; points at EOF") {
@@ -286,7 +286,7 @@ package ExtractorTest {
 			val left = Extractor.idExtractors.isString("left")
 			val right = Extractor.idExtractors.isString("right")
 
-			val dut:Extractor[Id, Class, Either[Unit, Unit]] = left.orElse(right)(discriminatedContraEithered)
+			val dut:Extractor[Id, Class, Either[Unit, Unit]] = left.orElse[Id, Class, Unit, Either[Unit, Unit]](right)(discriminatedContraEithered)
 
 			test ("when string is left and scrutinee is left, then matches") {
 				assertParseSuccess(dut, ("left" :: Nil, Left(())), Option(List.empty))
@@ -307,8 +307,8 @@ package ExtractorTest {
 		final class PartsThatMayConsumeInput extends BaseExtractorSuite {
 			def charIn(s:String) = Extractor.idExtractors.charIn(s).contramap({(_:Unit) => ' '})
 
-			val abcd = charIn("a") andThen charIn("b") andThen charIn("c") andThen charIn("d")
-			val abzy = charIn("a") andThen charIn("b") andThen charIn("z") andThen charIn("y")
+			val abcd = charIn("a").andThen[Id, Class, Unit, Unit](charIn("b")).andThen[Id, Class, Unit, Unit](charIn("c")).andThen[Id, Class, Unit, Unit](charIn("d"))
+			val abzy = charIn("a").andThen[Id, Class, Unit, Unit](charIn("b")).andThen[Id, Class, Unit, Unit](charIn("z")).andThen[Id, Class, Unit, Unit](charIn("y"))
 			val dut:Extractor[Id, Class, Either[Unit, Unit]] = abcd.orElse(abzy)(discriminatedContraEithered)
 
 			test ("even if left branch consumes input, then backtracking") {
@@ -321,7 +321,7 @@ package ExtractorTest {
 
 		final class ZeroOrMore extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(strategy = Greedy)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](strategy = Greedy)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
 				val input = List.fill(1 + inputLength)("")
@@ -339,7 +339,7 @@ package ExtractorTest {
 			}
 
 			test ("will backtrack") {
-				val dut2:Extractor[Id, Class, (List[String], String)] = dut.andThen(one)
+				val dut2:Extractor[Id, Class, (List[String], String)] = dut.andThen[Id, Class, String, (List[String], String)](one)
 				val input = List.fill(5)("")
 				val scrutinee = (List("a", "b", "c"), "d")
 				val expecting = List("a", "b", "c", "d")
@@ -349,7 +349,7 @@ package ExtractorTest {
 		}
 		final class ZeroOrMorePossessive extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(strategy = Possessive)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](strategy = Possessive)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
 				val input = List.fill(1 + inputLength)("")
@@ -367,7 +367,7 @@ package ExtractorTest {
 			}
 
 			test ("will not backtrack") {
-				val dut2:Extractor[Id, Class, (List[String], String)] = dut.andThen(one)
+				val dut2:Extractor[Id, Class, (List[String], String)] = dut.andThen[Id, Class, String, (List[String], String)](one)
 				val input = List.fill(4)("")
 				val scrutinee = (List("a", "b", "c"), "d")
 
@@ -376,7 +376,7 @@ package ExtractorTest {
 		}
 		final class ZeroOrMoreLazy extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(strategy = Lazy)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](strategy = Lazy)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
 				val input = List.fill(1 + inputLength)("")
@@ -394,7 +394,7 @@ package ExtractorTest {
 			}
 
 			test ("will backtrack") {
-				val dut2:Extractor[Id, Class, List[String]] = dut.andThen(Extractor.idExtractors.end)
+				val dut2:Extractor[Id, Class, List[String]] = dut.andThen[Id, Class, Unit, List[String]](Extractor.idExtractors.end)
 				val input = List.fill(4)("")
 				val scrutinee = List("a", "b", "c")
 				val expecting = List("a", "b", "c")
@@ -404,7 +404,7 @@ package ExtractorTest {
 		}
 		final class OneOrMore extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(1, strategy = Greedy)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](1, strategy = Greedy)
 
 			test (s"when input has length 0 then throws") {
 				assertParseFailure(dut, ("" :: Nil, List()), List("Expected OfType(java.lang.String)", "\t", "\t^"))
@@ -427,7 +427,7 @@ package ExtractorTest {
 		}
 		final class ZeroOrOne extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(0, 1, strategy = Greedy)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](0, 1, strategy = Greedy)
 
 			for (inputLength <- 0 to 2; scrutineeLength <- 0 to (inputLength + 1)) {
 				val input = List.fill(1 + inputLength)("")
@@ -446,7 +446,7 @@ package ExtractorTest {
 		}
 		final class PassRepeated extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.pass
-			val dut = one.repeat(strategy = Greedy)
+			val dut = one.repeat[Id, Class, Unit](strategy = Greedy)
 
 			test ("does not hang indefinitely") {
 				val input = "413" :: Nil
@@ -456,7 +456,7 @@ package ExtractorTest {
 		}
 		final class RepeatedRepeated extends BaseExtractorSuite {
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val two:Extractor[Id, Class, List[String]] = one.repeat(strategy = Greedy)
+			val two:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](strategy = Greedy)
 			val dut:Extractor[Id, Class, List[List[String]]] = two.repeat(strategy = Greedy)
 
 			test ("does not hang indefinitely") {
@@ -469,7 +469,7 @@ package ExtractorTest {
 		final class ZeroOrMoreWithDelimiter extends BaseExtractorSuite {
 			val delim = Extractor.idExtractors.isString(",")
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(delimiter = delim, strategy = Greedy)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](delimiter = delim, strategy = Greedy)
 
 			for (inputLength <- 0 to 1; scrutineeLength <- 0 to (inputLength + 1)) {
 				val input = List.fill(inputLength + 1)("")
@@ -504,7 +504,7 @@ package ExtractorTest {
 		final class TwoOrMoreWithDelimiter extends BaseExtractorSuite {
 			val delim = Extractor.idExtractors.isString(",")
 			val one = Extractor.idExtractors.ofType[String](classOf[String])
-			val dut:Extractor[Id, Class, List[String]] = one.repeat(2, delimiter = delim, strategy = Greedy)
+			val dut:Extractor[Id, Class, List[String]] = one.repeat[Id, Class, List[String]](2, delimiter = delim, strategy = Greedy)
 
 			test (s"when input has length 1, throws and reports expecting the delimiter") {
 				val input = "" :: "" :: Nil
@@ -515,9 +515,9 @@ package ExtractorTest {
 		final class SequenceRepeated extends BaseExtractorSuite {
 			def charIn(s:String) = Extractor.idExtractors.charIn(s)
 
-			val one:Extractor[Id, Class, (Char, Char)] = charIn("a") andThen charIn("b")
-			val two:Extractor[Id, Class, ((Char, Char), Char)] = one andThen charIn("c")
-			val dut:Extractor[Id, Class, List[((Char, Char), Char)]] = two.repeat(strategy = Greedy)
+			val one:Extractor[Id, Class, (Char, Char)] = charIn("a").andThen[Id, Class, Char, (Char, Char)](charIn("b"))
+			val two:Extractor[Id, Class, ((Char, Char), Char)] = one.andThen[Id, Class, Char, ((Char, Char), Char)](charIn("c"))
+			val dut:Extractor[Id, Class, List[((Char, Char), Char)]] = two.repeat[Id, Class, List[((Char, Char), Char)]](strategy = Greedy)
 			val chartriple = (('\u0000', '\u0000'), '\u0000')
 
 			test ("matches \"\"") {

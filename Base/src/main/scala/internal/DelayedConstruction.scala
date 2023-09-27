@@ -13,7 +13,7 @@ object DelayedConstruction {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A](
+	def extractor[Expr[_], Type[_], A](
 		backing:() => Extractor[Expr, Type, A]
 	):Extractor[Expr, Type, A] = {
 		new Extractor[Expr, Type, A] {
@@ -23,7 +23,7 @@ object DelayedConstruction {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A](
+	def parser[Expr[_], Type[_], A](
 		backing:() => Parser[Expr, Type, A]
 	):Parser[Expr, Type, A] = {
 		new Parser[Expr, Type, A] {

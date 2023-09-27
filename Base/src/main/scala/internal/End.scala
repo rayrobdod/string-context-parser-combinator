@@ -2,7 +2,7 @@ package name.rayrobdod.stringContextParserCombinator
 package internal
 
 private[stringContextParserCombinator]
-final class End[Expr[+_], Type[_]] extends Parser[Expr, Type, Unit] {
+final class End[Expr[_], Type[_]] extends Parser[Expr, Type, Unit] {
 	override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Unit] = {
 		this.parse(())(input)
 	}

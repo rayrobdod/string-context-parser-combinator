@@ -146,7 +146,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * The extractor parsing will probably fail if this parser expects to find holes.
 	 * @group Misc
 	 */
-	def extractorAtom[ExprZ[+_], TypeZ[_], UnexprA](
+	def extractorAtom[ExprZ[_], TypeZ[_], UnexprA](
 		implicit t:TypeZ[UnexprA],
 		ev:ExprZ[Any] <:< Expr,
 		ev2:A <:< ExprZ[UnexprA]
@@ -275,7 +275,7 @@ object Interpolator
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Interpolators[Expr[+_], ToExpr[_], Type[_]] {
+	trait Interpolators[Expr[_], ToExpr[_], Type[_]] {
 		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
 
 		/**

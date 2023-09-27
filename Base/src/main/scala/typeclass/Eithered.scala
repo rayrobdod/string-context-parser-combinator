@@ -47,7 +47,7 @@ trait Eithered[-A, -B, +Z] {
  * @tparam B the second choice
  * @tparam Z the result container
  */
-trait ContraEithered[+Expr[+_], +A, +B, -Z] {
+trait ContraEithered[+Expr[_], +A, +B, -Z] {
 	def contraLeft:PartialExprFunction[Expr, Z, A]
 	def contraRight:PartialExprFunction[Expr, Z, B]
 }
@@ -58,7 +58,7 @@ trait ContraEithered[+Expr[+_], +A, +B, -Z] {
  * @tparam B the second choice
  * @tparam Z the result container
  */
-trait BiEithered[Expr[+_], A, B, Z]
+trait BiEithered[Expr[_], A, B, Z]
 		extends Eithered[A, B, Z]
 		with ContraEithered[Expr, A, B, Z]
 
@@ -106,7 +106,7 @@ object ContraEithered extends VersionSpecificContraEithered {
 	/**
 	 * Constructs an `ContraEithered` from a set of functions corresponding to each of ContraEithered's methods
 	 */
-	def apply[Expr[+_], A, B, Z](
+	def apply[Expr[_], A, B, Z](
 		contraLeftFn:PartialExprFunction[Expr, Z, A],
 		contraRightFn:PartialExprFunction[Expr, Z, B]
 	):ContraEithered[Expr, A, B, Z] = {
@@ -126,7 +126,7 @@ object BiEithered extends VersionSpecificBiEithered {
 	/**
 	 * Constructs an `BiEithered` from a set of functions corresponding to each of BiEithered's methods
 	 */
-	def apply[Expr[+_], A, B, Z](
+	def apply[Expr[_], A, B, Z](
 		leftFn:A => Z,
 		rightFn:B => Z,
 		contraLeftFn:PartialExprFunction[Expr, Z, A],

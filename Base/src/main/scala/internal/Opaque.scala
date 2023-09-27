@@ -14,7 +14,7 @@ object Opaque {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A](
+	def extractor[Expr[_], Type[_], A](
 		backing:Extractor[Expr, Type, A],
 		description:ExpectingDescription
 	):Extractor[Expr, Type, A] = {
@@ -25,7 +25,7 @@ object Opaque {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A](
+	def parser[Expr[_], Type[_], A](
 		backing:Parser[Expr, Type, A],
 		description:ExpectingDescription
 	):Parser[Expr, Type, A] = {

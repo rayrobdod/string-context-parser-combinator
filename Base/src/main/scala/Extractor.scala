@@ -29,7 +29,7 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinator] (
+final class Extractor[+Expr[_], +Type[_], -A] private[stringContextParserCombinator] (
 		protected[stringContextParserCombinator] override val impl: internal.Extractor[Expr, Type, A]
 ) extends VersionSpecificExtractor[Expr, Type, A] {
 
@@ -41,8 +41,8 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 		sc:StringContext,
 		scrutinee:A)(
 		implicit
-		@nowarn("msg=never used") ev:Id[Any] =:= Expr[Any],
-		@nowarn("msg=never used") ev2:Class[Any] =:= Type[Any]
+		@nowarn("msg=never used") ev:Expr[Any] <:< Id[Any],
+		@nowarn("msg=never used") ev2:Type[Any] <:< Class[Any],
 	):Option[Seq[Any]] = {
 		def unapplyExprEval[Z](value:Z, expr:UnapplyExpr[Id, Class, Z]):Option[List[Any]] = {
 			expr match {
@@ -159,7 +159,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 *   * If the Expr is false, fails the match
 	 * @group Map
 	 */
-	def widenWith[Z](contrafn: PartialExprFunction[Expr, Z, A]):Extractor[Expr, Type, Z] =
+	def widenWith[ExprZ[x] >: Expr[x], Z](contrafn: PartialExprFunction[ExprZ, Z, A]):Extractor[ExprZ, Type, Z] =
 		new Extractor(new internal.WidenWith(this.impl, contrafn))
 
 	/**
@@ -193,7 +193,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Sequence
 	 */
-	def andThen[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraSequenced[A,B,Z]):Extractor[Expr, Type, Z] =
+	def andThen[ExprZ[x] >: Expr[x], TypeZ[x] >: Type[x], B, Z](rhs:Extractor[ExprZ, TypeZ, B])(implicit ev:typeclass.ContraSequenced[A,B,Z]):Extractor[ExprZ, TypeZ, Z] =
 		new Extractor(internal.AndThen.extractor(this.impl, rhs.impl, ev))
 
 	/**
@@ -207,7 +207,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @param ev A descriptor of how to treat either value as one value
 	 * @group Branch
 	 */
-	def orElse[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraEithered[Expr, A,B,Z]):Extractor[Expr, Type, Z] =
+	def orElse[ExprZ[x] >: Expr[x], TypeZ[x] >: Type[x], B, Z](rhs:Extractor[ExprZ, TypeZ, B])(implicit ev:typeclass.ContraEithered[ExprZ, A,B,Z]):Extractor[ExprZ, TypeZ, Z] =
 		new Extractor(internal.OrElse.extractor(this.impl, rhs.impl, ev))
 
 	/**
@@ -221,13 +221,13 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @param ev A descriptor of how to combine the repeated values into one value
 	 * @group Repeat
 	 */
-	def repeat[Z](
+	def repeat[ExprZ[x] >: Expr[x], TypeZ[x] >: Type[x], Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Extractor[Expr, Type, Unit] = new Extractor[Expr, Type, Unit](new internal.Pass),
+		delimiter:Extractor[ExprZ, TypeZ, Unit] = new Extractor[ExprZ, TypeZ, Unit](new internal.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.ContraRepeated[Expr, A, Z]
-	):Extractor[Expr, Type, Z] =
+		implicit ev:typeclass.ContraRepeated[ExprZ, A, Z]
+	):Extractor[ExprZ, TypeZ, Z] =
 		new Extractor(internal.Repeat.extractor(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
@@ -238,10 +238,10 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @param ev A descriptor of how to mark present or absent values
 	 * @group Repeat
 	 */
-	def optionally[Z](
+	def optionally[ExprZ[x] >: Expr[x], Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.ContraOptionally[Expr, A, Z]
-	):Extractor[Expr, Type, Z] =
+		implicit ev:typeclass.ContraOptionally[ExprZ, A, Z]
+	):Extractor[ExprZ, Type, Z] =
 		new Extractor(internal.Optionally.extractor(this.impl, strategy, ev))
 }
 
@@ -265,12 +265,13 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
  */
 object Extractor
 		extends VersionSpecificExtractorModule
+		with ExprIndependentExtractors[Nothing, Nothing]
 {
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
 	/**
@@ -299,7 +300,7 @@ object Extractor
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Extractors[Expr[+_], Type[_]] {
+	trait Extractors[Expr[_], Type[_]] {
 		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
 
 		/**
@@ -405,7 +406,7 @@ object Extractor
 /**
  * Extractors that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[+_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar

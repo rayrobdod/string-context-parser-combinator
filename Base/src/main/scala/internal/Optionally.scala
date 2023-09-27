@@ -16,7 +16,7 @@ object Optionally {
 		})
 	}
 
-	def extractor[Expr[+_], Type[_], A, Z](
+	def extractor[Expr[_], Type[_], A, Z](
 		backing:Extractor[Expr, Type, A],
 		strategy:RepeatStrategy,
 		ev:typeclass.ContraOptionally[Expr, A, Z]
@@ -43,7 +43,7 @@ object Optionally {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A, Z](
+	def parser[Expr[_], Type[_], A, Z](
 		backing:Parser[Expr, Type, A],
 		strategy:RepeatStrategy,
 		ev:typeclass.BiOptionally[Expr, A, Z]

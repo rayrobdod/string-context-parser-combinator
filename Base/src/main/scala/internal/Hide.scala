@@ -13,7 +13,7 @@ object Hide {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], Z](
+	def extractor[Expr[_], Type[_], Z](
 		backing:Extractor[Expr, Type, Z]
 	):Extractor[Expr, Type, Z] = {
 		new Extractor[Expr, Type, Z] {
@@ -23,7 +23,7 @@ object Hide {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], Z](
+	def parser[Expr[_], Type[_], Z](
 		backing:Parser[Expr, Type, Z]
 	):Parser[Expr, Type, Z] = {
 		new Parser[Expr, Type, Z] {

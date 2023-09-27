@@ -7,7 +7,7 @@ import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
  * Parts of [[Parser]] that use types specific to scala 3
  */
 private[stringContextParserCombinator]
-trait VersionSpecificParser[Expr[+_], Type[_], A] {
+trait VersionSpecificParser[Expr[_], Type[_], A] {
 	protected[stringContextParserCombinator]
 	def impl: internal.Parser[Expr, Type, A]
 
@@ -47,8 +47,8 @@ trait VersionSpecificParser[Expr[+_], Type[_], A] {
 		extensionClassName:String)(
 		value:c.Expr[UnexprA])(
 		implicit ev:c.Expr[UnexprA] <:< A,
-		ev2:c.Expr[_] =:= Expr[_],
-		ev3:c.TypeTag[_] =:= Type[_],
+		ev2:Expr[_] <:< c.Expr[_],
+		ev3:Type[_] <:< c.TypeTag[_],
 		ttUnexprA:c.TypeTag[UnexprA]
 	):c.Expr[Any] = {
 		new Extractor(this.impl).extractor(c)(extensionClassName)(value)

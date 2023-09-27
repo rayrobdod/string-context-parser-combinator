@@ -32,7 +32,7 @@ import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
  * @groupname Convert convert
  * @groupprio Convert 2000
  */
-final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] (
+final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 		protected[stringContextParserCombinator] override val impl: internal.Parser[Expr, Type, A]
 ) extends VersionSpecificParser[Expr, Type, A] {
 
@@ -62,7 +62,12 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * Extract subexpressions from the given value according to the given StringContext
 	 * @group Parse
 	 */
-	def extract(sc:StringContext, value:A)(implicit ev:Id[Any] =:= Expr[Any], ev2:Class[Any] =:= Type[Any]):Option[Seq[Any]] =
+	def extract(
+		sc:StringContext,
+		value:A)(
+		implicit
+		ev2:Type[Any] <:< Class[Any],
+	):Option[Seq[Any]] =
 		this.toExtractor.extract(sc, value)
 
 	/**
@@ -209,7 +214,7 @@ object Parser
 	 * A parser that acts like the Interpolator when interpolating, and like the Extractor when extracting
 	 * @group Misc
 	 */
-	def paired[Expr[+_], Type[_], A](
+	def paired[Expr[_], Type[_], A](
 		interpolator:SCPCInterpolator[Expr[Any], A],
 		extractor:SCPCExtractor[Expr, Type, A]
 	):SCPCParser[Expr, Type, A] =
@@ -219,7 +224,7 @@ object Parser
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
+	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
 		new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
@@ -249,7 +254,7 @@ object Parser
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Parsers[Expr[+_], ToExpr[_], Type[_]] {
+	trait Parsers[Expr[_], ToExpr[_], Type[_]] {
 		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
 		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
 		type Parser[A] = name.rayrobdod.stringContextParserCombinator.Parser[Expr, Type, A]
@@ -366,7 +371,7 @@ object Parser
 /**
  * Parsers that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentParsers[Expr[+_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentParsers[Expr[_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar

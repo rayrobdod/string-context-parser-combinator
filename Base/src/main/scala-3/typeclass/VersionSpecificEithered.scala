@@ -35,7 +35,7 @@ private[typeclass] trait LowPrioContraEithered {
 private[typeclass] trait VersionSpecificBiEithered extends LowPrioBiEithered {
 	given quotedUnitUnit(using Quotes):BiEithered[Expr, Unit, Unit, Unit] = quotedSymmetric[Unit]
 
-	given eitherUnitAny[Expr[+_], B, Z](using ev:BiOptionally[Expr, B, Z])(using Quotes):BiEithered[Expr, Unit, B, Z] = BiEithered(
+	given eitherUnitAny[Expr[_], B, Z](using ev:BiOptionally[Expr, B, Z])(using Quotes):BiEithered[Expr, Unit, B, Z] = BiEithered(
 		_ => ev.none,
 		ev.some _,
 		PartialExprFunction[Expr, Z, Unit](
@@ -44,7 +44,7 @@ private[typeclass] trait VersionSpecificBiEithered extends LowPrioBiEithered {
 		),
 		ev.contraSome,
 	)
-	given eitherAnyUnit[Expr[+_], A, Z](using ev:BiOptionally[Expr, A, Z])(using Quotes):BiEithered[Expr, A, Unit, Z] = BiEithered(
+	given eitherAnyUnit[Expr[_], A, Z](using ev:BiOptionally[Expr, A, Z])(using Quotes):BiEithered[Expr, A, Unit, Z] = BiEithered(
 		ev.some _,
 		_ => ev.none,
 		ev.contraSome,
