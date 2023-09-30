@@ -231,6 +231,17 @@ package InterpolatorTest {
 			}
 		}
 	}
+	package void {
+		final case class Bar(x:Int)
+
+		final class VoidedBar extends BaseInterpolatorSuite {
+			val dut = Interpolator.idInterpolators.ofType(classOf[Bar]).void
+
+			test ("When base matches an input, then dut result is unit") {
+				assertParseSuccess(dut, ("" :: "" :: Nil, Bar(42) :: Nil), ())
+			}
+		}
+	}
 	package filter {
 		final case class Foo(x:Int)
 

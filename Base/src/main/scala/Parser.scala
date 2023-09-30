@@ -96,6 +96,15 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 		))
 
 	/**
+	 * Returns a parser
+	 * which discards its result while interpolating
+	 * and ignores its input value while extracting
+	 * @group Map
+	 */
+	def void:Parser[Expr, Type, Unit] =
+		new Parser(internal.Void.parser(this.impl))
+
+	/**
 	 * @group Sequence
 	 */
 	def flatMap[ExprZ <: Expr[Any], Z](cofn:A => Interpolator[ExprZ, Z]):Interpolator[ExprZ, Z] =

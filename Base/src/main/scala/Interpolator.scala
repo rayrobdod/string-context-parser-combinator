@@ -101,6 +101,15 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	}
 
 	/**
+	 * Returns an interpolator which invokes this parser, then maps a successful result to the Unit value
+	 *
+	 * Approximately equivalent to `this.map({_ => ()})`
+	 * @group Map
+	 */
+	def void:Interpolator[Expr, Unit] =
+		new Interpolator(internal.Void.interpolator(this.impl))
+
+	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
 	 * @group Sequence
 	 */

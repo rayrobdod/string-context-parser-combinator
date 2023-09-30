@@ -99,6 +99,17 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		new Extractor(new internal.WidenWith(this.impl, contrafn))
 
 	/**
+	 * Returns an extractor which runs this parser but ignores the input
+	 *
+	 * Approximately equivalent to `this.contramap({_ => a})`,
+	 * where `a` is some value this extractor will accept,
+	 * except this discards all match groups
+	 * @group Map
+	 */
+	def void:Extractor[Expr, Type, Unit] =
+		new Extractor(internal.Void.extractor(this.impl))
+
+	/**
 	 * Returns a extractor which invokes this parser, but has the given description upon failure
 	 * @group ErrorPlus
 	 */

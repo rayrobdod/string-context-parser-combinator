@@ -242,6 +242,44 @@ package ExtractorTest {
 			}
 		}
 	}
+	package void {
+		trait Superclass
+		final case class Subclass1(x:Int) extends Superclass
+		final case class Subclass2(x:Int) extends Superclass
+
+		final class VoidedCharIn extends BaseExtractorSuite {
+			val base = Extractor.idExtractors.charIn("abcd")
+			val dut = base.void
+
+			test ("when base matches on an input, then dut matches on unit input") {
+				assertParseSuccess(base, ("a" :: Nil, 'a'), Option(List.empty))
+				assertParseSuccess(dut, ("a" :: Nil, ()), Option(List.empty))
+			}
+			test ("when base fails on an input, then dut fails on unit input") {
+				assertParseFailure(base, ("z" :: Nil, 'z'), List("Expected CharIn(\"abcd\")", "\tz", "\t^"))
+				assertParseFailure(dut, ("z" :: Nil, ()), List("Expected CharIn(\"abcd\")", "\tz", "\t^"))
+			}
+		}
+		final class VoidedWidenedOfType extends BaseExtractorSuite {
+			val expectingLine = s"Expected OfType(${classOf[Subclass1].getName})"
+			val base = Extractor.idExtractors.ofType[Subclass1](classOf[Subclass1])
+				.widenWith[Superclass](PartialExprFunction[Id, Superclass, Subclass1]({(x:Superclass) => x.isInstanceOf[Subclass1]}, {(x:Superclass) => x.asInstanceOf[Subclass1]}))
+			val dut = base.void
+
+			test ("when base matches on an input, then dut matches on unit input") {
+				assertParseSuccess(base, ("" :: "" :: Nil, Subclass1(1)), Option(List(Subclass1(1))))
+				assertParseSuccess(dut, ("" :: "" :: Nil, ()), Option(List.empty))
+			}
+			test ("when base not matches on an input, then dut matches on unit input") {
+				assertParseSuccess(base, ("" :: "" :: Nil, Subclass2(1)), Option.empty)
+				assertParseSuccess(dut, ("" :: "" :: Nil, ()), Option(List.empty))
+			}
+			test ("when base fails on an input, then dut fails on unit input") {
+				assertParseFailure(base, ("z" :: Nil, Subclass1(1)), List(expectingLine, "\tz", "\t^"))
+				assertParseFailure(dut, ("z" :: Nil, ()), List(expectingLine, "\tz", "\t^"))
+			}
+		}
+	}
 	package andThen {
 		final class DigitAndThenAlpha extends BaseExtractorSuite {
 			val digitExpectingLine = "Expected '0'<=c<='9'"

@@ -65,7 +65,7 @@ object MacroImpl {
 
 	private def whitespace(using Quotes):Parser[Unit] = {
 		charIn("\n\r\t ")
-			.imap(_ => (), _ => ' ')
+			.void
 			.repeat(strategy = RepeatStrategy.Possessive)
 			.hide
 	}

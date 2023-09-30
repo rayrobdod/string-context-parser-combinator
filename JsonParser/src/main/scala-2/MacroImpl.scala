@@ -101,7 +101,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 	private[this] val whitespace:Parser[Unit] = {
 		charIn("\n\r\t ")
-			.imap((_:Char) => (), (_:Unit) => ' ')
+			.void
 			.repeat(strategy = RepeatStrategy.Possessive)
 			.hide
 	}
