@@ -44,7 +44,7 @@ package object internal {
 		case '\r' => "\\r"
 		case '\t' => "\\t"
 		case x if Character.isISOControl(x) => f"\\u${x.toInt}%04X"
-		case _ => CodePoint(in).toString
+		case _ => CodePoint.unsafe_apply(in).toString
 	}
 
 	/**
@@ -175,7 +175,7 @@ package object internal {
 	def CodePointWhere[Expr[_], Type[_]](
 		predicate:Function1[CodePoint, Boolean]
 	):Parser[Expr, Type, CodePoint] = {
-		val description = describeCodepointPredicate(c => predicate(CodePoint(c)), Character.MAX_CODE_POINT)
+		val description = describeCodepointPredicate(c => predicate(CodePoint.unsafe_apply(c)), Character.MAX_CODE_POINT)
 		CodePointWhere(
 			predicate,
 			description
@@ -187,7 +187,7 @@ package object internal {
 	def CodePointWhere[Expr[_], Type[_]](
 		predicate:Function1[CodePoint, Boolean], description:ExpectingDescription
 	):Parser[Expr, Type, CodePoint] = new PartsParser(
-		pt => Option((CodePoint(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
+		pt => Option((CodePoint.unsafe_apply(pt.codePointAt(0)), pt.offsetByCodePoints(0, 1))).filter(x => predicate(x._1)),
 		description
 	)
 

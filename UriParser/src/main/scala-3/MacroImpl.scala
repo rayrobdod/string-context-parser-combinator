@@ -36,10 +36,10 @@ object MacroImpl {
 		val escapedContinuation:Interpolator[Int] = (isString("%") andThen charIn("89ABab") andThen hexChar).map({x => (parseByteHex(x) & 0x3F)})
 
 		(isString("%") andThen (
-			(charIn("01234567") andThen hexChar).map({x => CodePoint(parseByteHex(x))}) orElse
-			(charIn("cdCD") andThen hexChar).map({x => (parseByteHex(x) & 0x1F)}).andThen(escapedContinuation).map(CodePoint.apply _) orElse
-			(charIn("eE") andThen hexChar).map({x => (parseByteHex(x) & 0x0F)}).andThen(escapedContinuation).andThen(escapedContinuation).map(CodePoint.apply _) orElse
-			(charIn("fF") andThen charIn("01234567")).map({x => (parseByteHex(x) & 0x07)}).andThen(escapedContinuation).andThen(escapedContinuation).andThen(escapedContinuation).map(CodePoint.apply _)
+			(charIn("01234567") andThen hexChar).map({x => CodePoint.unsafe_apply(parseByteHex(x))}) orElse
+			(charIn("cdCD") andThen hexChar).map({x => (parseByteHex(x) & 0x1F)}).andThen(escapedContinuation).map(CodePoint.unsafe_apply _) orElse
+			(charIn("eE") andThen hexChar).map({x => (parseByteHex(x) & 0x0F)}).andThen(escapedContinuation).andThen(escapedContinuation).map(CodePoint.unsafe_apply _) orElse
+			(charIn("fF") andThen charIn("01234567")).map({x => (parseByteHex(x) & 0x07)}).andThen(escapedContinuation).andThen(escapedContinuation).andThen(escapedContinuation).map(CodePoint.unsafe_apply _)
 		))
 	}
 

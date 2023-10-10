@@ -5,8 +5,15 @@ import scala.math.Ordering
 /**
  * Represents a unicode codepoint
  */
-final case class CodePoint(val intValue:Int) {
+final class CodePoint private (val intValue:Int) {
+	if (! Character.isValidCodePoint(intValue)) throw new IllegalArgumentException(s"$intValue")
+
 	override def toString:String = new String(Array[Int](intValue), 0, 1)
+	override def hashCode:Int = intValue
+	override def equals(other:Any):Boolean = other match {
+		case other2:CodePoint => this.intValue == other2.intValue
+		case _ => false
+	}
 
 	def charCount:Int = Character.charCount(intValue)
 	def name:String = Character.getName(intValue)
@@ -38,8 +45,12 @@ final case class CodePoint(val intValue:Int) {
 }
 
 object CodePoint {
-	val MaxValue = Character.MAX_CODE_POINT
-	val MinValue = Character.MIN_CODE_POINT
+	val MaxValue:CodePoint = new CodePoint(Character.MAX_CODE_POINT)
+	val MinValue:CodePoint = new CodePoint(Character.MIN_CODE_POINT)
+
+	def apply(cp:Int):Option[CodePoint] = if (Character.isValidCodePoint(cp)) Option(new CodePoint(cp)) else None
+
+	def unsafe_apply(cp:Int):CodePoint = new CodePoint(cp)
 
 	implicit def char2Codepoint(c:Char):CodePoint = new CodePoint(c.toInt)
 

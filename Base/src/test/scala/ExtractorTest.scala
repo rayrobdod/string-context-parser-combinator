@@ -29,7 +29,7 @@ abstract class BaseExtractorSuite extends munit.FunSuite {
 		case x if
 			x >= 0x10000 ||
 			false => f"\\U{${x.toInt}%X}"
-		case _ => CodePoint(in).toString
+		case _ => CodePoint.unsafe_apply(in).toString
 	}
 
 	def assertParseSuccess[A](
@@ -137,50 +137,50 @@ package ExtractorTest {
 			val dut = Extractor.idExtractors.codePointWhere(_ => false)
 			val characterCases = List('\u0000', 'a', '\uFFFF', '\uD83D')
 
-			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
-			assertParseFailureOnExpr(dut, CodePoint(0x31), expectingLine)
+			assertParseFailureOnEmptyInput(dut, CodePoint.unsafe_apply(0x31), expectingLine)
+			assertParseFailureOnExpr(dut, CodePoint.unsafe_apply(0x31), expectingLine)
 			for (inputChar <- characterCases) {
 				test (s"throws when the next input is the character '${escape(inputChar)}'") {
-					assertParseFailure(dut, (s"$inputChar" :: Nil, CodePoint(0)), List(expectingLine, s"\t$inputChar", "\t^"))
+					assertParseFailure(dut, (s"$inputChar" :: Nil, CodePoint.unsafe_apply(0)), List(expectingLine, s"\t$inputChar", "\t^"))
 				}
 			}
 		}
 		final class ConstTrue extends BaseExtractorSuite {
 			val expectingLine = "Expected '\\u0000'<=c<='\uDBFF\uDFFF'"
 			val dut = Extractor.idExtractors.codePointWhere(_ => true)
-			val characterCases = List[Int](0, 'a', 0xFFFF, CodePoint.MaxValue)
+			val characterCases = List[Int](0, 'a', 0xFFFF, CodePoint.MaxValue.intValue)
 
-			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
-			assertParseFailureOnExpr(dut, CodePoint(0x31), expectingLine)
+			assertParseFailureOnEmptyInput(dut, CodePoint.unsafe_apply(0x31), expectingLine)
+			assertParseFailureOnExpr(dut, CodePoint.unsafe_apply(0x31), expectingLine)
 			for (inputChar <- characterCases) {
 				val scrutinee = 0
 				val expecting = Some(Nil)
 				test (s"returns ${expecting} when input is '${escape(inputChar)}' and scrutinee is '${escape(scrutinee)}'") {
-					assertParseSuccess(dut, (s"${CodePoint(inputChar)}" :: Nil, CodePoint(scrutinee)), expecting)
+					assertParseSuccess(dut, (s"${CodePoint.unsafe_apply(inputChar)}" :: Nil, CodePoint.unsafe_apply(scrutinee)), expecting)
 				}
 			}
 			test ("matches the entire surrogate pair") {
-				assertParseSuccess(dut, ("\uD83D\uDE00" :: Nil, CodePoint(128512)), Some(Nil))
+				assertParseSuccess(dut, ("\uD83D\uDE00" :: Nil, CodePoint.unsafe_apply(128512)), Some(Nil))
 			}
 		}
 		final class IsPlayingCard extends BaseExtractorSuite {
 			val expectingLine = "Expected '🂡'<=c<='🂮'"
 			val dut = Extractor.idExtractors.codePointWhere(c => 127137 <= c.intValue && c.intValue <= 127150)
 			val passCharCases = List[Int](127137, 127144, 127150)
-			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, CodePoint.MaxValue)
+			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, CodePoint.MaxValue.intValue)
 
-			assertParseFailureOnEmptyInput(dut, CodePoint(0x31), expectingLine)
-			assertParseFailureOnExpr(dut, CodePoint(0x31), expectingLine)
+			assertParseFailureOnEmptyInput(dut, CodePoint.unsafe_apply(0x31), expectingLine)
+			assertParseFailureOnExpr(dut, CodePoint.unsafe_apply(0x31), expectingLine)
 			for (inputChar <- passCharCases) {
 				val scrutinee = 0
 				val expecting = Some(Nil)
 				test (s"returns ${expecting} when input is '${escape(inputChar)}' and scrutinee is '${escape(scrutinee)}'") {
-					assertParseSuccess(dut, (s"${CodePoint(inputChar)}" :: Nil, CodePoint(scrutinee)), expecting)
+					assertParseSuccess(dut, (s"${CodePoint.unsafe_apply(inputChar)}" :: Nil, CodePoint.unsafe_apply(scrutinee)), expecting)
 				}
 			}
 			for (inputChar <- failCharCases) {
 				test (s"throws when the next input is the character '${escape(inputChar)}'") {
-					assertParseFailure(dut, (s"${CodePoint(inputChar)}" :: Nil, CodePoint(0)), List(expectingLine, s"\t${CodePoint(inputChar)}", "\t^"))
+					assertParseFailure(dut, (s"${CodePoint.unsafe_apply(inputChar)}" :: Nil, CodePoint.unsafe_apply(0)), List(expectingLine, s"\t${CodePoint.unsafe_apply(inputChar)}", "\t^"))
 				}
 			}
 		}

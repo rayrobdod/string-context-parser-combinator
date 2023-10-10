@@ -27,7 +27,7 @@ abstract class BaseInterpolatorSuite extends munit.FunSuite {
 		case x if
 			x >= 0x10000 ||
 			false => f"\\U{${x.toInt}%X}"
-		case _ => CodePoint(in).toString
+		case _ => CodePoint.unsafe_apply(in).toString
 	}
 
 	def assertParseSuccess[A](
@@ -143,37 +143,37 @@ package InterpolatorTest {
 		final class ConstTrue extends BaseInterpolatorSuite {
 			val expectingLine = "Expected '\\u0000'<=c<='\uDBFF\uDFFF'"
 			val dut = Interpolator.idInterpolators.codePointWhere(_ => true)
-			val characterCases = List[Int](0, 'a', 0xFFFF, CodePoint.MaxValue)
+			val characterCases = List[Int](0, 'a', 0xFFFF, CodePoint.MaxValue.intValue)
 
 			assertParseFailureOnEmptyInput(dut, expectingLine)
 			assertParseFailureOnExpr(dut, expectingLine)
 			for (inputChar <- characterCases) {
-				val expecting = CodePoint(inputChar)
+				val expecting = CodePoint.unsafe_apply(inputChar)
 				test (s"returns ${expecting} when input is '${escape(inputChar)}'") {
-					assertParseSuccess(dut, (s"${CodePoint(inputChar)}" :: Nil, Nil), expecting)
+					assertParseSuccess(dut, (s"${CodePoint.unsafe_apply(inputChar)}" :: Nil, Nil), expecting)
 				}
 			}
 			test ("matches the entire surrogate pair") {
-				assertParseSuccess(dut, ("\uD83D\uDE00" :: Nil, Nil), CodePoint(128512))
+				assertParseSuccess(dut, ("\uD83D\uDE00" :: Nil, Nil), CodePoint.unsafe_apply(128512))
 			}
 		}
 		final class IsPlayingCard extends BaseInterpolatorSuite {
 			val expectingLine = "Expected '🂡'<=c<='🂮'"
 			val dut = Interpolator.idInterpolators.codePointWhere(c => 127137 <= c.intValue && c.intValue <= 127150)
 			val passCharCases = List[Int](127137, 127144, 127150)
-			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, CodePoint.MaxValue)
+			val failCharCases = List[Int](0, 127136, 127151, 0xFFFF, CodePoint.MaxValue.intValue)
 
 			assertParseFailureOnEmptyInput(dut, expectingLine)
 			assertParseFailureOnExpr(dut, expectingLine)
 			for (inputChar <- passCharCases) {
-				val expecting = CodePoint(inputChar)
+				val expecting = CodePoint.unsafe_apply(inputChar)
 				test (s"returns ${expecting} when input is '${escape(inputChar)}'") {
-					assertParseSuccess(dut, (s"${CodePoint(inputChar)}" :: Nil, Nil), expecting)
+					assertParseSuccess(dut, (s"${CodePoint.unsafe_apply(inputChar)}" :: Nil, Nil), expecting)
 				}
 			}
 			for (inputChar <- failCharCases) {
 				test (s"throws when the next input is the character '${escape(inputChar)}'") {
-					assertParseFailure(dut, (s"${CodePoint(inputChar)}" :: Nil, Nil), List(expectingLine, s"\t${CodePoint(inputChar)}", "\t^"))
+					assertParseFailure(dut, (s"${CodePoint.unsafe_apply(inputChar)}" :: Nil, Nil), List(expectingLine, s"\t${CodePoint.unsafe_apply(inputChar)}", "\t^"))
 				}
 			}
 		}
