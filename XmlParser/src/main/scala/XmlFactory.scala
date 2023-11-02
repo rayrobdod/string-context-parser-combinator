@@ -67,6 +67,9 @@ object XmlFactory:
 					case OneAttribute(Some(ns), localName, value) => scala.xml.PrefixedAttribute(ns.prefix, localName, value, rest)
 				}
 
+		def interpolation(arg:Any):arg.type =
+			arg
+
 		def literal(arg:scala.xml.Node*):scala.xml.NodeSeq =
 			if 1 == arg.length then
 				arg(0)

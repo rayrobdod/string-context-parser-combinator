@@ -15,10 +15,14 @@ private[xml] object XmlParser {
 	/** Represents a name with a specified short namespace, but an unknown namespace */
 	final case class BoundName(prefix:Option[String], local:String)
 
-	final case class NamespaceBindingOne(prefix:Option[String], namespace:String)
+	sealed trait ThingInAttributePosition
+
+	final case class NamespaceBindingOne(prefix:Option[String], namespace:String) extends ThingInAttributePosition
 	type NamespaceBinding = Map[Option[String], String]
 
-	final case class Attribute(key:BoundName, value:List[Expr[Any]])
+	final case class Attribute(key:BoundName, value:List[Expr[Any]]) extends ThingInAttributePosition
+
+	final case class InterpolatedAttribute(data: Expr[Any]) extends ThingInAttributePosition
 
 
 	val xmlNameFirstChar:BitSet = {
@@ -106,6 +110,20 @@ private[xml] object XmlParser {
 		)
 	}
 
+	private def interpolation(factory: Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+		import quotes.reflect._
+		ofType[Any]
+			.map({(value) =>
+				Apply(
+					Select.unique(
+						factory.asTerm,
+						"interpolation",
+					),
+					List(value.asTerm)
+				)
+			})
+	}
+
 	private def attribute(factory:Expr[XmlFactory])(using Quotes):Interpolator[Attribute] = {
 		def valueText(excluding:Char) = (charRef orElse xmlAllowedChar("<&" + excluding)).repeat(1)
 			.map({data =>
@@ -118,6 +136,7 @@ private[xml] object XmlParser {
 
 		(
 			boundName andThen isString("=") andThen (
+					interpolation(factory).map(x => List.apply(x)) orElse
 					(isString("\"\"") orElse isString("\'\'")).map(_ => Nil) orElse
 					(isString("\"") andThen value('\"') andThen isString("\"")) orElse
 					(isString("\'") andThen value('\'') andThen isString("\'"))
@@ -209,6 +228,7 @@ private[xml] object XmlParser {
 
 	private def fragment(factory:Expr[XmlFactory], nsb: NamespaceBinding)(using Quotes):Interpolator[List[quotes.reflect.Term]] = {
 		(
+			interpolation(factory) orElse
 			entity(factory) orElse
 			text(factory) orElse
 			cdata(factory) orElse
@@ -219,40 +239,43 @@ private[xml] object XmlParser {
 	}
 
 	private def elem(factory:Expr[XmlFactory], nsb:NamespaceBinding)(using Quotes):Interpolator[quotes.reflect.Term] = {
+		import quotes.reflect._
 		(
 			isString("<") andThen
 				boundName andThen
 				(whitespace.repeat(1) andThen (
-					namespaceBinding.map(Left.apply _) orElse
-					attribute(factory).map(Right.apply _)
+					interpolation(factory).map({x => InterpolatedAttribute(x.asExpr)}) orElse
+					namespaceBinding orElse
+					attribute(factory)
 				)).attempt.repeat() andThen
 				whitespace.repeat()
 			)
 			.map({parts =>
-				val (name, nsAndAttrs:List[Either[NamespaceBindingOne, Attribute]]) = parts
-				val nsb2:NamespaceBinding = nsb ++ nsAndAttrs.collect({case Left(x) => (x._1, x._2)})
-				val attrs = nsAndAttrs.collect({case Right(x) =>
-					import quotes.reflect._
-					val Attribute(BoundName(ns, localName), value2) = x
-					val value = value2.map(_.asTerm)
+				val (name, nsAndAttrs:List[ThingInAttributePosition]) = parts
+				val nsb2:NamespaceBinding = nsb ++ nsAndAttrs.collect({case NamespaceBindingOne(prefix, ns) => (prefix, ns)})
+				val attrs = nsAndAttrs.collect({
+					case Attribute(BoundName(ns, localName), value2) =>
+						val value = value2.map(_.asTerm)
 
-					val _1 = factory.asTerm
-					val _2 = ns match {
-						case None => _1
-						case Some(prefix) => nsb2.get(Some(prefix)) match {
-							case None =>
-								_1
-									.selectFieldMember("prefixes")
-									.selectFieldMemberMaybeDynamic(prefix)
-							case Some(uri) =>
-								_1
-									.selectFieldMember("uris")
-									.selectAndApplyToArgsMaybeDynamicMaybeVarargs(uri)(List(Expr(prefix).asTerm))
+						val _1 = factory.asTerm
+						val _2 = ns match {
+							case None => _1
+							case Some(prefix) => nsb2.get(Some(prefix)) match {
+								case None =>
+									_1
+										.selectFieldMember("prefixes")
+										.selectFieldMemberMaybeDynamic(prefix)
+								case Some(uri) =>
+									_1
+										.selectFieldMember("uris")
+										.selectAndApplyToArgsMaybeDynamicMaybeVarargs(uri)(List(Expr(prefix).asTerm))
+							}
 						}
-					}
-					_2
+						_2
 								.selectFieldMember("attributes")
 								.selectAndApplyToArgsMaybeDynamicMaybeVarargs(localName)(value)
+					case InterpolatedAttribute(x) =>
+						x.asTerm
 				})
 
 				(name, attrs, nsb2)
@@ -272,7 +295,6 @@ private[xml] object XmlParser {
 			})
 			.map({parts =>
 				val (elemName, attributes, nsb2, children) = parts
-				import quotes.reflect._
 				val _1 = factory.asTerm
 				val _2 = elemName.prefix match {
 					case None => nsb2.get(None) match {

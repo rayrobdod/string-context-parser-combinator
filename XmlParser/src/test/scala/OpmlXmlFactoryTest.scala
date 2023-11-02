@@ -48,6 +48,7 @@ object OpmlXmlFactory extends XmlFactory:
 	case class TypeAttribute(value:String) extends OutlineAttribute
 
 	def literal(arg:Any):arg.type = arg
+	def interpolation(arg:Any):arg.type = arg
 
 	object elements:
 		def opml(version:VersionValue, head:HeadTag, body:BodyTag): OpmlTag = OpmlTag(version, head, body)
@@ -127,6 +128,29 @@ final class OpmlXmlFactoryTest extends munit.FunSuite {
 			BodyTag(Seq.empty),
 		)
 		val actual = xml"<opml version='1.0'><head /><body /></opml>"
+		assertEquals(actual, expected)
+	}
+	test ("interpolated opml tag") {
+		val expected = OpmlTag(
+			VersionValue.`1.0`,
+			HeadTag(Seq.empty),
+			BodyTag(Seq.empty),
+		)
+		val actual = xml"<opml ${VersionValue.`1.0`}>${HeadTag(Seq.empty)}${BodyTag(Seq.empty)}</opml>"
+		assertEquals(actual, expected)
+	}
+	test ("interpolated opml tag 2") {
+		/*
+		 * Interpolating a tag in the attribute position maybe shouldn't work,
+		 * but I don't see a way to make it not work
+		 * without making the `elements` methods have two parameter lists
+		 */
+		val expected = OpmlTag(
+			VersionValue.`1.0`,
+			HeadTag(Seq.empty),
+			BodyTag(Seq.empty),
+		)
+		val actual = xml"<opml ${VersionValue.`1.0`} ${HeadTag(Seq.empty)} ${BodyTag(Seq.empty)} />"
 		assertEquals(actual, expected)
 	}
 	test ("empty outline tag fails") {

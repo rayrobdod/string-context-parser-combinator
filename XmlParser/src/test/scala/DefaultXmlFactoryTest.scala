@@ -93,6 +93,16 @@ final class DefaultXmlFactoryTest extends munit.FunSuite:
 				|""".stripMargin
 		)
 	}
+	test ("interpolated innerContent") {
+		val arg = scala.xml.Elem("ns1", "inner", scala.xml.Null, scala.xml.TopScope, true)
+		val expected = xml.literal(
+			xml.elements.`outer`(
+				xml.interpolation(arg)
+			)
+		)
+		val actual = xml"<outer>${arg}</outer>"
+		assertEquals(actual, expected)
+	}
 	test ("charRef innerContent invalid codepoint 2") {
 		assertNoDiff(
 			compileErrors("""xml"<outer>&#1;</outer>""""),
@@ -122,15 +132,28 @@ final class DefaultXmlFactoryTest extends munit.FunSuite:
 		val actual = xml"<with-attr key='value' />"
 		assertEquals(actual, expected)
 	}
-	test ("attribute") {
+	test ("interpolated attribute value") {
+		val arg = scala.xml.Text("value")
 		val expected = xml.literal(
 			xml.elements.`with-attr`(
 				xml.attributes.`key`(
-					xml.values.`value`
+					arg
 				)
 			)
 		)
-		val actual = xml"<with-attr key='value' />"
+		val actual = xml"<with-attr key=${arg} />"
+		assertEquals(actual, expected)
+	}
+	test ("multiple attributes retains order") {
+		val arg = XmlFactory.default.OneAttribute(None, "interpolated", Seq(scala.xml.Text("2")))
+		val expected = xml.literal(
+			xml.elements.`with-attrs`(
+				xml.attributes.first(xml.values.`1`),
+				xml.interpolation(arg),
+				xml.attributes.last(xml.values.`3`),
+			)
+		)
+		val actual = xml"<with-attrs first='1' $arg last='3' />"
 		assertEquals(actual, expected)
 	}
 	test ("prefixed attribute") {

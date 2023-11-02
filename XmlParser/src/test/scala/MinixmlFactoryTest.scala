@@ -14,6 +14,7 @@ object MinixmlFactory extends XmlFactory:
 	import minixml.*
 
 	inline def literal(arg:Any):arg.type = arg
+	inline def interpolation(arg:Any):arg.type = arg
 
 	object elements extends Dynamic:
 		def applyDynamic(name: String)(params: (Attribute | Node)*):Elem =
@@ -124,6 +125,12 @@ final class MiniXmlFactoryTest extends munit.FunSuite {
 				|""".stripMargin
 		)
 	}
+	test ("interpolated innerContent") {
+		val arg = Elem(QName("", "interpolated-inner"), Map.empty, Seq())
+		val expected = Elem(QName("", "outer"), Map.empty, Seq(arg))
+		val actual = xml"<outer>${arg}</outer>"
+		assertEquals(actual, expected)
+	}
 	test ("nested elements") {
 		val expected =
 			Elem(QName("", "outer"), Map.empty, Seq(
@@ -138,6 +145,31 @@ final class MiniXmlFactoryTest extends munit.FunSuite {
 				QName("", "key") -> "value",
 			), Seq.empty)
 		val actual = xml"<with-attr key='value' />"
+		assertEquals(actual, expected)
+	}
+	test ("interpolated attribute") {
+		val arg = Attribute(QName("tag:rayrobdod.name,2023-10:example", "attr"), "data")
+		val expected =
+			Elem(QName("", "with-attr"), Map(arg.toTuple), Seq.empty)
+		val actual = xml"<with-attr $arg />"
+		assertEquals(actual, expected)
+	}
+	test ("interpolated attribute value") {
+		val arg = Text("interpolated value")
+		val expected =
+			Elem(QName("", "with-attr"), Map(QName("", "key") -> "interpolated value"), Seq.empty)
+		val actual = xml"<with-attr key=$arg />"
+		assertEquals(actual, expected)
+	}
+	test ("multiple attributes") {
+		val arg = Attribute(QName("", "interpolated"), "2")
+		val expected =
+			Elem(QName("", "with-attrs"), Map(
+				QName("", "first") -> "1",
+				QName("", "interpolated") -> "2",
+				QName("", "last") -> "3",
+			), Seq.empty)
+		val actual = xml"<with-attrs first='1' $arg last='3' />"
 		assertEquals(actual, expected)
 	}
 	test ("prefixed attribute") {
