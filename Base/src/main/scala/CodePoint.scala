@@ -48,6 +48,7 @@ object CodePoint {
 	val MaxValue:CodePoint = new CodePoint(Character.MAX_CODE_POINT)
 	val MinValue:CodePoint = new CodePoint(Character.MIN_CODE_POINT)
 
+	def apply(cp:Char):CodePoint = new CodePoint(cp.toInt)
 	def apply(cp:Int):Option[CodePoint] = if (Character.isValidCodePoint(cp)) Option(new CodePoint(cp)) else None
 
 	def unsafe_apply(cp:Int):CodePoint = new CodePoint(cp)

@@ -161,5 +161,22 @@ lazy val uri = (projectMatrix in file("UriParser"))
 		scala3Ver,
 	))
 
+lazy val xml = (projectMatrix in file("XmlParser"))
+	.dependsOn(base)
+	.settings(sharedSettings)
+	.settings(
+		name := "xml",
+		publish / skip := true,
+		libraryDependencies ++= Seq(
+			"org.scala-lang.modules" %%% "scala-xml" % "2.2.0",
+		),
+		console / initialCommands := """
+			import name.rayrobdod.stringContextParserCombinatorExample.xml._
+		""",
+	)
+	.jvmPlatform(scalaVersions = Seq(
+		scala3Ver,
+	))
+
 autoScalaLibrary := false
 publish / skip := true
