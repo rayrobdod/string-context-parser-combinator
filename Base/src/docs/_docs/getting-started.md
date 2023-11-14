@@ -72,7 +72,7 @@ s2"" // ""
 Next, lets handle processed string arguments.
 We will set aside `anyChars` for now.
 Of the leaf parsers that handle args, [[ofType|name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolators.ofType]] is the most straightforward.
-`ofType` takes a type argument and type evidence (in this case a Class) and will match and capture any argument that is a subtype of that class.
+`ofType` takes a type argument and type evidence and will match and capture any argument that is a subtype of that class.
 So, an `ofType[Int]` would match any argument that is an `Int` or a subclass of `Int`.
 Since we want to match any argument, we will use `ofType[Any]`.
 The result of running this parser is the same as its type parameter, in this case `Any`.
@@ -84,7 +84,7 @@ import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators
 //}
 extension (sc:StringContext)
   def s2(args:Any*):Any =
-    val anyArg = ofType[Any](classOf[Any])
+    val anyArg = ofType[Any]
     anyArg.interpolate(sc, args)
 
 s2"${2 + 2}" // 4
@@ -102,7 +102,7 @@ import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators
 //}
 extension (sc:StringContext)
   def s2(args:Any*):String =
-    val anyArg = ofType[Any](classOf[Any])
+    val anyArg = ofType[Any]
         .map(_.toString)
     anyArg.interpolate(sc, args)
 
@@ -128,7 +128,7 @@ extension (sc:StringContext)
   def s2(args:Any*):String =
     val anyChars = charWhere(_ => true)
         .repeat()
-    val anyArg = ofType[Any](classOf[Any])
+    val anyArg = ofType[Any]
         .map(_.toString)
     val segment = anyChars orElse anyArg
     segment.interpolate(sc, args)
@@ -155,7 +155,7 @@ extension (sc:StringContext)
   def s2(args:Any*):String =
     val anyChars = charWhere(_ => true)
         .repeat(1)
-    val anyArg = ofType[Any](classOf[Any])
+    val anyArg = ofType[Any]
         .map(_.toString)
     val segment = anyChars orElse anyArg
     segment.interpolate(sc, args)
@@ -179,7 +179,7 @@ extension (sc:StringContext)
   def s2(args:Any*):List[String] =
     val anyChars = charWhere(_ => true)
         .repeat(1)
-    val anyArg = ofType[Any](classOf[Any])
+    val anyArg = ofType[Any]
         .map(_.toString)
     val segment = anyChars orElse anyArg
     val segments = segment
@@ -201,7 +201,7 @@ extension (sc:StringContext)
   def s2(args:Any*):String =
     val anyChars = charWhere(_ => true)
         .repeat(1)
-    val anyArg = ofType[Any](classOf[Any])
+    val anyArg = ofType[Any]
         .map(_.toString)
     val segment = anyChars orElse anyArg
     val segments = segment
@@ -255,13 +255,12 @@ This can be done with the map operator, such as `.map(Expr(_))`, or equivalently
 +    .mapToExpr
 ```
 
-`ofType` changes from requiring a `java.lang.Class` and returning an immediate value,
+`ofType` changes from requiring an implicit `scala.reflect.ClassTag` and returning an unwrapped value,
 to requiring an implicit `scala.quoted.Type` and returning the `Expr`-wrapped value.
 Since the `ofType` result is in an `Expr`, the mapping applied to this value must be changed from a `Any => String` to a `Expr[Any] => Expr[String]`, essentially wrapping the mapping in a Quote.
 
 ```diff
--val anyArg = ofType[Any](classOf[Any])
-+val anyArg = ofType[Any]
+ val anyArg = ofType[Any]
 -    .map(arg => arg.toString)
 +    .map(arg => '{$arg.toString})
 ```

@@ -18,8 +18,8 @@ package typeclass
  *   def right(id: UUID): URI = new URI("urn", "uuid:" + id.toString, null)
  * }
  *
- * val uuidParser:Interpolator[UUID] = ofType[UUID](using classOf[UUID])
- * val fileParser:Interpolator[File] = ofType[File](using classOf[File])
+ * val uuidParser:Interpolator[UUID] = ofType[UUID]
+ * val fileParser:Interpolator[File] = ofType[File]
  * val p:Interpolator[URI] = (fileParser:Interpolator[File]) orElse (uuidParser:Interpolator[UUID]) // using Eithered[File, UUID, URI]
  *
  * p.interpolate(StringContext("", ""), new File("/tmp") :: Nil) // `file:///tmp`: URI

@@ -2,6 +2,7 @@ package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
 import scala.reflect.macros.blackbox.Context
+import scala.reflect.ClassTag
 
 /**
  * Associates an Expr type with the implicit types required to lift a value into an Expr.
@@ -21,9 +22,9 @@ object ToExprMapping {
 		}
 	}
 
-	def forId:ToExprMapping[Id, IdToExpr, Class] = {
-		new ToExprMapping[Id, IdToExpr, Class] {
-			def apply[A](value:A, fn: IdToExpr[A], tpe: Class[A]):Id[A] = {
+	def forId:ToExprMapping[Id, IdToExpr, ClassTag] = {
+		new ToExprMapping[Id, IdToExpr, ClassTag] {
+			def apply[A](value:A, fn: IdToExpr[A], tpe: ClassTag[A]):Id[A] = {
 				value
 			}
 		}

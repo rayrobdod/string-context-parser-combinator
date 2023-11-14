@@ -2,6 +2,7 @@ package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
+import scala.reflect.ClassTag
 import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
 
 /**
@@ -376,12 +377,12 @@ object Interpolator
 	 * Returns an Interpolators that can parse raw values
 	 * @group InterpolatorGroup
 	 */
-	val idInterpolators: Interpolators[Id, IdToExpr, Class] = {
-		new Interpolators[Id, IdToExpr, Class] with ExprIndependentInterpolators[Any] {
+	val idInterpolators: Interpolators[Id, IdToExpr, ClassTag] = {
+		new Interpolators[Id, IdToExpr, ClassTag] with ExprIndependentInterpolators[Any] {
 			override def `lazy`[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
 				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
-			override def ofType[A](implicit tpe: Class[A]): this.Interpolator[A] =
+			override def ofType[A](implicit tpe: ClassTag[A]): this.Interpolator[A] =
 				new this.Interpolator(new internal.OfClass(tpe))
 		}
 	}

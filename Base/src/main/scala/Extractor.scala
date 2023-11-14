@@ -3,6 +3,7 @@ package name.rayrobdod.stringContextParserCombinator
 import scala.annotation.nowarn
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
+import scala.reflect.ClassTag
 import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
 
 /**
@@ -42,7 +43,7 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		scrutinee:A)(
 		implicit
 		@nowarn("msg=never used") ev:Id[Any] =:= Expr[Any],
-		@nowarn("msg=never used") ev2:Class[Any] =:= Type[Any]
+		@nowarn("msg=never used") ev2:ClassTag[Any] =:= Type[Any]
 	):Option[Seq[Any]] = {
 		implicit val given_Int_Position:Position[Int] = PositionGivens.given_IdPosition_Position
 
@@ -54,11 +55,11 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		val argWithPoss = strings.init.map(x => (((), x._2 + x._1.size)))
 
 		val input = new Input[Unit, Int](strings, argWithPoss)
-		implicit val exprs:UnapplyExprs[Id, Class] = UnapplyExprs.forId
+		implicit val exprs:UnapplyExprs[Id, ClassTag] = UnapplyExprs.forId
 
-		impl.asInstanceOf[internal.Extractor[Id, Class, A]].extractor(input)(implicitly, exprs) match {
+		impl.asInstanceOf[internal.Extractor[Id, ClassTag, A]].extractor(input)(implicitly, exprs) match {
 			case s:Success[_, _, _] => {
-				val expr:UnapplyExpr[Id, Class, A] = s.choicesHead.value
+				val expr:UnapplyExpr[Id, ClassTag, A] = s.choicesHead.value
 				if (expr.condition(scrutinee)) {
 					Some(expr.parts.map(_.value(scrutinee)))
 				} else {
@@ -338,12 +339,12 @@ object Extractor
 	 * Returns an Extractors that can parse raw values
 	 * @group ExtractorGroup
 	 */
-	def idExtractors: Extractors[Id, Class] = {
-		new Extractors[Id, Class] with ExprIndependentExtractors[Id, Class] {
+	def idExtractors: Extractors[Id, ClassTag] = {
+		new Extractors[Id, ClassTag] with ExprIndependentExtractors[Id, ClassTag] {
 			override def `lazy`[A](fn:Function0[this.Extractor[A]]):this.Extractor[A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def ofType[A](implicit tpe: Class[A]): this.Extractor[A] =
+			override def ofType[A](implicit tpe: ClassTag[A]): this.Extractor[A] =
 				new this.Extractor(new internal.OfClass(tpe))
 		}
 	}

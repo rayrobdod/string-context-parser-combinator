@@ -18,8 +18,8 @@ package typeclass
  *   def aggregate(date:LocalDate, time:LocalTime):LocalDateTime = date.atTime(time)
  * }
  *
- * val dateParser:Interpolator[LocalDate] = ofType(using classOf[LocalDate])
- * val timeParser:Interpolator[LocalTime] = ofType(using classOf[LocalTime])
+ * val dateParser:Interpolator[LocalDate] = ofType[LocalDate]
+ * val timeParser:Interpolator[LocalTime] = ofType[LocalTime]
  * val p: Interpolator[LocalDateTime] = dateParser andThen timeParser
  *
  * p.interpolate(StringContext("", "", ""), LocalDate.of(2001, 02, 03) :: LocalTime.of(04, 05, 06) :: Nil) // `2001-02-03T04:05:06`: LocalDateTime

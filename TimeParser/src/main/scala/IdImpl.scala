@@ -1,6 +1,7 @@
 package name.rayrobdod.stringContextParserCombinatorExample.datetime
 
 import java.time._
+import scala.reflect.ClassTag
 import name.rayrobdod.stringContextParserCombinator._
 
 object IdImpl {
@@ -23,28 +24,12 @@ object IdImpl {
 		def separate(value:LocalDateTime):(LocalDate, LocalTime) = ((value.toLocalDate, value.toLocalTime))
 	}
 
-	private val timeParsers = TimeParsers[Id, IdToExpr, Class](leafParsers)(
+	private[this] implicit val toExprMappingForId: typeclass.ToExprMapping[Id, IdToExpr, ClassTag] =
+		typeclass.ToExprMapping.forId
+
+	private val timeParsers = TimeParsers[Id, IdToExpr, ClassTag](leafParsers)(
 		(ym) => intTwoDigits(1, ym.lengthOfMonth).map(day => ym.atDay(day)),
 		java.time.LocalTime.of _
-	)(
-		typeclass.ToExprMapping.forId,
-		classOf[Int],
-		classOf[Year],
-		classOf[Month],
-		classOf[YearMonth],
-		classOf[LocalDate],
-		classOf[LocalTime],
-		implicitly[=:=[Int, Int]],
-		implicitly[=:=[Year, Year]],
-		implicitly[=:=[Month, Month]],
-		implicitly[typeclass.BiEithered[Id, Id[Year], Id[Year], Id[Year]]],
-		implicitly[typeclass.BiEithered[Id, Id[Month], Id[Month], Id[Month]]],
-		implicitly[typeclass.BiEithered[Id, Id[YearMonth], Id[YearMonth], Id[YearMonth]]],
-		implicitly[typeclass.BiEithered[Id, Id[LocalDate], Id[LocalDate], Id[LocalDate]]],
-		implicitly[typeclass.BiEithered[Id, Id[LocalTime], Id[LocalTime], Id[LocalTime]]],
-		sequenced_YearMonth,
-		sequenced_LocalDate,
-		sequenced_LocalDateTime
 	)
 
 	def interpolate_localDate(sc:StringContext, args:Any*):LocalDate = {

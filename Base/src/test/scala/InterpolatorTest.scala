@@ -196,7 +196,7 @@ package InterpolatorTest {
 		object Scrutinee2 extends Scrutinee
 
 		val expectingLine = s"Expected OfType(${classOf[Scrutinee].getName})"
-		val dut = Interpolator.idInterpolators.ofType[Scrutinee](classOf[Scrutinee])
+		val dut = Interpolator.idInterpolators.ofType[Scrutinee]
 
 		assertParseFailureOnEmptyInput(dut, expectingLine)
 		test ("throws when the next value is a character") {
@@ -224,7 +224,7 @@ package InterpolatorTest {
 		final case class Bar(x:Int)
 
 		final class BarToFoo extends BaseInterpolatorSuite {
-			val dut = Interpolator.idInterpolators.ofType(classOf[Bar]).map[Foo](bar => new Foo(bar.x))
+			val dut = Interpolator.idInterpolators.ofType[Bar].map[Foo](bar => new Foo(bar.x))
 
 			test ("Returns the mapped Foo when the next input is an a Expr Bar") {
 				assertParseSuccess(dut, ("" :: "" :: Nil, Bar(42) :: Nil), Foo(42))
@@ -235,7 +235,7 @@ package InterpolatorTest {
 		final case class Bar(x:Int)
 
 		final class VoidedBar extends BaseInterpolatorSuite {
-			val dut = Interpolator.idInterpolators.ofType(classOf[Bar]).void
+			val dut = Interpolator.idInterpolators.ofType[Bar].void
 
 			test ("When base matches an input, then dut result is unit") {
 				assertParseSuccess(dut, ("" :: "" :: Nil, Bar(42) :: Nil), ())
@@ -246,7 +246,7 @@ package InterpolatorTest {
 		final case class Foo(x:Int)
 
 		final class IsEven extends BaseInterpolatorSuite {
-			val dut = Interpolator.idInterpolators.ofType(classOf[Foo]).filter(_.x % 2 == 0, "is even")
+			val dut = Interpolator.idInterpolators.ofType[Foo].filter(_.x % 2 == 0, "is even")
 			val className = "name.rayrobdod.stringContextParserCombinator.InterpolatorTest.filter.Foo"
 
 			test ("if base parser fails, parser passes through the failure") {
@@ -504,7 +504,7 @@ package InterpolatorTest {
 	}
 	package optionally {
 		final class GreedyTest extends BaseInterpolatorSuite {
-			val one = Interpolator.idInterpolators.ofType[String](classOf[String])
+			val one = Interpolator.idInterpolators.ofType[String]
 			val dut:Interpolator[Any, Option[String]] = one.optionally(strategy = Greedy)
 
 			test ("when input is empty, then returns None") {
@@ -518,7 +518,7 @@ package InterpolatorTest {
 			}
 		}
 		final class PossessiveTest extends BaseInterpolatorSuite {
-			val one = Interpolator.idInterpolators.ofType[String](classOf[String])
+			val one = Interpolator.idInterpolators.ofType[String]
 			val dut:Interpolator[Any, Option[String]] = one.optionally(strategy = Possessive)
 
 			test ("when input is empty, then returns None") {
@@ -532,7 +532,7 @@ package InterpolatorTest {
 			}
 		}
 		final class LazyTest extends BaseInterpolatorSuite {
-			val one = Interpolator.idInterpolators.ofType[String](classOf[String])
+			val one = Interpolator.idInterpolators.ofType[String]
 			val dut:Interpolator[Any, Option[String]] = one.optionally(strategy = Lazy)
 
 			test ("when input is empty, then returns None") {

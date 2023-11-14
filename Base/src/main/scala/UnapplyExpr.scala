@@ -1,5 +1,7 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import scala.reflect.ClassTag
+
 /**
  * The data needed to create am Unapply
  */
@@ -214,16 +216,16 @@ object UnapplyExprs extends VersionSpecificUnapplyExprs {
 		}
 	}
 
-	def forId: UnapplyExprs[Id, Class] = {
+	def forId: UnapplyExprs[Id, ClassTag] = {
 		val andBooleans = {(lhs:Boolean, rhs:() => Boolean) => lhs && rhs()}
 
-		new UnapplyExprs.Common[Id, Class](true, false, andBooleans) {
-			override def ofType[Z](implicit typ:Class[Z]):UnapplyExpr[Id, Class, Id[Z]] = {
-				UnapplyExpr[Id, Class, Id[Z]]({(_:Id[Z]) => true}, UnapplyExpr.Part(typ, {(value:Id[Z]) => value}) :: Nil)
+		new UnapplyExprs.Common[Id, ClassTag](true, false, andBooleans) {
+			override def ofType[Z](implicit typ:ClassTag[Z]):UnapplyExpr[Id, ClassTag, Id[Z]] = {
+				UnapplyExpr[Id, ClassTag, Id[Z]]({(_:Id[Z]) => true}, UnapplyExpr.Part(typ, {(value:Id[Z]) => value}) :: Nil)
 			}
 
-			override def isEqualTo[A](other:Id[A])(implicit typ:Class[A]):UnapplyExpr[Id, Class, Id[A]] = {
-				UnapplyExpr[Id, Class, Id[A]]({(value:Id[A]) => value == other}, Nil)
+			override def isEqualTo[A](other:Id[A])(implicit typ:ClassTag[A]):UnapplyExpr[Id, ClassTag, Id[A]] = {
+				UnapplyExpr[Id, ClassTag, Id[A]]({(value:Id[A]) => value == other}, Nil)
 			}
 		}
 	}

@@ -2,6 +2,7 @@ package name.rayrobdod.stringContextParserCombinator
 
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
+import scala.reflect.ClassTag
 import name.rayrobdod.stringContextParserCombinator.{Extractor => SCPCExtractor}
 import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpolator}
 import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
@@ -62,7 +63,7 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 	 * Extract subexpressions from the given value according to the given StringContext
 	 * @group Parse
 	 */
-	def extract(sc:StringContext, value:A)(implicit ev:Id[Any] =:= Expr[Any], ev2:Class[Any] =:= Type[Any]):Option[Seq[Any]] =
+	def extract(sc:StringContext, value:A)(implicit ev:Id[Any] =:= Expr[Any], ev2:ClassTag[Any] =:= Type[Any]):Option[Seq[Any]] =
 		this.toExtractor.extract(sc, value)
 
 	/**
@@ -358,15 +359,15 @@ object Parser
 	 * Returns an Parsers that can parse raw values
 	 * @group ParserGroup
 	 */
-	def idParsers: Parsers[Id, IdToExpr, Class] = {
-		new Parsers[Id, IdToExpr, Class] with ExprIndependentParsers[Id, Class] {
+	def idParsers: Parsers[Id, IdToExpr, ClassTag] = {
+		new Parsers[Id, IdToExpr, ClassTag] with ExprIndependentParsers[Id, ClassTag] {
 			override def `lazy`[A](fn:Function0[this.Parser[A]]):this.Parser[A] =
 				new this.Parser(internal.DelayedConstruction.parser(() => fn().impl))
 
 			override def paired[A](interpolator:this.Interpolator[A], extractor:this.Extractor[A]):this.Parser[A] =
 				new this.Parser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def ofType[A](implicit tpe: Class[A]): this.Parser[A] =
+			override def ofType[A](implicit tpe: ClassTag[A]): this.Parser[A] =
 				new this.Parser(new internal.OfClass(tpe))
 		}
 	}

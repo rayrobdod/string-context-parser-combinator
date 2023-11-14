@@ -19,7 +19,7 @@ extension (sc: StringContext)
     def eval(head:Int, tail:Seq[(Char, Int)]):Int = tail.foldLeft(head)(eval1 _)
     //
     def numberLiteral:Interpolator[Int] = charIn('0' to '9').repeat(1).map({x => x.toInt})
-    def numberProvided:Interpolator[Int] = ofType(using classOf[Integer]).map({x => x:Int})
+    def numberProvided:Interpolator[Int] = ofType[Integer].map({x => x:Int})
     def parens:Interpolator[Int] = `lazy`(() => isString("(") andThen addSub andThen isString(")"))
     def factor:Interpolator[Int] = numberLiteral orElse numberProvided orElse parens
     def divMul:Interpolator[Int] = (factor andThen (charIn("*/") andThen factor).repeat()).map(eval _)
