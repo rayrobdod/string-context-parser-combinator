@@ -100,7 +100,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		name := "json",
 		publish / skip := true,
 		libraryDependencies ++= Seq(
-			"org.json4s" %%% "json4s-ast" % "4.0.6",
+			"org.json4s" %%% "json4s-ast" % "4.0.7",
 		),
 		console / initialCommands := """
 			import org.json4s._
