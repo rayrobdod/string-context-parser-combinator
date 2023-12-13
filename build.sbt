@@ -13,6 +13,7 @@ lazy val sharedSettings = Seq(
 
 	organization := "name.rayrobdod",
 	organizationHomepage := Some(url("https://rayrobdod.name/")),
+	homepage := Some(url("https://rayrobdod.name/programming/libraries/scala/string-context-parser-combinator/")),
 	versionScheme := Some("early-semver"),
 	licenses := Seq(License.Apache2),
 	developers := List(
