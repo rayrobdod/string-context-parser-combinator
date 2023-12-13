@@ -9,7 +9,7 @@ package name.rayrobdod.stringContextParserCombinator
  * and the other dimension is the method that uses an instance of the type
  *
  * | method | Covariant ([[Interpolator]]) | Contravariant ([[Extractor]]) | Invariant ([[Parser]]) |
- * | - | --- | --- | --- |
+ * | --- | --- | --- | --- |
  * | `andThen` | [[Sequenced]] | [[ContraSequenced]] | [[BiSequenced]] |
  * | `orElse` | [[Eithered]] | [[ContraEithered]] | [[BiEithered]] |
  * | `repeat` | [[Repeated]] | [[ContraRepeated]] | [[BiRepeated]] |
