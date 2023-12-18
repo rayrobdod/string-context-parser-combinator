@@ -67,10 +67,28 @@ lazy val base = (projectMatrix in file("Base"))
 	.settings(
 		name := "string-context-parser-combinator",
 		description := "A scala library for writing custom string interpolation implementations using parser combinators",
-		apiURL := Some(url("https://rayrobdod.github.io/string-context-parser-combinator/")),
+		apiURL := {
+			val suffix = scalaBinaryVersion.value match {
+				case "2.12" => "_2.12"
+				case "2.13" => "_2.13"
+				case "3" => ""
+			}
+			val v = version.value match {
+				case x if x.endsWith("-SNAPSHOT") => "SNAPSHOT"
+				case v => v
+			}
+			Some(url(s"https://rayrobdod.github.io/string-context-parser-combinator/${v}${suffix}/"))
+		},
 		Compile / packageBin / packageOptions += Package.ManifestAttributes(
 			"Automatic-Module-Name" -> "name.rayrobdod.stringContextParserCombinator"
 		),
+		Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
+			case "2.12" | "2.13" => Seq(
+			)
+			case _ => Seq(
+				"-versions-dictionary-url", "https://rayrobdod.github.io/string-context-parser-combinator/versions.json",
+			)
+		}),
 		libraryDependencies ++= (scalaBinaryVersion.value match {
 			case "2.12" | "2.13" => Seq(
 				"org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -181,3 +199,11 @@ lazy val xml = (projectMatrix in file("XmlParser"))
 
 autoScalaLibrary := false
 publish / skip := true
+
+enablePlugins(StageWebsitePlugin)
+snapshotVariants := Seq(
+	(base.jvm(scala212Ver) / Compile / doc).value -> "_2.12",
+	(base.jvm(scala213Ver) / Compile / doc).value -> "_2.13",
+	(base.jvm(scala3Ver) / Compile / doc).value -> "",
+)
+webStage / mappings += ((base.jvm(scala3Ver) / sourceDirectory).value / "docs" / "versions.json") -> "versions.json",

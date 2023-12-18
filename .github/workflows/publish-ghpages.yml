@@ -27,11 +27,11 @@ jobs:
     - name: Setup Pages
       uses: actions/configure-pages@v3
     - name: Build site
-      run: sbt base3/Compile/doc
+      run: sbt webStage
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
       with:
-        path: './Base/target/jvm-3/api'
+        path: './target/web/stage'
 
   deploy:
     environment:

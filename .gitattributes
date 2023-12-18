@@ -1,4 +1,5 @@
 *.java	text	diff=java
+*.json	text	diff=json
 *.md	text	diff=markdown
 *.properties	text
 *.sbt	text

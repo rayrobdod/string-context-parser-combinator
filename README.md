@@ -12,4 +12,4 @@ The maven coordinates are `"name.rayrobdod" %% "string-context-parser-combinator
 
 The library itself is contained within the `Base/` project. The other projects are sample uses of the library.
 
-[Documentation](https://rayrobdod.github.io/string-context-parser-combinator/)
+[Documentation](https://rayrobdod.github.io/string-context-parser-combinator/SNAPSHOT/)
