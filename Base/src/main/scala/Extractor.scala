@@ -339,7 +339,7 @@ object Extractor
 	 * Returns an Extractors that can parse raw values
 	 * @group ExtractorGroup
 	 */
-	def idExtractors: Extractors[Id, ClassTag] = {
+	val idExtractors: Extractors[Id, ClassTag] = {
 		new Extractors[Id, ClassTag] with ExprIndependentExtractors[Id, ClassTag] {
 			override def `lazy`[A](fn:Function0[this.Extractor[A]]):this.Extractor[A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))

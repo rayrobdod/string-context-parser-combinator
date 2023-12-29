@@ -359,7 +359,7 @@ object Parser
 	 * Returns an Parsers that can parse raw values
 	 * @group ParserGroup
 	 */
-	def idParsers: Parsers[Id, IdToExpr, ClassTag] = {
+	val idParsers: Parsers[Id, IdToExpr, ClassTag] = {
 		new Parsers[Id, IdToExpr, ClassTag] with ExprIndependentParsers[Id, ClassTag] {
 			override def `lazy`[A](fn:Function0[this.Parser[A]]):this.Parser[A] =
 				new this.Parser(internal.DelayedConstruction.parser(() => fn().impl))

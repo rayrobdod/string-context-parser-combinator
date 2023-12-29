@@ -550,6 +550,26 @@ package InterpolatorTest {
 			}
 		}
 	}
+	final class hide extends BaseInterpolatorSuite {
+		import Interpolator.idInterpolators.charIn
+
+		test ("hide does not affect parse success") {
+			val dut = charIn("a") orElse charIn("b").hide
+			assertParseSuccess(dut, ("b" :: Nil, Nil), ('b'))
+		}
+		test ("on failure, when second branch is `.hide`, don't list that branch in expect") {
+			val dut = charIn("a") orElse charIn("b").hide
+			assertParseFailure(dut, ("x" :: Nil, Nil), List("Expected CharIn(\"a\")", "\tx", "\t^"))
+		}
+		test ("on failure, when first branch is `.hide`, don't list that branch in expect") {
+			val dut = charIn("a").hide orElse charIn("b")
+			assertParseFailure(dut, ("x" :: Nil, Nil), List("Expected CharIn(\"b\")", "\tx", "\t^"))
+		}
+		test ("When all branches are hidden, just says parse failed without an expects") {
+			val dut = charIn("a").hide
+			assertParseFailure(dut, ("x" :: Nil, Nil), List("Parsing Failed"))
+		}
+	}
 
 	final class ComboAndThenRepeat extends BaseInterpolatorSuite {
 		import Interpolator.idInterpolators.charIn

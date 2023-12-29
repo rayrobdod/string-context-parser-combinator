@@ -594,4 +594,25 @@ package ExtractorTest {
 			}
 		}
 	}
+	final class hide extends BaseExtractorSuite {
+		import Extractor.idExtractors.charIn
+		implicit val bridge: typeclass.ContraEithered[Id,Char,Char,Char] = typeclass.ContraEithered.idSymmetric
+
+		test ("hide does not affect parse success") {
+			val dut = charIn("a") orElse charIn("b").hide
+			assertParseSuccess(dut, ("b" :: Nil, 'b'), Option(Nil))
+		}
+		test ("on failure, when second branch is `.hide`, don't list that branch in expect") {
+			val dut = charIn("a") orElse charIn("b").hide
+			assertParseFailure(dut, ("x" :: Nil, 'b'), List("Expected CharIn(\"a\")", "\tx", "\t^"))
+		}
+		test ("on failure, when first branch is `.hide`, don't list that branch in expect") {
+			val dut = charIn("a").hide orElse charIn("b")
+			assertParseFailure(dut, ("x" :: Nil, 'b'), List("Expected CharIn(\"b\")", "\tx", "\t^"))
+		}
+		test ("When all branches are hidden, just says parse failed without an expects") {
+			val dut = charIn("a").hide
+			assertParseFailure(dut, ("x" :: Nil, 'b'), List("Parsing Failed"))
+		}
+	}
 }
