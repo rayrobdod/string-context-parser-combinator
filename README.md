@@ -1,6 +1,6 @@
 # string context parser combinator
 [![Build status](https://ci.appveyor.com/api/projects/status/rwtfcrrc7xkjsg6s/branch/main?svg=true)](https://ci.appveyor.com/project/rayrobdod/string-context-parser-combinator)
-![Run tests](https://github.com/rayrobdod/string-context-parser-combinator/workflows/Run%20tests/badge.svg)
+[![Check](https://github.com/rayrobdod/string-context-parser-combinator/actions/workflows/run-tests.yml/badge.svg)](https://github.com/rayrobdod/string-context-parser-combinator/actions/workflows/run-tests.yml)
 
 This is a scala library for writing [custom string interpolation](https://docs.scala-lang.org/scala3/book/string-interpolation.html#advanced-usage)
 implementations via parser combinators.
