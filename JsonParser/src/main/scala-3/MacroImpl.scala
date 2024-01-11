@@ -44,16 +44,22 @@ object MacroImpl {
 	}
 
 	/**
-	 * A micro-optimization; particularly useful since Lifted lifts to a JString and Map keys and
-	 * string building take java Strings; the macro is particularly likely to wrap a java String
-	 * and then immediately unwrap that string.
-	 *
-	 * that is, generate something like `Lift.string.apply("abcd").values`
+	 * A micro-optimization:
+	 * Since the `Lift.String` instances create a `JString`
+	 * (so that they work in general contexts that want a JValue),
+	 * naive use in places that want a `String` (such as map keys and string concatenation)
+	 * would be prone to generating code that wraps and then immediately unwraps a String
+	 * (i.e. `Lift.string.apply("abcd").values`).
+	 * This will bypass that wrapping, at least for the built-in `Lift.string`.
 	 */
-	private def jstringExprToStringExpr(using Quotes)(in:Expr[JString]):Expr[String] = in match {
-		case '{ name.rayrobdod.stringContextParserCombinatorExample.json.Lift.string.apply(${param}) } => param
-		case '{ name.rayrobdod.stringContextParserCombinatorExample.json.Lift.jvalue[JString].apply(${param}) } => '{ $param.values }
-		case _ => '{ $in.values }
+	private object stringLiftFunction extends LiftFunction[Lift.String, Expr[String]] {
+		def apply[A](lifter:Expr[Lift.String[A]], a:Expr[A])(using Type[A], Quotes):Expr[String] = lifter match {
+			// Lifter being a Lift.jvalue implies that A =:= Z, and for Lift.String, Z =:= JString
+			case '{ Lift.jvalue } => '{ ${a.asExprOf[JString]}.values }
+			// Lifter being a Lift.string implies that A =:= String
+			case '{ Lift.string } => a.asExprOf[String]
+			case _ => '{ $lifter.apply($a).values }
+		}
 	}
 
 	import name.rayrobdod.stringContextParserCombinator.Parser._
@@ -136,10 +142,10 @@ object MacroImpl {
 			.extractorAtom
 
 		val jCharsLifted:Parser[Expr[String]] = paired(
-			lifted[Lift.String, Expr[JString]](
-				myLiftFunction[JString, Lift.String],
+			lifted[Lift.String, Expr[String]](
+				stringLiftFunction,
 				"A for Lift[A, JString]"
-			).map(jstringExprToStringExpr _),
+			),
 			Extractor.ofType[String],
 		)
 		val content:Parser[Expr[String]] = paired(
@@ -215,10 +221,10 @@ object MacroImpl {
 			)
 
 			val key = {
-				val jCharsLifted:Interpolator[Expr[String]] = Interpolator.lifted[Lift.String, Expr[JString]](
-					myLiftFunction[JString, Lift.String],
+				val jCharsLifted:Interpolator[Expr[String]] = Interpolator.lifted[Lift.String, Expr[String]](
+					stringLiftFunction,
 					"A for Lift[A, JString]"
-				).map(jstringExprToStringExpr _)
+				)
 				val immediate:Interpolator[Expr[String]] = stringBase.toInterpolator
 
 				(jCharsLifted orElse immediate) andThen whitespace.toInterpolator
