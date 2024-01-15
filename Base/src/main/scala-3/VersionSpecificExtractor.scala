@@ -1,5 +1,6 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import scala.annotation.nowarn
 import scala.quoted.*
 import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor, Unapply => SCUnapply}
 
@@ -57,11 +58,12 @@ trait VersionSpecificExtractor[Expr[_], Type[_], -A] {
 				val expr:UnapplyExpr[quoted.Expr, quoted.Type, quoted.Expr[UnexprA]] = unexpr.substituteContra(s.choicesHead.value)
 				val conditionFn:quoted.Expr[UnexprA] => quoted.Expr[Boolean] = expr.condition
 
-				expr.parts.size match {
-					case 0 =>
+				expr.parts match {
+					case Nil =>
 						'{((a:UnexprA) => ${conditionFn('a)}):Unapply.Zero[UnexprA]}
-					case 1 =>
-						'{((a:UnexprA) => Option.when[Any](${conditionFn('a)})(${expr.parts(0).value('a)})):Unapply.Fixed[UnexprA, Any]}
+					case (part: UnapplyExpr.Part[quoted.Expr, quoted.Type, quoted.Expr[UnexprA], z]) :: Nil =>
+						@nowarn("msg=unused local definition") given quoted.Type[z] = part.typ
+						'{((a:UnexprA) => Option.when[z](${conditionFn('a)})(${part.value('a)})):Unapply.Fixed[UnexprA, z]}
 					case _ =>
 						import quotes.reflect._
 						val unexpraTypeTree = TypeTree.of[UnexprA]
