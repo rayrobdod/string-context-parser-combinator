@@ -1,5 +1,5 @@
 version: 'yml-{build}'
-os: Windows Server 2012
+image: Visual Studio 2022
 install:
   - cmd: choco install sbt
   - cmd: refreshenv
