@@ -1,8 +1,9 @@
 package name.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.Seq
+import scala.math.BigDecimal
 import scala.reflect.macros.whitebox.Context
-import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
+import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
@@ -135,18 +136,32 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		implicit val CharStringOptionallyTypes = typeclass.Optionally[Char, String]("", _.toString)
 		implicit val StringStringOptionallyTypes = typeclass.Optionally.whereDefault[String]("")
 
-		(
+		val stringRepr: Interpolator[String] = (
 			charIn("-").optionally()
 			andThen (charIn("0").map(_.toString) orElse (charIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
 			andThen (charIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally()
 			andThen (charIn("eE").map(_.toString) andThen charIn("+-").optionally() andThen RepeatedDigits(1)).optionally()
 		)
+			.opaque("Number Literal")
+
+		val interpolator = stringRepr
 			.map({x =>
 				val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
 				c.universe.reify(_root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply(xExpr.splice)))
 			})
-			.opaque("Number Literal")
-			.extractorAtom[c.Expr, c.TypeTag, JValue with JNumber]
+
+		val extractor = stringRepr
+			.map({x =>
+				val xExpr = c.Expr[String](c.universe.Literal(c.universe.Constant(x)))
+				c.universe.reify(_root_.scala.math.BigDecimal.apply(xExpr.splice))
+			})
+			.extractorAtom[c.Expr, c.TypeTag, BigDecimal]
+			.toExtractor
+			.contramap[c.Expr[JValue with JNumber]]({(n: c.Expr[JValue with JNumber]) =>
+				c.universe.reify(_root_.name.rayrobdod.stringContextParserCombinatorExample.json.jnumber2bigdecimal(n.splice))
+			})
+
+		paired(interpolator, extractor)
 	}
 
 	private[this] val stringBase:Parser[c.Expr[String]] = {

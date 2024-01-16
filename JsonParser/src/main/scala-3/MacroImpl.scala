@@ -1,8 +1,9 @@
 package name.rayrobdod.stringContextParserCombinatorExample.json
 
 import scala.collection.immutable.Seq
+import scala.math.BigDecimal
 import scala.quoted.{Expr, Quotes, Type}
-import org.json4s.{JValue, JNull, JBool, JNumber, JString, JArray, JObject}
+import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
@@ -105,17 +106,34 @@ object MacroImpl {
 		given typeclass.Optionally[Char, String] = typeclass.Optionally("", _.toString)
 		given typeclass.Optionally[String, String] = typeclass.Optionally.whereDefault[String]("")
 
-		(
+		val stringRepr: Interpolator[String] = (
 			charIn("-").optionally()
 			andThen (charIn("0").map(_.toString) orElse (charIn('1' to '9').map(_.toString) andThen repeatedDigits(0)))
 			andThen (charIn(".").map(_.toString) andThen repeatedDigits(1)).optionally()
 			andThen (charIn("eE").map(_.toString) andThen charIn("+-").optionally() andThen repeatedDigits(1)).optionally()
 		)
-			.map({x =>
-				'{ _root_.org.json4s.JsonAST.JDecimal(_root_.scala.math.BigDecimal.apply( ${Expr[String](x)} )) }
-			})
 			.opaque("Number Literal")
-			.extractorAtom
+
+		val interpolator = stringRepr.map({s => '{JDecimal(BigDecimal(${Expr(s)}))}})
+
+		val extractor = stringRepr
+			.map:
+				s => '{BigDecimal(${Expr(s)})}
+			.extractorAtom[Expr, Type, BigDecimal]
+			.toExtractor
+			.contramap[Expr[JValue & JNumber]]:
+				n => '{jnumber2bigdecimal($n)}
+
+		paired(interpolator, extractor)
+	}
+
+	def jnumber2bigdecimal(n: JNumber): BigDecimal = {
+		n match {
+			case JDecimal(bd) => bd
+			case JDouble(d) => d
+			case JInt(bi) => BigDecimal(bi)
+			case JLong(i) => i
+		}
 	}
 
 	private def stringBase(using Quotes):Parser[Expr[String]] = {

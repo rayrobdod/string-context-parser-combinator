@@ -61,6 +61,14 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 			case _ => // pass
 		}
 	}
+	for (value <- Seq(JDouble(123d), JInt(scala.math.BigInt("123")), JLong(123L))) {
+		test(s"number 123 pattern matches other types of numbers (${value})") {
+			value match {
+				case json"""123""" => // pass
+				case _ => fail("did not match")
+			}
+		}
+	}
 	for (value <- sampleJValues) {
 		test(s"""string "abc" pattern ${if (value == JString("abc")) {"matches"} else {"does not match"}} ${value}""") {
 			value match {
