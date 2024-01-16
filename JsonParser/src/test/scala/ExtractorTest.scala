@@ -4,40 +4,75 @@ import org.json4s._
 import name.rayrobdod.stringContextParserCombinatorExample.json._
 
 final class StringContextUnapplyTest extends munit.FunSuite {
-	test("can extract a whole value") {
-		JNull match {
-			case json"$_" => // pass
-			case _ => fail("did not match")
+	val sampleJValues = Seq(
+		JNull,
+		JBool.True,
+		JBool.False,
+		JDecimal(123),
+		JString("abc"),
+		JArray(Nil),
+		JObject(Nil),
+	)
+
+	for (value <- sampleJValues) {
+		test(s"irrefutable whole-value pattern matches and extracts ${value}") {
+			value match {
+				case json"${_1}" =>
+					assertEquals(_1, value)
+				case _ => fail("did not match")
+			}
 		}
 	}
-	test("can match an immediate null") {
-		JNull match {
-			case json"null" => // pass
-			case _ => fail("did not match")
+	for (value <- sampleJValues) {
+		test(s"null-literal pattern ${if (value == JNull) {"matches"} else {"does not match"}} ${value}") {
+			value match {
+				case json"null" => if (value != JNull) {fail("did match")}
+				case _ => if (value == JNull) {fail("did not match")}
+			}
 		}
 	}
-	test("can match an immediate true") {
-		JBool.True match {
-			case json"true" => // pass
-			case _ => fail("did not match")
+	for (value <- sampleJValues) {
+		test(s"true-literal pattern ${if (value == JBool.True) {"matches"} else {"does not match"}} ${value}") {
+			value match {
+				case json"true" => if (value != JBool.True) {fail("did match")}
+				case _ => if (value == JBool.True) {fail("did not match")}
+			}
 		}
 	}
-	test("can match an immediate false") {
-		JBool.False match {
-			case json"false" => // pass
-			case _ => fail("did not match")
+	for (value <- sampleJValues) {
+		test(s"false-literal pattern ${if (value == JBool.False) {"matches"} else {"does not match"}} ${value}") {
+			value match {
+				case json"false" => if (value != JBool.False) {fail("did match")}
+				case _ => if (value == JBool.False) {fail("did not match")}
+			}
 		}
 	}
-	test("can match an immediate integer") {
-		JDecimal(123) match {
-			case json"123" => // pass
-			case _ => fail("did not match")
+	for (value <- sampleJValues) {
+		test(s"number 123 pattern ${if (value == JDecimal(123)) {"matches"} else {"does not match"}} ${value}") {
+			value match {
+				case json"123" => if (value != JDecimal(123)) {fail("did match")}
+				case _ => if (value == JDecimal(123)) {fail("did not match")}
+			}
 		}
 	}
-	test("can match an immediate string") {
-		JString("abc") match {
-			case json""" "abc" """ => // pass
-			case _ => fail("did not match")
+	test("number 123 pattern does not match other number values") {
+		JDecimal(456) match {
+			case json"""123""" => fail("did match")
+			case _ => // pass
+		}
+	}
+	for (value <- sampleJValues) {
+		test(s"""string "abc" pattern ${if (value == JString("abc")) {"matches"} else {"does not match"}} ${value}""") {
+			value match {
+				case json""" "abc" """ => if (value != JString("abc")) {fail("did match")}
+				case _ => if (value == JString("abc")) {fail("did not match")}
+			}
+		}
+	}
+	test("string \"abc\" pattern does not match other strings") {
+		JString("def") match {
+			case json""" "abc" """ => fail("did match")
+			case _ => // pass
 		}
 	}
 	test("can match an immediate empty array") {
@@ -48,8 +83,8 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 	}
 	test("can extract the values from a one-item array") {
 		JArray(List(JDecimal(123))) match {
-			case json"[$_]" =>
-				//assertEquals(_1, JDecimal(123))
+			case json"[${_1}]" =>
+				assertEquals(_1, JDecimal(123))
 			case _ => fail("did not match")
 		}
 	}
@@ -95,7 +130,7 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 			case _ => fail("did not match")
 		}
 	}
-	test("can extract the values from a one-item map") {
+	test("can extract the key-value pairs from a one-item map") {
 		JObject(List("a" -> JDecimal(123))) match {
 			case json"{${(k, v)}}" =>
 				assertEquals(k, "a")
@@ -103,7 +138,7 @@ final class StringContextUnapplyTest extends munit.FunSuite {
 			case _ => fail("did not match")
 		}
 	}
-	test("can extract the values from a two-item map") {
+	test("can extract the key-value pairs from a three-item map") {
 		JObject(List("a" -> JDecimal(123), "b" -> JBool.True, "c" -> JString("abc"))) match {
 			case json"{${_1}, ${_2}, ${_3}}" =>
 				assertEquals(_1, "a" -> JDecimal(123))
