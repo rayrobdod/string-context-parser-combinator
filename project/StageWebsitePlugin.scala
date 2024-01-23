@@ -1,4 +1,4 @@
-package name.rayrobdod.sbtJavafx
+package name.rayrobdod.stringContextParserCombinator.build
 
 import sbt._
 import sbt.Keys._
