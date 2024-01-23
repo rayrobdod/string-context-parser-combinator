@@ -10,7 +10,6 @@ build_script:
   - cmd: 'sbt compile publishLocal'
   - cmd: 'move C:\Users\appveyor\.ivy2\local C:\projects\string-context-parser-combinator\publish'
 test_script:
-  - cmd: 'sbt Test/compile'
   - cmd: 'sbt test'
 artifacts:
   - path: publish

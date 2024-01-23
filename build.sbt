@@ -25,9 +25,13 @@ lazy val sharedSettings = Seq(
 		),
 	),
 	autoAPIMappings := true,
-	libraryDependencies ++= Seq(
-		"org.scalameta" %%% "munit" % "0.7.29" % Test,
-	),
+	libraryDependencies += {
+		val version = (scalaBinaryVersion.value, crossVersion.value.asInstanceOf[Binary].prefix) match {
+			case ("3", "native0.4_") => "1.0.0-M10"
+			case _ => "0.7.29"
+		}
+		"org.scalameta" %%% "munit" % version % Test,
+	},
 	tpolecatExcludeOptions ++= Set(
 		org.typelevel.scalacoptions.ScalacOptions.warnUnusedNoWarn,
 		org.typelevel.scalacoptions.ScalacOptions.privateWarnUnusedNoWarn,
@@ -111,6 +115,11 @@ lazy val base = (projectMatrix in file("Base"))
 		scala213Ver,
 		scala3Ver,
 	))
+	.nativePlatform(scalaVersions = Seq(
+		scala212Ver,
+		scala213Ver,
+		scala3Ver,
+	))
 
 lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)
@@ -136,6 +145,11 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		scala213Ver,
 		scala3Ver,
 	))
+	.nativePlatform(scalaVersions = Seq(
+		scala212Ver,
+		scala213Ver,
+		scala3Ver,
+	))
 
 lazy val time = (projectMatrix in file("TimeParser"))
 	.dependsOn(base)
@@ -154,6 +168,15 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		scala3Ver,
 	))
 	.jsPlatform(scalaVersions = Seq(
+			scala212Ver,
+			scala213Ver,
+			scala3Ver,
+		),
+		libraryDependencies ++= Seq(
+			"io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
+		),
+	)
+	.nativePlatform(scalaVersions = Seq(
 			scala212Ver,
 			scala213Ver,
 			scala3Ver,
