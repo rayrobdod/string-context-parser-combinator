@@ -258,16 +258,16 @@ package InterpolatorTest {
 			test ("if base parser succeeds and predicate fails for all branches, returns a failure including the filter description") {
 				assertParseFailure(dut, ("" :: "" :: Nil, Foo(11) :: Nil), List(s"Expected OfType($className) where is even", "\t${}", "\t^"))
 			}
-			test ("if base parser succeeds and predicate fails for some branches, returns a success with the variants that passed the predicate".ignore) {
-				val left = Interpolator.idInterpolators.charIn("a").map(_ => "1").attempt
-				val right = Interpolator.idInterpolators.charIn("a").map(_ => "2").attempt
-				val either = (left orElse right)
-				val dut = either.filter(_ == "2", "is two")
+		}
+		final class PoorMansMinMaxRepeats extends BaseInterpolatorSuite {
+			test ("if base parser succeeds and predicate fails for some branches, returns a success with the variants that passed the predicate") {
+				val base = Interpolator.idInterpolators.charIn("a").repeat(strategy = RepeatStrategy.Greedy)
+				val dut = base.filter(_.length == 3, "XXX")
 
-				val input = ("a" :: Nil, Nil)
+				val input = ("aaaaa" :: Nil, Nil)
 
-				assertParseSuccess(either, input, "1")
-				assertParseSuccess(dut, input, "2")
+				assertParseSuccess(base, input, "aaaaa")
+				assertParseSuccess(dut, input, "aaa")
 			}
 		}
 	}
