@@ -8,8 +8,8 @@ That is, an interpolator that builds a string consisting of the concatenation of
 The crux of parser combinators is creating a parser by combining smaller parsers together,
 so we'll start with a small parser and build up to a parser with the desired properties.
 
-The leaf parsers that we'll be using for now are provided in [[Interpolator.idInterpolators|name.rayrobdod.stringContextParserCombinator.Interpolator$.idInterpolators]].
-And we're [[defining a new string interpolation|https://docs.scala-lang.org/scala3/book/string-interpolation.html#advanced-usage]].
+The leaf parsers that we'll be using for now are provided in [Interpolator.idInterpolators](name.rayrobdod.stringContextParserCombinator.Interpolator$.idInterpolators).
+And we're [defining a new string interpolation](https://docs.scala-lang.org/scala3/book/string-interpolation.html#advanced-usage).
 So, the scaffolding will look something like:
 
 ```scala
@@ -256,7 +256,7 @@ This can be done with the map operator, such as `.map(Expr(_))`, or equivalently
 ```
 
 `ofType` changes from requiring an implicit `scala.reflect.ClassTag` and returning an unwrapped value,
-to requiring an implicit `scala.quoted.Type` and returning the `Expr`-wrapped value.
+to requiring an implicit `scala.quoted.Type` and returning an `Expr` that builds a value.
 Since the `ofType` result is in an `Expr`, the mapping applied to this value must be changed from a `Any => String` to a `Expr[Any] => Expr[String]`, essentially wrapping the mapping in a Quote.
 
 ```diff
