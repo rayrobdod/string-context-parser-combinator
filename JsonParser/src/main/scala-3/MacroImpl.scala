@@ -7,19 +7,6 @@ import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
-	/**
-	 * Creates an Expr that represents the concatenation of the component Exprs
-	 */
-	private def concatenateStrings(strings:Seq[Expr[String]])(using Quotes):Expr[String] = {
-		strings match {
-			case Seq() => '{ "" }
-			case Seq(x) => x
-			case _ => '{
-				${strings.foldLeft('{new _root_.java.lang.StringBuilder()})({(builder, part) => '{$builder.append($part)}})}.toString
-			}
-		}
-	}
-
 	private def assembleCollection[A]
 			(parts:List[Either[Expr[A], Expr[List[A]]]])
 			(using Type[A], Quotes)
@@ -169,8 +156,7 @@ object MacroImpl {
 		val content:Parser[Expr[String]] = paired(
 			(jCharsLifted orElse jCharsImmediate)
 				.toInterpolator
-				.repeat(strategy = RepeatStrategy.Possessive)
-				.map(strs => concatenateStrings(strs))
+				.repeat(strategy = RepeatStrategy.Possessive)(using typeclass.Repeated.quotedConcatenateExprString)
 			,
 			(jCharsImmediate).toExtractor
 		)

@@ -5,6 +5,68 @@ import scala.collection.mutable.Builder
 import scala.reflect.macros.blackbox.Context
 
 private[typeclass]
+trait VersionSpecificRepeated {
+	def concatenateExprString(c:Context):Repeated[c.Expr[String], c.Expr[String]] = {
+		import c.universe.Tree
+		import c.universe.Quasiquote
+		val ttString0 = c.universe.typeTag[String]
+		final class ConcatenateExprString extends Repeated[c.Expr[String], c.Expr[String]] {
+			val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
+			val accumulatorTypeTree = c.universe.TypeTree(
+				c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
+			)
+			val accumulatorIdent = c.universe.Ident(accumulatorName)
+			val accumulatorValDef = c.universe.ValDef(
+				c.universe.NoMods,
+				accumulatorName,
+				accumulatorTypeTree,
+				q"new $accumulatorTypeTree()",
+			)
+
+			implicit val ttString: c.TypeTag[String] = ttString0
+
+			sealed trait Acc
+			final object AccZero extends Acc
+			final class AccOne(val elem: c.Expr[String]) extends Acc
+			final class AccMany extends Acc {
+				val builder: Builder[Tree, c.Expr[String]] = List.newBuilder.mapResult(stat =>
+					c.Expr[String](
+						c.universe.Block(
+							stat,
+							q"$accumulatorIdent.toString"
+						)
+					)
+				)
+			}
+
+			def init():Acc = AccZero
+			def append(acc:Acc, elem:c.Expr[String]):Acc = acc match {
+				case AccZero => new AccOne(elem)
+				case accOne: AccOne => {
+					val retval = new AccMany()
+					retval.builder += accumulatorValDef
+					retval.builder += q"$accumulatorIdent.append(${accOne.elem})"
+					retval.builder += q"$accumulatorIdent.append($elem)"
+					retval
+				}
+				case accMany: AccMany => {
+					accMany.builder += q"$accumulatorIdent.append($elem)"
+					accMany
+				}
+			}
+			def result(acc:Acc):c.Expr[String] = {
+				acc match {
+					case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
+					case accOne: AccOne => accOne.elem
+					case accMany: AccMany => accMany.builder.result()
+				}
+			}
+		}
+		new ConcatenateExprString()
+	}
+}
+
+private[typeclass]
 trait VersionSpecificContraRepeated {
 	trait ContraRepeateds[Expr[_], Type[_]] {
 		implicit def unit:ContraRepeated[Expr, Unit, Unit]

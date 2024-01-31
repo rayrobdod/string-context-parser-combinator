@@ -2,7 +2,55 @@ package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
 import scala.collection.mutable.Builder
+import scala.collection.mutable.StringBuilder
 import scala.quoted.*
+
+private[typeclass]
+trait VersionSpecificRepeated {
+	def quotedConcatenateExprString(using Quotes):Repeated[Expr[String], Expr[String]] = {
+		final class ConcatenateExprString extends Repeated[Expr[String], Expr[String]] {
+			sealed trait Acc
+			object AccZero extends Acc
+			final class AccOne(val elem: Expr[String]) extends Acc
+			final class AccMany extends Acc {
+				val builder: Builder[Expr[String], Expr[String]] = List.newBuilder.mapResult(stat =>
+					val accumulator:Expr[StringBuilder] = '{new scala.collection.mutable.StringBuilder}
+					import quotes.reflect.*
+					val retval = ValDef.let(Symbol.spliceOwner, "builder$", accumulator.asTerm): accumulatorRef =>
+						val accumulatorRefExpr = accumulatorRef.asExprOf[StringBuilder]
+						Block(
+							stat.map(addend => '{$accumulatorRefExpr.append($addend)}.asTerm),
+							Apply(Select.unique(accumulatorRef, "result"), Nil),
+						)
+					retval.asExprOf[String]
+				)
+			}
+
+			def init():Acc = AccZero
+			def append(acc:Acc, elem:Expr[String]):Acc = acc match {
+				case AccZero => new AccOne(elem)
+				case accOne: AccOne => {
+					val retval = new AccMany()
+					retval.builder += accOne.elem
+					retval.builder += elem
+					retval
+				}
+				case accMany: AccMany => {
+					accMany.builder += elem
+					accMany
+				}
+			}
+			def result(acc:Acc):Expr[String] = {
+				acc match {
+					case AccZero => Expr[String]("")
+					case accOne: AccOne => accOne.elem
+					case accMany: AccMany => accMany.builder.result()
+				}
+			}
+		}
+		new ConcatenateExprString()
+	}
+}
 
 private[typeclass]
 trait VersionSpecificContraRepeated {

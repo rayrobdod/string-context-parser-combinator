@@ -133,7 +133,7 @@ object MacroImpl {
 	private def opaquePart(using Quotes):Interpolator[Expr[String]] = {
 		val variable:Interpolator[Expr[String]] = ofType[String]
 		val literal:Interpolator[Expr[String]] = (uriNoSlashChar andThen uriChar.repeat()).mapToExpr
-		(variable orElse literal).repeat().map(xs => concatenateStrings(xs))
+		(variable orElse literal).repeat()(using typeclass.Repeated.quotedConcatenateExprString)
 	}
 
 
@@ -144,8 +144,7 @@ object MacroImpl {
 
 	private def fragmentOrQueryString(using Quotes):Interpolator[Expr[String]] = {
 		val Arbitrary = (ofType[String] orElse uriChar.repeat(1).mapToExpr)
-			.repeat()
-			.map(xs => concatenateStrings(xs))
+			.repeat()(using typeclass.Repeated.quotedConcatenateExprString)
 		val Mapping = {
 			given typeclass.Sequenced[Expr[String], Expr[String], List[Expr[String]]] = (a, b) => a :: b :: Nil
 			given typeclass.Sequenced[Expr[String], List[Expr[String]], List[Expr[String]]] = (a, b) => a +: b

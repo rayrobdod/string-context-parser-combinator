@@ -85,7 +85,7 @@ trait BiRepeated[Expr[_], A, Z]
 	with ContraRepeated[Expr, A, Z]
 
 /** Predefined implicit implementations of Repeated */
-object Repeated extends LowPrioRepeated {
+object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 	/**
 	 * Repeated units results in a unit
 	 */
