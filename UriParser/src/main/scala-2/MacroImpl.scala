@@ -10,45 +10,6 @@ import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 import name.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits._
 
 object MacroImpl {
-	/**
-	 * Creates an Expr that represents the concatenation of the component Exprs
-	 */
-	def concatenateStrings(c:Context)(strings:Seq[c.Expr[String]]):c.Expr[String] = {
-		import c.universe.Quasiquote
-		strings match {
-			case Seq() => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
-			case Seq(x) => x
-			case _ => {
-				val accumulatorName = c.universe.TermName("accumulator$")
-				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
-				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
-				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
-				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
-					c.universe.ValDef(
-						c.universe.NoMods,
-						accumulatorName,
-						accumulatorTypeTree,
-						c.universe.Apply(
-							c.universe.Select(
-								c.universe.New(accumulatorTypeTree),
-								c.universe.termNames.CONSTRUCTOR
-							),
-							List()
-						)
-					)
-				)
-				strings.foreach(x => stats += q"$accumulatorExpr.append($x)")
-
-				c.Expr[String](
-					c.universe.Block(
-						stats.toList,
-						q"$accumulatorExpr.toString"
-					)
-				)
-			}
-		}
-	}
-
 	def stringContext_uri(c:Context {type PrefixType = UriStringContext})(args:c.Expr[Any]*):c.Expr[URI] = {
 		val LeafParsers = Interpolator.contextInterpolators(c)
 		import LeafParsers._
@@ -183,38 +144,95 @@ object MacroImpl {
 			val Arbitrary = (ofType[String] orElse uriChar.repeat(1).mapToExpr)
 				.repeat()(typeclass.Repeated.concatenateExprString(c))
 			val Mapping = {
-				implicit def AndThenElemElem:typeclass.Sequenced[c.Expr[String], c.Expr[String], List[c.Expr[String]]] = (a:c.Expr[String],b:c.Expr[String]) => a :: b :: Nil
-				implicit def AndThenElemList:typeclass.Sequenced[c.Expr[String], List[c.Expr[String]], List[c.Expr[String]]] = (a:c.Expr[String], b:List[c.Expr[String]]) => a +: b
-				implicit def AndThenListElem:typeclass.Sequenced[List[c.Expr[String]], c.Expr[String], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:c.Expr[String]) => a :+ b
-				implicit def AndThenListList:typeclass.Sequenced[List[c.Expr[String]], List[c.Expr[String]], List[c.Expr[String]]] = (a:List[c.Expr[String]], b:List[c.Expr[String]]) => a ++: b
-				final class ListRepeatTypes[A] extends typeclass.Repeated[List[A], List[A]] {
-					type Acc = scala.collection.mutable.Builder[A, List[A]]
-					def init():Acc = List.newBuilder
-					def append(acc:Acc, elem:List[A]):Acc = {acc ++= elem}
-					def result(acc:Acc):List[A] = acc.result()
+				val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
+				val accumulatorTypeTree = c.universe.TypeTree(
+					c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
+				)
+				val accumulatorIdent = c.universe.Ident(accumulatorName)
+				val accumulatorValDef = c.universe.ValDef(
+					c.universe.NoMods,
+					accumulatorName,
+					accumulatorTypeTree,
+					q"new $accumulatorTypeTree()",
+				)
+
+				class StringExpr private (val isEmpty: Boolean, private val direct: Option[c.Expr[String]], private val accStats: List[c.Tree]) {
+					def ++(other: StringExpr): StringExpr = {
+						if (this.isEmpty) {
+							other
+						} else if (other.isEmpty) {
+							this
+						} else {
+							new StringExpr(false, None, this.accStats ++: other.accStats)
+						}
+					}
+					def result: c.Expr[String] = {
+						this.direct match {
+							case Some(x) => x
+							case None => {
+								c.Expr[String](
+									c.universe.Block(
+										accumulatorValDef :: accStats,
+										q"$accumulatorIdent.toString"
+									)
+								)
+							}
+						}
+					}
 				}
-				implicit def ListRepeatTypes[A]:typeclass.Repeated[List[A], List[A]] = new ListRepeatTypes[A]
-				val EqualsChar = codePointIn("=").map(_.toString).mapToExpr
-				val AndChar = codePointIn("&").map(_.toString).mapToExpr
+				object StringExpr {
+					def empty: StringExpr = new StringExpr(true, Option(constExpr("")), Nil)
+					def single(direct: c.Expr[String]): StringExpr = new StringExpr(false, Some(direct), List(q"""$accumulatorIdent.append($direct)"""))
+					def single(direct: c.Expr[String], accStats: List[c.Tree]): StringExpr = new StringExpr(false, Some(direct), accStats)
+					def multiple(accStats: List[c.Tree]): StringExpr = new StringExpr(false, None, accStats)
+				}
 
-				val tupleConcatFun = q""" {ab:(String, String) => ab._1 + "=" + ab._2} """
-				val lit:Interpolator[c.Expr[String]] = (escapedChar orElse unreservedChar orElse codePointIn(";?:@+$,")).repeat().mapToExpr
-				val str:Interpolator[c.Expr[String]] = ofType[String]
-				val str2:Interpolator[c.Expr[String]] = str orElse lit
-				val pair:Interpolator[List[c.Expr[String]]] = ofType(c.typeTag[scala.Tuple2[String, String]])
-					.map(x => List(
-						c.Expr[String](q"$x._1"),
-						constExpr("="),
-						c.Expr[String](q"$x._2")
+				implicit def AndThenStringExpr: typeclass.Sequenced[StringExpr, StringExpr, StringExpr] = (a:StringExpr, b:StringExpr) => a ++ b
+				final class RepeatStringExpr extends typeclass.Repeated[StringExpr, c.Expr[String]] {
+					type Acc = StringExpr
+					def init():Acc = StringExpr.empty
+					def append(acc:Acc, elem:StringExpr):Acc = {
+						if (acc.isEmpty) {
+							elem
+						} else {
+							acc ++ StringExpr.single(constExpr("&")) ++ elem
+						}
+					}
+					def result(acc:Acc):c.Expr[String] = acc.result
+				}
+				implicit def RepeatStringExpr: typeclass.Repeated[StringExpr, c.Expr[String]] = new RepeatStringExpr
+
+				val EqualsChar = isString("=").map(_ => StringExpr.single(constExpr("=")))
+				val AndChar = isString("&")
+
+				val tupleConcatFun = q""" {pair:(String, String) => pair._1 + "=" + pair._2} """
+
+				val literalString:Interpolator[c.Expr[String]] = (escapedChar orElse unreservedChar orElse codePointIn(";?:@+$,")).repeat(1).mapToExpr
+				val holeString:Interpolator[c.Expr[String]] = ofType[String]
+				val string:Interpolator[StringExpr] = (holeString orElse literalString).map(s => StringExpr.single(s))
+
+				val holePair:Interpolator[StringExpr] = ofType(c.typeTag[scala.Tuple2[String, String]])
+					.map(x =>
+						StringExpr.multiple(
+							List(
+								q"$accumulatorIdent.append($x._1)",
+								q"""$accumulatorIdent.append("=")""",
+								q"$accumulatorIdent.append($x._2)",
+							)
+						)
+					)
+				val literalPair: Interpolator[StringExpr] = (string andThen EqualsChar andThen string)
+				val pair:Interpolator[StringExpr] = holePair orElse literalPair
+
+				val map:Interpolator[StringExpr] = ofType(c.typeTag[scala.collection.Map[String, String]])
+					.map(m => StringExpr.single(
+						c.Expr[String](q"""$m.map($tupleConcatFun).mkString("&")"""),
+						List(q"""$m.map($tupleConcatFun).addString($accumulatorIdent, "&")"""),
 					))
-				val pair2:Interpolator[List[c.Expr[String]]] = pair orElse (str2 andThen EqualsChar andThen str2)
-				val map:Interpolator[List[c.Expr[String]]] = ofType(c.typeTag[scala.collection.Map[String, String]])
-					.map(x => c.Expr[List[String]](q"$x.map($tupleConcatFun)"))
-					.map(x => List(c.Expr[String](q""" $x.mkString("&") """)))
-				val mapOrPair:Interpolator[List[c.Expr[String]]] = map orElse pair2
 
-				(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
-					.map(xs => concatenateStrings(c)(xs))
+				val mapOrPair:Interpolator[StringExpr] = map orElse pair
+
+				mapOrPair.repeat(min = 1, delimiter = AndChar)(using RepeatStringExpr)
 			}
 			Mapping.attempt orElse Arbitrary
 		}

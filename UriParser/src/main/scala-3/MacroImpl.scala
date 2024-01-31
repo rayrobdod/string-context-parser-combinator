@@ -7,17 +7,6 @@ import name.rayrobdod.stringContextParserCombinator.RepeatStrategy._
 import name.rayrobdod.stringContextParserCombinatorExample.uri.ConcatenateStringImplicits.{given}
 
 object MacroImpl {
-	/**
-	 * Creates an Expr that represents the concatenation of the component Exprs
-	 */
-	private def concatenateStrings(strings:Seq[Expr[String]])(using Quotes):Expr[String] = {
-		strings match {
-			case Seq() => '{ "" }
-			case Seq(x) => x
-			case _ => '{ ${Expr.ofSeq(strings)}.mkString }
-		}
-	}
-
 	import name.rayrobdod.stringContextParserCombinator.Interpolator._
 	private def parseByteHex(x:(Char, Char)):Int = java.lang.Integer.parseInt(s"${x._1}${x._2}", 16)
 
@@ -146,38 +135,86 @@ object MacroImpl {
 		val Arbitrary = (ofType[String] orElse uriChar.repeat(1).mapToExpr)
 			.repeat()(using typeclass.Repeated.quotedConcatenateExprString)
 		val Mapping = {
-			given typeclass.Sequenced[Expr[String], Expr[String], List[Expr[String]]] = (a, b) => a :: b :: Nil
-			given typeclass.Sequenced[Expr[String], List[Expr[String]], List[Expr[String]]] = (a, b) => a +: b
-			given typeclass.Sequenced[List[Expr[String]], Expr[String], List[Expr[String]]] = (a, b) => a :+ b
-			given typeclass.Sequenced[List[Expr[String]], List[Expr[String]], List[Expr[String]]] = (a, b) => a ++: b
-			given [A]:typeclass.Repeated[List[A], List[A]] = new typeclass.Repeated[List[A], List[A]] {
-				type Acc = scala.collection.mutable.Builder[A, List[A]]
-				def init():Acc = List.newBuilder
-				def append(acc:Acc, elem:List[A]):Acc = {acc ++= elem}
-				def result(acc:Acc):List[A] = acc.result
+			class StringExpr private (val isEmpty: Boolean, private val direct: Option[Expr[String]], private val accStats: List[Expr[StringBuilder] => Expr[Unit]]) {
+				def ++(other: StringExpr): StringExpr = {
+					if (this.isEmpty) {
+						other
+					} else if (other.isEmpty) {
+						this
+					} else {
+						new StringExpr(false, None, this.accStats ++: other.accStats)
+					}
+				}
+				def result: Expr[String] = {
+					this.direct match {
+						case Some(x) => x
+						case None => {
+							val accumulator:Expr[StringBuilder] = '{new scala.collection.mutable.StringBuilder}
+							import quotes.reflect.*
+							val retval = ValDef.let(Symbol.spliceOwner, "builder$", accumulator.asTerm): accumulatorRef =>
+								val accumulatorRefExpr = accumulatorRef.asExprOf[StringBuilder]
+								Block(
+									accStats.map(accStat => accStat(accumulatorRefExpr).asTerm),
+									Apply(Select.unique(accumulatorRef, "toString"), Nil),
+								)
+							retval.asExprOf[String]
+						}
+					}
+				}
+			}
+			object StringExpr {
+				def empty: StringExpr = new StringExpr(true, Option(Expr("")), Nil)
+				def single(direct: Expr[String]): StringExpr = new StringExpr(false, Some(direct), List(acc => '{$acc.append($direct); ()}))
+				def single(direct: Expr[String], accStats: List[Expr[StringBuilder] => Expr[Unit]]): StringExpr = new StringExpr(false, Some(direct), accStats)
+				def multiple(accStats: List[Expr[StringBuilder] => Expr[Unit]]): StringExpr = new StringExpr(false, None, accStats)
 			}
 
-			val EqualsChar = codePointIn("=").map(x => Expr.apply(x.toString))
-			val AndChar = codePointIn("&").map(x => Expr.apply(x.toString))
+			implicit def AndThenStringExpr: typeclass.Sequenced[StringExpr, StringExpr, StringExpr] = (a:StringExpr, b:StringExpr) => a ++ b
+			final class RepeatStringExpr extends typeclass.Repeated[StringExpr, Expr[String]] {
+				type Acc = StringExpr
+				def init():Acc = StringExpr.empty
+				def append(acc:Acc, elem:StringExpr):Acc = {
+					if (acc.isEmpty) {
+						elem
+					} else {
+						acc ++ StringExpr.single(Expr("&")) ++ elem
+					}
+				}
+				def result(acc:Acc):Expr[String] = acc.result
+			}
+			implicit def RepeatStringExpr: typeclass.Repeated[StringExpr, Expr[String]] = new RepeatStringExpr
+
+			val EqualsChar = isString("=").map(_ => StringExpr.single(Expr("=")))
+			val AndChar = isString("&")
 
 			val tupleConcatFun = '{ {(ab:Tuple2[String, String]) => ab._1 + "=" + ab._2} }
-			val lit:Interpolator[Expr[String]] = (escapedChar orElse unreservedChar orElse codePointIn(";?:@+$,")).repeat().mapToExpr
-			val str:Interpolator[Expr[String]] = ofType[String]
-			val str2:Interpolator[Expr[String]] = str orElse lit
-			val pair:Interpolator[List[Expr[String]]] = ofType[scala.Tuple2[String, String]]
-				.map(x => List(
-					'{ $x._1 },
-					Expr.apply("="),
-					'{ $x._2 },
-				))
-			val pair2:Interpolator[List[Expr[String]]] = pair orElse (str2 andThen EqualsChar andThen str2)
-			val map:Interpolator[List[Expr[String]]] = ofType[scala.collection.Map[String, String]]
-				.map(x => '{$x.map($tupleConcatFun)})
-				.map(x => List('{ $x.mkString("&") }))
-			val mapOrPair:Interpolator[List[Expr[String]]] = map orElse pair2
 
-			(mapOrPair andThen (AndChar andThen mapOrPair).repeat())
-				.map(xs => concatenateStrings(xs))
+			val literalString:Interpolator[Expr[String]] = (escapedChar orElse unreservedChar orElse codePointIn(";?:@+$,")).repeat().mapToExpr
+			val holeString:Interpolator[Expr[String]] = ofType[String]
+			val string:Interpolator[StringExpr] = (holeString orElse literalString).map(s => StringExpr.single(s))
+
+			val holePair:Interpolator[StringExpr] = ofType[scala.Tuple2[String, String]]
+				.map(x =>
+					StringExpr.multiple(
+						List(
+							(sb: Expr[StringBuilder]) => '{ $sb.append($x._1); () },
+							(sb: Expr[StringBuilder]) => '{ $sb.append("="); () },
+							(sb: Expr[StringBuilder]) => '{ $sb.append($x._2); () },
+						)
+					)
+				)
+			val literalPair:Interpolator[StringExpr] = (string andThen EqualsChar andThen string)
+			val pair:Interpolator[StringExpr] = holePair orElse literalPair
+
+			val map:Interpolator[StringExpr] = ofType[scala.collection.Map[String, String]]
+				.map(m => StringExpr.single(
+					'{ $m.map($tupleConcatFun).mkString("&") },
+					List((sb: Expr[StringBuilder]) => '{$m.map($tupleConcatFun).addString($sb, "&"); ()})
+				))
+
+			val mapOrPair:Interpolator[StringExpr] = map orElse pair
+
+			mapOrPair.repeat(min = 1, delimiter = AndChar)(using RepeatStringExpr)
 		}
 		Mapping.attempt orElse Arbitrary
 	}
