@@ -99,6 +99,8 @@ lazy val base = (projectMatrix in file("Base"))
 			)
 			case _ => Seq()
 		}),
+		mimaPreviousArtifacts := Set(organization.value %% name.value % "0.1.0"),
+		tastyMiMaPreviousArtifacts := mimaPreviousArtifacts.value,
 		console / initialCommands := """
 			import scala.quoted.{Expr, Quotes}
 			import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
@@ -123,6 +125,8 @@ lazy val base = (projectMatrix in file("Base"))
 
 lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)
+	.disablePlugins(MimaPlugin)
+	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
 	.settings(
 		name := "json",
@@ -153,6 +157,8 @@ lazy val json = (projectMatrix in file("JsonParser"))
 
 lazy val time = (projectMatrix in file("TimeParser"))
 	.dependsOn(base)
+	.disablePlugins(MimaPlugin)
+	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
 	.settings(
 		name := "time",
@@ -188,6 +194,8 @@ lazy val time = (projectMatrix in file("TimeParser"))
 
 lazy val uri = (projectMatrix in file("UriParser"))
 	.dependsOn(base)
+	.disablePlugins(MimaPlugin)
+	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
 	.settings(
 		name := "uri",
@@ -205,6 +213,8 @@ lazy val uri = (projectMatrix in file("UriParser"))
 
 lazy val xml = (projectMatrix in file("XmlParser"))
 	.dependsOn(base)
+	.disablePlugins(MimaPlugin)
+	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
 	.settings(
 		name := "xml",
@@ -220,6 +230,8 @@ lazy val xml = (projectMatrix in file("XmlParser"))
 		scala3Ver,
 	))
 
+disablePlugins(MimaPlugin)
+disablePlugins(TastyMiMaPlugin)
 autoScalaLibrary := false
 publish / skip := true
 

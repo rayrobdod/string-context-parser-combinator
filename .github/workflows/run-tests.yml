@@ -20,6 +20,21 @@ jobs:
       run: echo "Global / parallelExecution := false">parallelExecution.sbt
     - name: sbt test
       run: sbt test
+  mima:
+    needs: test
+    runs-on: ubuntu-latest
+    name: MigrationManager
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: 8
+        cache: 'sbt'
+    - name: sbt mimaReportBinaryIssues
+      run: sbt mimaReportBinaryIssues
+    - name: sbt tastyMiMaReportIssues
+      run: sbt tastyMiMaReportIssues
   publish-artifact:
     strategy:
       matrix:
