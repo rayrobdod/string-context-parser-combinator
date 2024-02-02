@@ -7,11 +7,11 @@ val githubId = "rayrobdod/string-context-parser-combinator"
 sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / dynverVTagPrefix := false
+ThisBuild / organization := "name.rayrobdod"
 
 lazy val sharedSettings = Seq(
 	sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
 
-	organization := "name.rayrobdod",
 	organizationHomepage := Some(url("https://rayrobdod.name/")),
 	homepage := Some(url("https://rayrobdod.name/programming/libraries/scala/string-context-parser-combinator/")),
 	versionScheme := Some("early-semver"),
