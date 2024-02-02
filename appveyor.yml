@@ -3,6 +3,7 @@ image: Visual Studio 2022
 install:
   - cmd: choco install sbt
   - cmd: refreshenv
+  - cmd: echo Global / parallelExecution := false>parallelExecution.sbt
   - cmd: sbt update
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
