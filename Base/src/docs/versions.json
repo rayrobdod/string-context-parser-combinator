@@ -1,5 +1,6 @@
 {
 	"versions": {
+		"0.1.0": "https://rayrobdod.github.io/string-context-parser-combinator/0.1.0/",
 		"Snapshot": "https://rayrobdod.github.io/string-context-parser-combinator/SNAPSHOT/"
 	}
 }
