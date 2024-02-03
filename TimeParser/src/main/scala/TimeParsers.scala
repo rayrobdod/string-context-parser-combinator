@@ -42,6 +42,7 @@ object TimeParsers {
 		toExpr_Int: ToExpr[Int],
 		toExpr_Year: ToExpr[Year],
 		toExpr_Month: ToExpr[Month],
+		eithered_SymmetricExprInt: typeclass.BiEithered[Expr, Expr[Int], Expr[Int], Expr[Int]],
 		eithered_SymmetricExprYear: typeclass.BiEithered[Expr, Expr[Year], Expr[Year], Expr[Year]],
 		eithered_SymmetricExprMonth: typeclass.BiEithered[Expr, Expr[Month], Expr[Month], Expr[Month]],
 		eithered_SymmetricExprYearMonth: typeclass.BiEithered[Expr, Expr[YearMonth], Expr[YearMonth], Expr[YearMonth]],
@@ -99,6 +100,7 @@ object TimeParsers {
 							.mapToExpr[Int, Expr, ToExpr, Type]
 							.extractorAtom[Expr, Type, Int]
 							.toExtractor
+							.orElse(ofType[Int].toExtractor)
 						)
 
 				paired(interpolator, extractor)

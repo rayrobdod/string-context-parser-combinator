@@ -87,6 +87,26 @@ final class localdate2 extends munit.FunSuite {
 			case _ => fail("did not match")
 		}
 	}
+	test("can extract a year and a month and a day from value") {
+		LocalDate.of(2001, 2, 3) match {
+			case localdate"${year}-${month}-${day}" => {
+				assertEquals(year, Year.of(2001))
+				assertEquals(month, Month.FEBRUARY)
+				assertEquals(day, 3)
+			}
+			case _ => fail("did not match")
+		}
+	}
+	test("can extract y-m-d from a ofEpochDay value") {
+		LocalDate.ofEpochDay(10000) match {
+			case localdate"${year}-${month}-${day}" => {
+				assertEquals(year, Year.of(1997))
+				assertEquals(month, Month.MAY)
+				assertEquals(day, 19)
+			}
+			case _ => fail("did not match")
+		}
+	}
 	test("does not compile if attempting to match month 0") {
 		interceptMessage[ParseException]("Expected 01 <= $value <= 12 or OfType(java.time.Month)\n\t2001-00-03\n\t     ^")(
 			LocalDate.of(2001, 2, 3) match {
