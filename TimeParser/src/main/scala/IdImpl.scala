@@ -7,6 +7,7 @@ import name.rayrobdod.stringContextParserCombinator._
 object IdImpl {
 	private[this] val leafParsers = Parser.idParsers
 	import leafParsers.end
+	import leafParsers.ofType
 	import TimeParsers.intTwoDigits
 	import typeclass.BiEithered.idSymmetric
 
@@ -28,8 +29,9 @@ object IdImpl {
 		typeclass.ToExprMapping.forId
 
 	private val timeParsers = TimeParsers[Id, IdToExpr, ClassTag](leafParsers)(
-		(ym) => intTwoDigits(1, ym.lengthOfMonth).map(day => ym.atDay(day)),
-		java.time.LocalTime.of _
+		(ym) => ofType[DayOfMonth].map(_.getValue).orElse(intTwoDigits(1, ym.lengthOfMonth)).map(day => ym.atDay(day)),
+		java.time.LocalTime.of _,
+		DayOfMonth.of _,
 	)
 
 	def interpolate_localDate(sc:StringContext, args:Any*):LocalDate = {

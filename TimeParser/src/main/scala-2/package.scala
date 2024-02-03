@@ -55,24 +55,31 @@ package datetime {
 			}
 		}
 
+		private def dayOfMonth(max: Int): Interpolator[c.Expr[Int]] = {
+			ofType[DayOfMonth].map(d => c.Expr[Int](q"$d.getValue")).orElse(intTwoDigits(1, max).mapToExpr)
+		}
+
 		private val timeParsers = TimeParsers(leafParsers)(
 			{(ymExpr) => ymExpr match {
 				case c.Expr(`unliftYearMonth`(ym)) => {
-					intTwoDigits(1, ym.lengthOfMonth).map(day => c.Expr[LocalDate](liftLocalDate(ym.atDay(day))))
+					ofType[DayOfMonth].map(d => c.Expr[LocalDate](q"LocalDate.of(${ym.getYear}, ${ym.getMonth}, ${d}.getValue)")).orElse(
+						intTwoDigits(1, ym.lengthOfMonth).map(day => c.Expr[LocalDate](liftLocalDate(ym.atDay(day))))
+					)
 				}
 				case c.Expr(Apply(Select(_, Name("atMonth")), List(`unliftMonth`(month)))) => {
-					intTwoDigits(1, month.maxLength).map({day =>
+					dayOfMonth(month.maxLength).map({day =>
 						c.Expr[LocalDate](q"$ymExpr.atDay($day)")
 					})
 				}
 				case ymExpr => {
-					intTwoDigits(1, 31).map({day =>
+					dayOfMonth(31).map({day =>
 						c.Expr[LocalDate](q"$ymExpr.atDay($day)")
 					})
 				}
 			}},
 			(hour, minute, second, nano) =>
-					c.Expr[LocalTime](q"java.time.LocalTime.of($hour, $minute, $second, $nano)")
+					c.Expr[LocalTime](q"java.time.LocalTime.of($hour, $minute, $second, $nano)"),
+			(value) => c.Expr[DayOfMonth](q"DayOfMonth.of($value)"),
 		)
 
 		private[this] val extensionClassName = "name.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"

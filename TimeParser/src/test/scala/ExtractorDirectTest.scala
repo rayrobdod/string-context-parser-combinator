@@ -92,7 +92,7 @@ final class localdate2 extends munit.FunSuite {
 			case localdate"${year}-${month}-${day}" => {
 				assertEquals(year, Year.of(2001))
 				assertEquals(month, Month.FEBRUARY)
-				assertEquals(day, 3)
+				assertEquals(day, DayOfMonth.of(3))
 			}
 			case _ => fail("did not match")
 		}
@@ -102,7 +102,7 @@ final class localdate2 extends munit.FunSuite {
 			case localdate"${year}-${month}-${day}" => {
 				assertEquals(year, Year.of(1997))
 				assertEquals(month, Month.MAY)
-				assertEquals(day, 19)
+				assertEquals(day, DayOfMonth.of(19))
 			}
 			case _ => fail("did not match")
 		}

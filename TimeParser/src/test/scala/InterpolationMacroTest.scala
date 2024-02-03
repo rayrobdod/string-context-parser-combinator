@@ -130,7 +130,7 @@ final class localdate extends munit.FunSuite {
 	test("Rejects day 0") {
 		assertNoDiff(
 			compileErrors("""localdate"2000-01-00""""),
-			"""|error: Expected 01 <= $value <= 31
+			"""|error: Expected 01 <= $value <= 31 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)
 				|localdate"2000-01-00"
 				|                  ^
 				|""".stripMargin
@@ -139,7 +139,7 @@ final class localdate extends munit.FunSuite {
 	test("Rejects day 32") {
 		assertNoDiff(
 			compileErrors("""localdate"2000-01-32""""),
-			"""|error: Expected 01 <= $value <= 31
+			"""|error: Expected 01 <= $value <= 31 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)
 				|localdate"2000-01-32"
 				|                  ^
 				|""".stripMargin
@@ -148,7 +148,7 @@ final class localdate extends munit.FunSuite {
 	test("Rejects February 31st of a known year") {
 		assertNoDiff(
 			compileErrors("""localdate"2000-02-31""""),
-			"""|error: Expected 01 <= $value <= 29
+			"""|error: Expected 01 <= $value <= 29 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)
 				|localdate"2000-02-31"
 				|                  ^
 				|""".stripMargin
@@ -157,7 +157,7 @@ final class localdate extends munit.FunSuite {
 	test("Rejects February 31st of an unknown year") {
 		assertNoDiff(
 			compileErrors("val year = Year.of(2000);\nlocaldate\"${year}-02-31\""),
-			"""|error: Expected 01 <= $value <= 29
+			"""|error: Expected 01 <= $value <= 29 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)
 				|localdate"${year}-02-31"
 				|                     ^
 				|""".stripMargin
@@ -175,11 +175,21 @@ final class localdate extends munit.FunSuite {
 	test("Rejects February 29th of a non-leap year") {
 		assertNoDiff(
 			compileErrors("""localdate"2003-02-29""""),
-			"""|error: Expected 01 <= $value <= 28
+			"""|error: Expected 01 <= $value <= 28 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)
 				|localdate"2003-02-29"
 				|                  ^
 				|""".stripMargin
 		)
+	}
+	test("Accepts an unknown day-of-month") {
+		val day = DayOfMonth.of(3)
+		assertEquals(localdate"2000-02-${day}", LocalDate.of(2000, 2, 3))
+	}
+	test("Accepts an unknown day-of-month (2)") {
+		val day = DayOfMonth.of(31)
+		intercept[DateTimeException]{
+			localdate"2000-02-${day}"
+		}
 	}
 }
 final class localdatetime extends munit.FunSuite {
@@ -201,5 +211,9 @@ final class localdatetime extends munit.FunSuite {
 	test("Month interpolated") {
 		val month = Month.FEBRUARY
 		assertEquals(localdatetime"2001-${month}-03T04:05:06", LocalDateTime.of(2001, 2, 3, 4, 5, 6))
+	}
+	test("DayOfMonth interpolated") {
+		val day = DayOfMonth.of(3)
+		assertEquals(localdatetime"2001-02-${day}T04:05:06", LocalDateTime.of(2001, 2, 3, 4, 5, 6))
 	}
 }

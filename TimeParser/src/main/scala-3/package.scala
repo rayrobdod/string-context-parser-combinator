@@ -56,8 +56,12 @@ object MacroImpl {
 	}
 
 	import Parser.end
+	import Interpolator.ofType
 	import TimeParsers.intTwoDigits
 
+	private def dayOfMonth(max: Int)(using Quotes): Interpolator[quoted.Expr[Any], quoted.Expr[Int]] = {
+		ofType[DayOfMonth].map(d => '{$d.getValue}).orElse(intTwoDigits(1, max).mapToExpr)
+	}
 
 	private def timeParsers(using Quotes) = {
 		val leafParsers:Parser.Parsers[quoted.Expr, quoted.ToExpr, quoted.Type] =
@@ -65,17 +69,22 @@ object MacroImpl {
 
 		TimeParsers(leafParsers)(
 			_ match {
-				case Expr(ym) => intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day)))
-				case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => intTwoDigits(1, Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, ${Expr(day)})})
-				case '{YearMonth.of($y:Int, ${Expr(m)}:Month)} => intTwoDigits(1, m.maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, ${Expr(day)})})
-				case '{($year:Year).atMonth(${Expr(m)}:Int)} => intTwoDigits(1, Month.of(m).maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay(${Expr(day)})})
-				case '{($year:Year).atMonth(${Expr(m)}:Month)} => intTwoDigits(1, m.maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay(${Expr(day)})})
-				case '{YearMonth.of($y:Int, $m:Int)} => intTwoDigits(1, 31).map(day => '{LocalDate.of($y, $m, ${Expr(day)})})
-				case '{YearMonth.of($y:Int, $m:Month)} => intTwoDigits(1, 31).map(day => '{LocalDate.of($y, $m, ${Expr(day)})})
-				case ym => intTwoDigits(1, 31).map(day => '{$ym.atDay(${Expr(day)})})
+				case Expr(ym) => {
+					ofType[DayOfMonth].map(day => '{LocalDate.of(${Expr(ym.getYear)}, ${Expr(ym.getMonth)}, ${day}.getValue)})
+						.orElse(intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day))))
+				}
+				case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
+				case '{YearMonth.of($y:Int, ${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
+				case '{($year:Year).atMonth(${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay($day)})
+				case '{($year:Year).atMonth(${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay($day)})
+				case '{YearMonth.of($y:Int, $m:Int)} => dayOfMonth(31).map(day => '{LocalDate.of($y, $m, $day)})
+				case '{YearMonth.of($y:Int, $m:Month)} => dayOfMonth(31).map(day => '{LocalDate.of($y, $m, $day)})
+				case ym => dayOfMonth(31).map(day => '{$ym.atDay($day)})
 			},
 			(hour, minute, second, nano) =>
-				'{ LocalTime.of($hour, $minute, $second, $nano) }
+				'{ LocalTime.of($hour, $minute, $second, $nano) },
+			(value) =>
+				'{ DayOfMonth.of($value) },
 		)
 	}
 

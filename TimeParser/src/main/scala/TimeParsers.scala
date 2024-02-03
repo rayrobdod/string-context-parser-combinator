@@ -30,12 +30,14 @@ object TimeParsers {
 		leaves:Parser.Parsers[Expr, ToExpr, Type]
 	)(
 		yearMonthFlatMap: Expr[YearMonth] => leaves.Interpolator[Expr[LocalDate]],
-		partsToLocalTime: (Expr[Int], Expr[Int], Expr[Int], Expr[Int]) => Expr[LocalTime]
+		partsToLocalTime: (Expr[Int], Expr[Int], Expr[Int], Expr[Int]) => Expr[LocalTime],
+		ofDayOfMonth: Expr[Int] => Expr[DayOfMonth],
 	)(implicit
 		toExprMapping: typeclass.ToExprMapping[Expr, ToExpr, Type],
 		type_Int: Type[Int],
 		type_Year: Type[Year],
 		type_Month: Type[Month],
+		type_DayOfMonth: Type[DayOfMonth],
 		type_YearMonth: Type[YearMonth],
 		type_LocalDate: Type[LocalDate],
 		type_LocalTime: Type[LocalTime],
@@ -100,7 +102,7 @@ object TimeParsers {
 							.mapToExpr[Int, Expr, ToExpr, Type]
 							.extractorAtom[Expr, Type, Int]
 							.toExtractor
-							.orElse(ofType[Int].toExtractor)
+							.orElse(ofType[DayOfMonth].toExtractor.contramap(ofDayOfMonth))
 						)
 
 				paired(interpolator, extractor)

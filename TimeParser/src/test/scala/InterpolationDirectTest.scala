@@ -75,19 +75,23 @@ final class localdate2 extends munit.FunSuite {
 		interceptMessage[Exception]("Expected 01 <= $value <= 12 or OfType(java.time.Month)\n\t2000-1-01\n\t     ^")(localdate2"2000-1-01")
 	}
 	test("Rejects day 0") {
-		interceptMessage[Exception]("Expected 01 <= $value <= 31\n\t2000-01-00\n\t        ^")(localdate2"2000-01-00")
+		interceptMessage[Exception]("Expected 01 <= $value <= 31 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)\n\t2000-01-00\n\t        ^")(localdate2"2000-01-00")
 	}
 	test("Rejects day 32") {
-		interceptMessage[Exception]("Expected 01 <= $value <= 31\n\t2000-01-32\n\t        ^")(localdate2"2000-01-32")
+		interceptMessage[Exception]("Expected 01 <= $value <= 31 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)\n\t2000-01-32\n\t        ^")(localdate2"2000-01-32")
 	}
 	test("Rejects February 31st of a known year") {
-		interceptMessage[Exception]("Expected 01 <= $value <= 29\n\t2000-02-31\n\t        ^")(localdate2"2000-02-31")
+		interceptMessage[Exception]("Expected 01 <= $value <= 29 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)\n\t2000-02-31\n\t        ^")(localdate2"2000-02-31")
 	}
 	test("Accepts February 29th of a leap year") {
 		assertEquals(localdate2"2004-02-29", LocalDate.of(2004, 2, 29))
 	}
 	test("Rejects February 29th of a non-leap year") {
-		interceptMessage[Exception]("Expected 01 <= $value <= 28\n\t2003-02-29\n\t        ^")(localdate2"2003-02-29")
+		interceptMessage[Exception]("Expected 01 <= $value <= 28 or OfType(name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth)\n\t2003-02-29\n\t        ^")(localdate2"2003-02-29")
+	}
+	test("Accepts an unknown day of a year-month") {
+		val day = DayOfMonth.of(3)
+		assertEquals(localdate2"2000-02-${day}", LocalDate.of(2000, 2, 3))
 	}
 }
 final class localdatetime2 extends munit.FunSuite {
@@ -109,5 +113,9 @@ final class localdatetime2 extends munit.FunSuite {
 	test("Month interpolated") {
 		val month = Month.FEBRUARY
 		assertEquals(localdatetime2"2001-${month}-03T04:05:06", LocalDateTime.of(2001, 2, 3, 4, 5, 6))
+	}
+	test("DayOfMonth interpolated") {
+		val day = DayOfMonth.of(3)
+		assertEquals(localdatetime2"2001-02-${day}T04:05:06", LocalDateTime.of(2001, 2, 3, 4, 5, 6))
 	}
 }
