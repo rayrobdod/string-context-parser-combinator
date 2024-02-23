@@ -6,11 +6,11 @@ import scala.reflect.macros.blackbox.Context
 
 private[typeclass]
 trait VersionSpecificRepeated {
-	def concatenateExprString(c:Context):Repeated[c.Expr[String], c.Expr[String]] = {
+	def forContextConcatenateString(c:Context):Repeated[c.Expr[String], c.Expr[String]] = {
 		import c.universe.Tree
 		import c.universe.Quasiquote
 		val ttString0 = c.universe.typeTag[String]
-		final class ConcatenateExprString extends Repeated[c.Expr[String], c.Expr[String]] {
+		final class ConcatenateString extends Repeated[c.Expr[String], c.Expr[String]] {
 			val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
 			val accumulatorTypeTree = c.universe.TypeTree(
 				c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
@@ -62,7 +62,7 @@ trait VersionSpecificRepeated {
 				}
 			}
 		}
-		new ConcatenateExprString()
+		new ConcatenateString()
 	}
 }
 

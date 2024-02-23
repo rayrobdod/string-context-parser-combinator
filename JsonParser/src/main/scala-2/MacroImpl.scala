@@ -157,7 +157,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val content:Parser[c.Expr[String]] = paired(
 			(jCharsLifted orElse jCharsImmediate)
 				.toInterpolator
-				.repeat(strategy = RepeatStrategy.Possessive)(typeclass.Repeated.concatenateExprString(c))
+				.repeat(strategy = RepeatStrategy.Possessive)(typeclass.Repeated.forContextConcatenateString(c))
 			,
 			(jCharsImmediate).toExtractor
 		)

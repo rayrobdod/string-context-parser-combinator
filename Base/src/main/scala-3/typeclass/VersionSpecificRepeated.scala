@@ -7,8 +7,8 @@ import scala.quoted.*
 
 private[typeclass]
 trait VersionSpecificRepeated {
-	def quotedConcatenateExprString(using Quotes):Repeated[Expr[String], Expr[String]] = {
-		final class ConcatenateExprString extends Repeated[Expr[String], Expr[String]] {
+	def quotedConcatenateString(using Quotes):Repeated[Expr[String], Expr[String]] = {
+		final class ConcatenateString extends Repeated[Expr[String], Expr[String]] {
 			sealed trait Acc
 			object AccZero extends Acc
 			final class AccOne(val elem: Expr[String]) extends Acc
@@ -48,7 +48,7 @@ trait VersionSpecificRepeated {
 				}
 			}
 		}
-		new ConcatenateExprString()
+		new ConcatenateString()
 	}
 }
 

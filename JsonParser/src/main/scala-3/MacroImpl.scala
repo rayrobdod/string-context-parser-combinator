@@ -156,7 +156,7 @@ object MacroImpl {
 		val content:Parser[Expr[String]] = paired(
 			(jCharsLifted orElse jCharsImmediate)
 				.toInterpolator
-				.repeat(strategy = RepeatStrategy.Possessive)(using typeclass.Repeated.quotedConcatenateExprString)
+				.repeat(strategy = RepeatStrategy.Possessive)(using typeclass.Repeated.quotedConcatenateString)
 			,
 			(jCharsImmediate).toExtractor
 		)
