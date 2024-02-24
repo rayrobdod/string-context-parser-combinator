@@ -86,6 +86,20 @@ trait BiRepeated[Expr[_], A, Z]
 
 /** Predefined implicit implementations of Repeated */
 object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
+	private def apply[A, Acc, Z](
+		initFn: () => Acc,
+		appendFn: (Acc, A) => Acc,
+		resultFn: Acc => Z,
+	): Repeated[A, Z] = {
+		type Acc2 = Acc
+		new Repeated[A, Z] {
+			type Acc = Acc2
+			def init():Acc = initFn()
+			def append(acc:Acc, elem:A):Acc = appendFn(acc, elem)
+			def result(acc:Acc):Z = resultFn(acc)
+		}
+	}
+
 	/**
 	 * Repeated units results in a unit
 	 */
@@ -123,6 +137,14 @@ object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 			def result(acc:Acc):String = acc.toString
 		}
 		new RepeatedCodepoint()
+	}
+
+	def idConcatenateString:Repeated[String, String] = {
+		Repeated.apply(
+			() => new StringBuilder,
+			(acc:StringBuilder, elem:String) => acc ++= elem,
+			(acc:StringBuilder) => acc.toString,
+		)
 	}
 }
 
