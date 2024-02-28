@@ -1,6 +1,5 @@
 package name.rayrobdod
 
-import scala.Predef.refArrayOps
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 import scala.Predef._
