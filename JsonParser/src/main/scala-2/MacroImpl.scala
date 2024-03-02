@@ -1,50 +1,11 @@
 package name.rayrobdod.stringContextParserCombinatorExample.json
 
-import scala.collection.immutable.Seq
 import scala.math.BigDecimal
 import scala.reflect.macros.whitebox.Context
 import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
-	/**
-	 * Creates an Expr that represents the concatenation of the component Exprs
-	 */
-	private[this] def concatenateStrings(strings:List[c.Expr[String]]):c.Expr[String] = {
-		strings match {
-			case Seq() => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
-			case Seq(x) => x
-			case _ => {
-				val accumulatorName = c.universe.TermName("accumulator$")
-				val accumulatorType = c.universe.typeTag[scala.collection.mutable.StringBuilder]
-				val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
-				val accumulatorExpr = c.Expr(c.universe.Ident(accumulatorName))(accumulatorType)
-				val stats = scala.collection.mutable.Buffer[c.universe.Tree](
-					c.universe.ValDef(
-						c.universe.NoMods,
-						accumulatorName,
-						accumulatorTypeTree,
-						c.universe.Apply(
-							c.universe.Select(
-								c.universe.New(accumulatorTypeTree),
-								c.universe.termNames.CONSTRUCTOR
-							),
-							List()
-						)
-					)
-				)
-				strings.foreach(x => stats += c.universe.reify(accumulatorExpr.splice.append(x.splice)).tree)
-
-				c.Expr[String](
-					c.universe.Block(
-						stats.toList,
-						c.universe.reify(accumulatorExpr.splice.toString).tree
-					)
-				)
-			}
-		}
-	}
-
 	private[this] def assembleCollection[A](parts:List[Either[c.Expr[A], c.Expr[List[A]]]])(implicit builderType: c.universe.TypeTag[scala.collection.mutable.Builder[A, List[A]]]):c.Expr[List[A]] = {
 		val builderName = c.freshName(c.universe.TermName("builder"))
 		val builderTypeTree = c.universe.TypeTree(builderType.tpe)
@@ -196,8 +157,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val content:Parser[c.Expr[String]] = paired(
 			(jCharsLifted <|> jCharsImmediate)
 				.toInterpolator
-				.repeat[c.Expr[Any], List[c.Expr[String]]](strategy = RepeatStrategy.Possessive)
-				.map(strs => concatenateStrings(strs))
+				.repeat(strategy = RepeatStrategy.Possessive)(typeclass.Repeated.forContextConcatenateString(c))
 			,
 			(jCharsImmediate).toExtractor
 		)
