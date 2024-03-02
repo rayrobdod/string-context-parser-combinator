@@ -139,6 +139,10 @@ object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 		new RepeatedCodepoint()
 	}
 
+	/**
+	 * Creates a String consisting of the concatenation of the component strings
+	 * @since 0.1.1
+	 */
 	def idConcatenateString:Repeated[String, String] = {
 		Repeated.apply(
 			() => new StringBuilder,

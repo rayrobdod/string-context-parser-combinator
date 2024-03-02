@@ -6,6 +6,10 @@ import scala.reflect.macros.blackbox.Context
 
 private[typeclass]
 trait VersionSpecificRepeated {
+	/**
+	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
+	 * @since 0.1.1
+	 */
 	def forContextConcatenateString(c:Context):Repeated[c.Expr[String], c.Expr[String]] = {
 		import c.universe.Tree
 		import c.universe.Quasiquote

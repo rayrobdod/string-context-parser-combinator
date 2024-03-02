@@ -7,6 +7,10 @@ import scala.quoted.*
 
 private[typeclass]
 trait VersionSpecificRepeated {
+	/**
+	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
+	 * @since 0.1.1
+	 */
 	def quotedConcatenateString(using Quotes):Repeated[Expr[String], Expr[String]] = {
 		final class ConcatenateString extends Repeated[Expr[String], Expr[String]] {
 			sealed trait Acc
