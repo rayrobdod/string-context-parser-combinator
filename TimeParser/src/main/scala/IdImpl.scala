@@ -29,27 +29,27 @@ object IdImpl {
 		typeclass.ToExprMapping.forId
 
 	private val timeParsers = TimeParsers[Id, IdToExpr, ClassTag](leafParsers)(
-		(ym) => ofType[DayOfMonth].map(_.getValue).orElse(intTwoDigits(1, ym.lengthOfMonth)).map(day => ym.atDay(day)),
+		(ym) => (ofType[DayOfMonth].map(_.getValue) <|> intTwoDigits(1, ym.lengthOfMonth)).map(day => ym.atDay(day)),
 		java.time.LocalTime.of _,
 		DayOfMonth.of _,
 	)
 
 	def interpolate_localDate(sc:StringContext, args:Any*):LocalDate = {
-		(timeParsers.localDate andThen end).interpolate(sc, args.toList)
+		(timeParsers.localDate <~ end).interpolate(sc, args.toList)
 	}
 	def interpolate_localTime(sc:StringContext, args:Any*):LocalTime = {
-		(timeParsers.localTime andThen end).interpolate(sc, args.toList)
+		(timeParsers.localTime <~ end).interpolate(sc, args.toList)
 	}
 	def interpolate_localDateTime(sc:StringContext, args:Any*):LocalDateTime = {
-		(timeParsers.localDateTime andThen end).interpolate(sc, args.toList)
+		(timeParsers.localDateTime <~ end).interpolate(sc, args.toList)
 	}
 	def extract_localDate(sc:StringContext, value:LocalDate):Option[Seq[Any]] = {
-		(timeParsers.localDate andThen end).extract(sc, value)
+		(timeParsers.localDate <~ end).extract(sc, value)
 	}
 	def extract_localTime(sc:StringContext, value:LocalTime):Option[Seq[Any]] = {
-		(timeParsers.localTime andThen end).extract(sc, value)
+		(timeParsers.localTime <~ end).extract(sc, value)
 	}
 	def extract_localDateTime(sc:StringContext, value:LocalDateTime):Option[Seq[Any]] = {
-		(timeParsers.localDateTime andThen end).extract(sc, value)
+		(timeParsers.localDateTime <~ end).extract(sc, value)
 	}
 }

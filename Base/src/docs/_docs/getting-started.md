@@ -112,11 +112,11 @@ s2"Hello" // throws: Expected ofType[Object]
 
 Now that we have one parser that will match a sequence of characters and another that will match an arg,
 we can create a parser that will match either a sequence of characters or an arg by combing the two other parsers using the [[orElse|name.rayrobdod.stringContextParserCombinator.Interpolator.orElse]] operator.
-The `orElse` operator creates a parser that will attempt the left parser,
+The `<|>` operator creates a parser that will attempt the left parser,
 passing the result of left parser if the result was a success,
 otherwise attempting the right parser and passing that result.
 
-Using the default givens, since both arguments to the orElse operator are `Interpolator[String]`,
+Using the default givens, since both arguments to the `<|>` operator are `Interpolator[String]`,
 the result of the operator will also be a `Interpolator[String]`
 
 ```scala
@@ -130,7 +130,7 @@ extension (sc:StringContext)
         .repeat()
     val anyArg = ofType[Any]
         .map(_.toString)
-    val segment = anyChars orElse anyArg
+    val segment = anyChars <|> anyArg
     segment.interpolate(sc, args)
 
 s2"2 + 2 = ${2 + 2}" // "2 + 2 = "
@@ -157,7 +157,7 @@ extension (sc:StringContext)
         .repeat(1)
     val anyArg = ofType[Any]
         .map(_.toString)
-    val segment = anyChars orElse anyArg
+    val segment = anyChars <|> anyArg
     segment.interpolate(sc, args)
 
 s2"2 + 2 = ${2 + 2}" // "2 + 2 = "
@@ -181,7 +181,7 @@ extension (sc:StringContext)
         .repeat(1)
     val anyArg = ofType[Any]
         .map(_.toString)
-    val segment = anyChars orElse anyArg
+    val segment = anyChars <|> anyArg
     val segments = segment
         .repeat()
     segments.interpolate(sc, args)
@@ -203,7 +203,7 @@ extension (sc:StringContext)
         .repeat(1)
     val anyArg = ofType[Any]
         .map(_.toString)
-    val segment = anyChars orElse anyArg
+    val segment = anyChars <|> anyArg
     val segments = segment
         .repeat()
         .map(_.mkString)
@@ -266,10 +266,10 @@ Since the `ofType` result is in an `Expr`, the mapping applied to this value mus
 ```
 
 The operands that create a segment have changed from both being a `Interpolator[String]` to both being an `Interpolator[Expr[String]]`,
-so the `orElse`-combination of the two parts changes in the same way, but no source changes occur as a consequence of this.
+so the `<|>`-combination of the two parts changes in the same way, but no source changes occur as a consequence of this.
 
 ```diff
- val segment = anyChars orElse anyArg
+ val segment = anyChars <|> anyArg
 ```
 
 Lastly, the `segments` mapping has to be changed from a `Seq[String] => String` to a `Seq[Expr[String]] => Expr[String]`.
@@ -299,7 +299,7 @@ def s2Impl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Strin
   val anyArg = ofType[Any]
       .map(arg => '{$arg.toString})
 
-  val segment = anyChars orElse anyArg
+  val segment = anyChars <|> anyArg
 
   val segments = segment
       .repeat()

@@ -120,7 +120,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val jFalse = isString("false")
 			.map(_ => c.universe.reify(_root_.org.json4s.JsonAST.JBool.False))
 			.extractorAtom[c.Expr, c.TypeTag, JBool]
-		jTrue orElse jFalse
+		jTrue <|> jFalse
 	}
 
 	private[this] val jnumber:Parser[c.Expr[JValue with JNumber]] = {
@@ -138,9 +138,9 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 		val stringRepr: Interpolator[String] = (
 			charIn("-").optionally()
-			andThen (charIn("0").map(_.toString) orElse (charIn('1' to '9').map(_.toString) andThen RepeatedDigits(0)))
-			andThen (charIn(".").map(_.toString) andThen RepeatedDigits(1)).optionally()
-			andThen (charIn("eE").map(_.toString) andThen charIn("+-").optionally() andThen RepeatedDigits(1)).optionally()
+			<~> (charIn("0").map(_.toString) <|> (charIn('1' to '9').map(_.toString) <~> RepeatedDigits(0)))
+			<~> (charIn(".").map(_.toString) <~> RepeatedDigits(1)).optionally()
+			<~> (charIn("eE").map(_.toString) <~> charIn("+-").optionally() <~> RepeatedDigits(1)).optionally()
 		)
 			.opaque("Number Literal")
 
@@ -169,7 +169,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val delimiter:Parser[Unit] = leafParsers.isString("\"")
 		val jCharImmediate:Interpolator[Char] = charWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
 		val jCharEscaped:Interpolator[Char] = (
-			(isString("\\") andThen charFlatCollect({
+			(isString("\\") ~> charFlatCollect({
 				case '\\' => pass.map(_ => '\\')
 				case '/' => pass.map(_ => '/')
 				case '"' => pass.map(_ => '"')
@@ -181,7 +181,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				case 'u' => charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar)
 			}))
 		)
-		val jChar:Interpolator[Char] = jCharEscaped orElse jCharImmediate
+		val jChar:Interpolator[Char] = jCharEscaped <|> jCharImmediate
 		val jCharsImmediate:Parser[c.Expr[String]] = jChar
 			.repeat(1, strategy = RepeatStrategy.Possessive)
 			.mapToExpr
@@ -194,14 +194,14 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			ofType[String].toExtractor
 		)
 		val content:Parser[c.Expr[String]] = paired(
-			(jCharsLifted orElse jCharsImmediate)
+			(jCharsLifted <|> jCharsImmediate)
 				.toInterpolator
 				.repeat[c.Expr[Any], List[c.Expr[String]]](strategy = RepeatStrategy.Possessive)
 				.map(strs => concatenateStrings(strs))
 			,
 			(jCharsImmediate).toExtractor
 		)
-		(delimiter andThen content andThen delimiter)
+		(delimiter ~> content <~ delimiter)
 	}
 
 	private[this] val jstring:Parser[c.Expr[JString]] = {
@@ -212,8 +212,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	}
 
 	private[this] val jarray:Parser[c.Expr[JArray]] = `lazy`(() => {
-		val prefix:Parser[Unit] = isString("[") andThen whitespace
-		val delimiter:Parser[Unit] = isString(",") andThen whitespace
+		val prefix:Parser[Unit] = isString("[") <~> whitespace
+		val delimiter:Parser[Unit] = isString(",") <~> whitespace
 		val suffix:Parser[Unit] = isString("]")
 
 		val interpolator:Interpolator[c.Expr[JArray]] = {
@@ -228,8 +228,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 
 			val splicableValue:Interpolator[Either[c.Expr[JValue], c.Expr[List[JValue]]]] = {
 				val value = jvalue.toInterpolator
-				val array = (isString("..").toInterpolator andThen liftedArray)
-				value.orElse(array)(typeclass.Eithered.discriminatedUnion)
+				val array = (isString("..").toInterpolator ~> liftedArray)
+				value <+> array
 			}
 
 			val literalPresplice:Interpolator[List[Either[c.Expr[JValue], c.Expr[List[JValue]]]]] = (
@@ -247,13 +247,13 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				.contramap((x:c.Expr[JArray]) =>  c.universe.reify(x.splice.arr))
 		}
 
-		prefix andThen paired(interpolator, extractor) andThen suffix
+		prefix ~> paired(interpolator, extractor) <~ suffix
 	})
 
 	private[this] val jobject:Parser[c.Expr[JObject]] = `lazy`(() => {
-		val prefix:Parser[Unit] = isString("{") andThen whitespace
-		val separator:Parser[Unit] = isString(":") andThen whitespace
-		val delimiter:Parser[Unit] = isString(",") andThen whitespace
+		val prefix:Parser[Unit] = isString("{") <~> whitespace
+		val separator:Parser[Unit] = isString(":") <~> whitespace
+		val delimiter:Parser[Unit] = isString(",") <~> whitespace
 		val suffix:Parser[Unit] = isString("}")
 
 		val interpolator:Interpolator[c.Expr[JObject]] = {
@@ -273,15 +273,15 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 					"A for Lift[A, JString]"
 				).map(x => c.universe.reify(x.splice.values))
 				val immediate:Interpolator[c.Expr[String]] = stringBase.toInterpolator
-				(jCharsLifted orElse immediate) andThen whitespace.toInterpolator
+				(jCharsLifted <|> immediate) <~ whitespace.toInterpolator
 			}
 
 			val splicableValue:Interpolator[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]] = {
-				val keyValue = (liftedKeyValue andThen whitespace.toInterpolator)
-				val keyThenValue = (key andThen separator.toInterpolator andThen jvalue.toInterpolator)
+				val keyValue = (liftedKeyValue <~ whitespace.toInterpolator)
+				val keyThenValue = (key <~ separator.toInterpolator <~> jvalue.toInterpolator)
 					.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
-				val mapping = (isString("..").toInterpolator andThen liftedObject andThen whitespace.toInterpolator)
-				keyValue.orElse(keyThenValue).orElse(mapping)(typeclass.Eithered.discriminatedUnion)
+				val mapping = (isString("..").toInterpolator ~> liftedObject <~ whitespace.toInterpolator)
+				(keyValue <|> keyThenValue) <+> mapping
 			}
 
 			val literalPresplice:Interpolator[List[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]]] = (
@@ -299,7 +299,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				.contramap(x => c.universe.reify(x.splice.obj))
 		}
 
-		prefix andThen paired(interpolator, extractor) andThen suffix
+		prefix ~> paired(interpolator, extractor) <~ suffix
 	})
 
 	private[this] val jlifted:Parser[c.Expr[JValue]] = {
@@ -350,17 +350,17 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		}
 
 		((
-			widenToJValue(jnull) orElse
-			widenToJValue(booleanValue) orElse
-			widenToJValue(jnumber) orElse
-			widenToJValue(jstring) orElse
-			widenToJValue(jarray) orElse
-			widenToJValue(jobject) orElse
+			widenToJValue(jnull) <|>
+			widenToJValue(booleanValue) <|>
+			widenToJValue(jnumber) <|>
+			widenToJValue(jstring) <|>
+			widenToJValue(jarray) <|>
+			widenToJValue(jobject) <|>
 			jlifted
-		) andThen whitespace)
+		) <~ whitespace)
 	}
 
-	private[this] val onlyJvalue = (whitespace andThen jvalue andThen end)
+	private[this] val onlyJvalue = (whitespace <~> jvalue <~> end)
 
 	private val className = "name.rayrobdod.stringContextParserCombinatorExample.json.package.JsonStringContext"
 	def stringContext_json(args:c.Expr[Any]*):c.Expr[JValue] = {

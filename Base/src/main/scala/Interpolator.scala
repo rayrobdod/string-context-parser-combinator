@@ -181,6 +181,35 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		new Interpolator(internal.AndThen.interpolator(this.impl, rhs.impl, ev))
 
 	/**
+	 * An alias for [[#andThen]]
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def <~>[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
+		this.andThen(rhs)(ev)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def <~[ExprZ <: Expr](rhs:Interpolator[ExprZ, Unit]):Interpolator[ExprZ, A] =
+		this.andThen(rhs)(typeclass.Sequenced.genericUnit)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def ~>[ExprZ <: Expr, B](rhs:Interpolator[ExprZ, B])(implicit ev: A <:< Unit):Interpolator[ExprZ, B] =
+		this.map(ev).andThen(rhs)(typeclass.Sequenced.unitGeneric)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def `<::>`[ExprZ <: Expr, B >: A](rhs:Interpolator[ExprZ, List[B]]):Interpolator[ExprZ, List[B]] =
+		this.andThen(rhs)({(h, t) => h :: t})
+
+	/**
 	 * Returns a parser which invokes this parser, and then:
 	 *   * If this parser run succeeded, return this internal's success
 	 *   * If this parser failed and consumed input, return this parser's failure
@@ -193,6 +222,30 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 */
 	def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
 		new Interpolator(internal.OrElse.interpolator(this.impl, rhs.impl, ev))
+
+	/**
+	 * An alias for [[#orElse]]
+	 * @group Branch
+	 * @since 0.1.1
+	 */
+	def <|>[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
+		this.orElse(rhs)(ev)
+
+	/**
+	 * Calls [[#orElse]] using specifically the [[typeclass.Eithered.discriminatedUnion]] implicit evidence
+	 * @group Branch
+	 * @since 0.1.1
+	 */
+	def <+>[ExprZ <: Expr, B](rhs:Interpolator[ExprZ, B]):Interpolator[ExprZ, Either[A, B]] =
+		this.orElse(rhs)(typeclass.Eithered.discriminatedUnion)
+
+	/**
+	 * Returns an interpolator that returns the `onFailValue` if this parser failed without consuming input
+	 * @group Branch
+	 * @since 0.1.1
+	 */
+	def </>[B, Z](onFailValue:B)(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[Expr, Z] =
+		this.orElse(Interpolator.idInterpolators.pass.map(_ => onFailValue))(ev)
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result

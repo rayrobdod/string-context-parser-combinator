@@ -146,6 +146,28 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 		new Parser(internal.AndThen.parser(this.impl, rhs.impl, ev))
 
 	/**
+	 * An alias for [[#andThen]]
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def <~>[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiSequenced[A,B,Z]):Parser[Expr, Type, Z] =
+		this.andThen(rhs)(ev)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def <~(rhs:Parser[Expr, Type, Unit]):Parser[Expr, Type, A] =
+		this.andThen(rhs)(typeclass.BiSequenced.genericUnit)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def ~>[B](rhs:Parser[Expr, Type, B])(implicit ev: A =:= Unit):Parser[Expr, Type, B] =
+		this.imap(ev, TypeConformanceCompat.equivFlip(ev)).andThen(rhs)(typeclass.BiSequenced.unitGeneric)
+
+	/**
 	 * Returns a parser which invokes this parser, and then:
 	 *   * If this parser run succeeded, return this internal's success
 	 *   * If this parser failed and consumed input, return this parser's failure
@@ -158,6 +180,14 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 	 */
 	def orElse[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiEithered[Expr, A,B,Z]):Parser[Expr, Type, Z] =
 		new Parser(internal.OrElse.parser(this.impl, rhs.impl, ev))
+
+	/**
+	 * An alias for [[#orElse]]
+	 * @group Branch
+	 * @since 0.1.1
+	 */
+	def <|>[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiEithered[Expr, A,B,Z]):Parser[Expr, Type, Z] =
+		this.orElse(rhs)(ev)
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result

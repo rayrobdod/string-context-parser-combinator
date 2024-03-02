@@ -145,6 +145,28 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 		new Extractor(internal.AndThen.extractor(this.impl, rhs.impl, ev))
 
 	/**
+	 * An alias for [[#andThen]]
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def <~>[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraSequenced[A,B,Z]):Extractor[Expr, Type, Z] =
+		this.andThen(rhs)(ev)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def <~(rhs:Extractor[Expr, Type, Unit]):Extractor[Expr, Type, A] =
+		this.andThen(rhs)(typeclass.ContraSequenced.genericUnit)
+
+	/**
+	 * @group Sequence
+	 * @since 0.1.1
+	 */
+	def ~>[B](rhs:Extractor[Expr, Type, B])(implicit ev: Unit <:< A):Extractor[Expr, Type, B] =
+		this.contramap(ev).andThen(rhs)(typeclass.ContraSequenced.unitGeneric)
+
+	/**
 	 * Returns a parser which invokes this parser, and then:
 	 *   * If this parser run succeeded, return this internal's success
 	 *   * If this parser failed and consumed input, return this parser's failure
@@ -157,6 +179,14 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 	 */
 	def orElse[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraEithered[Expr, A,B,Z]):Extractor[Expr, Type, Z] =
 		new Extractor(internal.OrElse.extractor(this.impl, rhs.impl, ev))
+
+	/**
+	 * An alias for [[#orElse]]
+	 * @group Branch
+	 * @since 0.1.1
+	 */
+	def <|>[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraEithered[Expr, A,B,Z]):Extractor[Expr, Type, Z] =
+		this.orElse(rhs)(ev)
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result

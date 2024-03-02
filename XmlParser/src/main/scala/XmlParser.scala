@@ -54,13 +54,13 @@ private[xml] object XmlParser {
 	/* @see https://www.w3.org/TR/xml/#sec-line-ends
 	 * 2.11: the XML processor MUST behave as if it normalized all line breaks in external parsed entities
 	 */
-	private val lineBreak:Interpolator[CodePoint] = ((isString("\r\n") orElse isString("\r")) orElse isString("\n")).map(_ => CodePoint('\n'))
+	private val lineBreak:Interpolator[CodePoint] = ((isString("\r\n") <|> isString("\r")) <|> isString("\n")).map(_ => CodePoint('\n'))
 
 	private def charRef(using Quotes):Interpolator[CodePoint] = {
 		def hexInteger = charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(1).map(Integer.parseInt(_, 16))
 		def decInteger = charIn('0' to '9').repeat(1).map(Integer.parseInt(_, 10))
 
-		isString("&#") andThen (((isString("x") andThen hexInteger) orElse decInteger) andThen isString(";"))
+		isString("&#") ~> (((isString("x") ~> hexInteger) <|> decInteger) <~ isString(";"))
 			.filter(xmlAllowedChar, "")
 			.collect({(c:Int) => CodePoint(c)}.unlift, "")
 			.opaque("valid codepoint")
@@ -70,13 +70,13 @@ private[xml] object XmlParser {
 
 	private val xmlNameNoColon:Interpolator[String] = {
 		val firstChar = codePointWhere(x => xmlNameFirstChar.contains(x.intValue))
-		val restChar = firstChar orElse codePointWhere(x => xmlNameRestChar.contains(x.intValue))
-		(firstChar andThen restChar.repeat())
+		val restChar = firstChar <|> codePointWhere(x => xmlNameRestChar.contains(x.intValue))
+		(firstChar <~> restChar.repeat())
 	}
 	private val xmlName:Interpolator[String] = {
-		val firstChar = codePointIn(":") orElse codePointWhere(x => xmlNameFirstChar.contains(x.intValue))
-		val restChar = firstChar orElse codePointWhere(x => xmlNameRestChar.contains(x.intValue))
-		(firstChar andThen restChar.repeat())
+		val firstChar = codePointIn(":") <|> codePointWhere(x => xmlNameFirstChar.contains(x.intValue))
+		val restChar = firstChar <|> codePointWhere(x => xmlNameRestChar.contains(x.intValue))
+		(firstChar <~> restChar.repeat())
 	}
 	private def xmlAllowedChar(exclude:String):Interpolator[CodePoint] = {
 		val exclude2:Set[Int] = Set(exclude.codePoints.toArray:_*)
@@ -86,27 +86,27 @@ private[xml] object XmlParser {
 				.opaque("xml char excluding " + exclude2.mkString("[", ",", "]"))
 		else
 			val bits = ((xmlAllowedChar -- exclude2) - '\r' - '\n')
-			(lineBreak orElse codePointWhere(x => bits.contains(x.intValue)))
+			(lineBreak <|> codePointWhere(x => bits.contains(x.intValue)))
 				.opaque("xml char excluding " + exclude2.mkString("[", ",", "]"))
 
 	}
 
 
 	private val boundName:Interpolator[BoundName] = {
-		(((xmlNameNoColon andThen isString(":")).attempt.optionally()) andThen xmlName)
+		(((xmlNameNoColon <~ isString(":")).attempt.optionally()) <~> xmlName)
 			.map(x => BoundName(x._1, x._2))
 	}
 
 	private val namespaceBinding:Interpolator[NamespaceBindingOne] = {
 		val namespaceValue:Interpolator[String] = {
-			((isString("\"") andThen xmlAllowedChar("\"").repeat() andThen isString("\"")) orElse
-			(isString("\'") andThen xmlAllowedChar("\'").repeat() andThen isString("\'")))
+			((isString("\"") ~> xmlAllowedChar("\"").repeat() <~ isString("\"")) <|>
+			(isString("\'") ~> xmlAllowedChar("\'").repeat() <~ isString("\'")))
 				.map(x => x.mkString)
 		}
 
-		isString("xmlns") andThen (
-			(isString("=") andThen namespaceValue).map(x => NamespaceBindingOne(None, x)) orElse
-			(isString(":") andThen xmlName andThen isString("=") andThen namespaceValue).map(x => NamespaceBindingOne(Option(x._1), x._2))
+		isString("xmlns") ~> (
+			(isString("=") ~> namespaceValue).map(x => NamespaceBindingOne(None, x)) <|>
+			(isString(":") ~> xmlName <~> isString("=") <~> namespaceValue).map(x => NamespaceBindingOne(Option(x._1), x._2))
 		)
 	}
 
@@ -125,21 +125,21 @@ private[xml] object XmlParser {
 	}
 
 	private def attribute(factory:Expr[XmlFactory])(using Quotes):Interpolator[Attribute] = {
-		def valueText(excluding:Char) = (charRef orElse xmlAllowedChar("<&" + excluding)).repeat(1)
+		def valueText(excluding:Char) = (charRef <|> xmlAllowedChar("<&" + excluding)).repeat(1)
 			.map({data =>
 				import quotes.reflect._
 				factory.asTerm
 					.selectFieldMember("values")
 					.selectFieldMemberMaybeDynamic(data)
 			})
-		def value(excluding:Char) = (entity(factory) orElse valueText(excluding)).repeat(1)
+		def value(excluding:Char) = (entity(factory) <|> valueText(excluding)).repeat(1)
 
 		(
-			boundName andThen isString("=") andThen (
-					interpolation(factory).map(x => List.apply(x)) orElse
-					(isString("\"\"") orElse isString("\'\'")).map(_ => Nil) orElse
-					(isString("\"") andThen value('\"') andThen isString("\"")) orElse
-					(isString("\'") andThen value('\'') andThen isString("\'"))
+			boundName <~> isString("=") <~> (
+					interpolation(factory).map(x => List.apply(x)) <|>
+					(isString("\"\"") <|> isString("\'\'")).map(_ => Nil) <|>
+					(isString("\"") ~> value('\"') <~ isString("\"")) <|>
+					(isString("\'") ~> value('\'') <~ isString("\'"))
 				)
 		)
 			.map((k,v) => Attribute(k, v.map(_.asExpr)))
@@ -154,12 +154,12 @@ private[xml] object XmlParser {
 
 		(
 			isString("<![CDATA[")
-			andThen (
-				(xmlAllowedChar("]")) orElse
-				(codePointIn("]") andThen xmlAllowedChar("]")).attempt orElse
-				(codePointIn("]") andThen codePointIn("]") andThen xmlAllowedChar(">")).attempt
+			~> (
+				(xmlAllowedChar("]")) <|>
+				(codePointIn("]") <~> xmlAllowedChar("]")).attempt <|>
+				(codePointIn("]") <~> codePointIn("]") <~> xmlAllowedChar(">")).attempt
 			).repeat().map(_.mkString)
-			andThen isString("]]>")
+			<~ isString("]]>")
 		)
 			.map({name =>
 				import quotes.reflect._
@@ -170,7 +170,7 @@ private[xml] object XmlParser {
 	}
 
 	private def entity(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
-		(isString("&") andThen xmlName andThen isString(";"))
+		(isString("&") ~> xmlName <~ isString(";"))
 			.map({name =>
 				import quotes.reflect._
 				factory.asTerm
@@ -181,7 +181,7 @@ private[xml] object XmlParser {
 	}
 
 	private def text(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
-		(charRef orElse xmlAllowedChar("<&")).repeat(1)
+		(charRef <|> xmlAllowedChar("<&")).repeat(1)
 			.map({data =>
 				import quotes.reflect._
 				factory.asTerm
@@ -193,11 +193,11 @@ private[xml] object XmlParser {
 	private def comment(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		(
 			isString("<!--")
-			andThen (
-				(xmlAllowedChar("-")) orElse
-				(codePointIn("-") andThen xmlAllowedChar("-")).attempt
+			~> (
+				(xmlAllowedChar("-")) <|>
+				(codePointIn("-") <~> xmlAllowedChar("-")).attempt
 			).repeat().map(_.mkString)
-			andThen isString("-->")
+			<~ isString("-->")
 		)
 			.map({name =>
 				import quotes.reflect._
@@ -210,13 +210,13 @@ private[xml] object XmlParser {
 	private def processingInstruction(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		(
 			isString("<?")
-			andThen xmlName.filter(_ != "xml", "not `xml`")
-			andThen whitespace
-			andThen (
-				(xmlAllowedChar("?")) orElse
-				(codePointIn("?") andThen xmlAllowedChar(">")).attempt
+			~> xmlName.filter(_ != "xml", "not `xml`")
+			<~> whitespace
+			<~> (
+				(xmlAllowedChar("?")) <|>
+				(codePointIn("?") <~> xmlAllowedChar(">")).attempt
 			).repeat().map(_.mkString)
-			andThen isString("?>")
+			<~ isString("?>")
 		)
 			.map({(target, value) =>
 				import quotes.reflect._
@@ -228,12 +228,12 @@ private[xml] object XmlParser {
 
 	private def fragment(factory:Expr[XmlFactory], nsb: NamespaceBinding)(using Quotes):Interpolator[List[quotes.reflect.Term]] = {
 		(
-			interpolation(factory) orElse
-			entity(factory) orElse
-			text(factory) orElse
-			cdata(factory) orElse
-			comment(factory) orElse
-			processingInstruction(factory) orElse
+			interpolation(factory) <|>
+			entity(factory) <|>
+			text(factory) <|>
+			cdata(factory) <|>
+			comment(factory) <|>
+			processingInstruction(factory) <|>
 			elem(factory, nsb).attempt
 		).repeat()
 	}
@@ -241,13 +241,13 @@ private[xml] object XmlParser {
 	private def elem(factory:Expr[XmlFactory], nsb:NamespaceBinding)(using Quotes):Interpolator[quotes.reflect.Term] = {
 		import quotes.reflect._
 		(
-			isString("<") andThen
-				boundName andThen
-				(whitespace.repeat(1) andThen (
-					interpolation(factory).map({x => InterpolatedAttribute(x.asExpr)}) orElse
-					namespaceBinding orElse
+			isString("<") ~>
+				boundName <~>
+				(whitespace.repeat(1) ~> (
+					interpolation(factory).map({x => InterpolatedAttribute(x.asExpr)}) <|>
+					namespaceBinding <|>
 					attribute(factory)
-				)).attempt.repeat() andThen
+				)).attempt.repeat() <~
 				whitespace.repeat()
 			)
 			.map({parts =>
@@ -283,12 +283,12 @@ private[xml] object XmlParser {
 			.flatMap({(parts) =>
 				val (elemName, attributes, nsb2) = parts
 
-				(isString("/>").map(_ => List.empty) orElse (
-					(isString(">") andThen
-					(fragment(factory, nsb2) andThen
-					isString("</"))) andThen
-					boundName.filter(x => x == elemName, s"$elemName").map(_ => ()) andThen
-					whitespace.repeat() andThen
+				(isString("/>").map(_ => List.empty) <|> (
+					(isString(">") <~>
+					(fragment(factory, nsb2) <~>
+					isString("</"))) <~>
+					boundName.filter(x => x == elemName, s"$elemName").map(_ => ()) <~>
+					whitespace.repeat() <~>
 					isString(">")
 				))
 					.map(children => ((elemName, attributes, nsb2, children)))
@@ -338,7 +338,7 @@ private[xml] object XmlParser {
 		factoryExpr.asTerm
 			.selectAndApplyToArgsMaybeDynamicMaybeVarargs
 				("literal")
-				((fragment(factoryExpr, initialNsb) andThen end).interpolate(sc, args))
+				((fragment(factoryExpr, initialNsb) <~> end).interpolate(sc, args))
 			.asExpr
 	}
 

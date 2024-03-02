@@ -56,15 +56,14 @@ package datetime {
 		}
 
 		private def dayOfMonth(max: Int): Interpolator[c.Expr[Int]] = {
-			ofType[DayOfMonth].map(d => c.Expr[Int](q"$d.getValue")).orElse(intTwoDigits(1, max).mapToExpr)
+			ofType[DayOfMonth].map(d => c.Expr[Int](q"$d.getValue")) <|> intTwoDigits(1, max).mapToExpr
 		}
 
 		private val timeParsers = TimeParsers(leafParsers)(
 			{(ymExpr) => ymExpr match {
 				case c.Expr(`unliftYearMonth`(ym)) => {
-					ofType[DayOfMonth].map(d => c.Expr[LocalDate](q"LocalDate.of(${ym.getYear}, ${ym.getMonth}, ${d}.getValue)")).orElse(
+					ofType[DayOfMonth].map(d => c.Expr[LocalDate](q"LocalDate.of(${ym.getYear}, ${ym.getMonth}, ${d}.getValue)")) <|>
 						intTwoDigits(1, ym.lengthOfMonth).map(day => c.Expr[LocalDate](liftLocalDate(ym.atDay(day))))
-					)
 				}
 				case c.Expr(Apply(Select(_, Name("atMonth")), List(`unliftMonth`(month)))) => {
 					dayOfMonth(month.maxLength).map({day =>
@@ -85,23 +84,23 @@ package datetime {
 		private[this] val extensionClassName = "name.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"
 
 		def interpolate_localDate(args:c.Expr[Any]*):c.Expr[LocalDate] = {
-			(timeParsers.localDate andThen end).interpolate(c)(extensionClassName)(args.toList)
+			(timeParsers.localDate <~ end).interpolate(c)(extensionClassName)(args.toList)
 		}
 		def interpolate_localTime(args:c.Expr[Any]*):c.Expr[LocalTime] = {
-			(timeParsers.localTime andThen end).interpolate(c)(extensionClassName)(args.toList)
+			(timeParsers.localTime <~ end).interpolate(c)(extensionClassName)(args.toList)
 		}
 		def interpolate_localDateTime(args:c.Expr[Any]*):c.Expr[LocalDateTime] = {
-			(timeParsers.localDateTime andThen end).interpolate(c)(extensionClassName)(args.toList)
+			(timeParsers.localDateTime <~ end).interpolate(c)(extensionClassName)(args.toList)
 		}
 
 		def extractor_localDate(value:c.Expr[LocalDate]):c.Expr[Any] = {
-			(timeParsers.localDate andThen end).extractor(c)(extensionClassName)(value)
+			(timeParsers.localDate <~ end).extractor(c)(extensionClassName)(value)
 		}
 		def extractor_localTime(value:c.Expr[LocalTime]):c.Expr[Any] = {
-			(timeParsers.localTime andThen end).extractor(c)(extensionClassName)(value)
+			(timeParsers.localTime <~ end).extractor(c)(extensionClassName)(value)
 		}
 		def extractor_localDateTime(value:c.Expr[LocalDateTime]):c.Expr[Any] = {
-			(timeParsers.localDateTime andThen end).extractor(c)(extensionClassName)(value)
+			(timeParsers.localDateTime <~ end).extractor(c)(extensionClassName)(value)
 		}
 	}
 }

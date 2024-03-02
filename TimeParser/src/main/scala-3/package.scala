@@ -60,7 +60,7 @@ object MacroImpl {
 	import TimeParsers.intTwoDigits
 
 	private def dayOfMonth(max: Int)(using Quotes): Interpolator[quoted.Expr[Any], quoted.Expr[Int]] = {
-		ofType[DayOfMonth].map(d => '{$d.getValue}).orElse(intTwoDigits(1, max).mapToExpr)
+		ofType[DayOfMonth].map(d => '{$d.getValue}) <|> intTwoDigits(1, max).mapToExpr
 	}
 
 	private def timeParsers(using Quotes) = {
@@ -70,8 +70,8 @@ object MacroImpl {
 		TimeParsers(leafParsers)(
 			_ match {
 				case Expr(ym) => {
-					ofType[DayOfMonth].map(day => '{LocalDate.of(${Expr(ym.getYear)}, ${Expr(ym.getMonth)}, ${day}.getValue)})
-						.orElse(intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day))))
+					ofType[DayOfMonth].map(day => '{LocalDate.of(${Expr(ym.getYear)}, ${Expr(ym.getMonth)}, ${day}.getValue)}) <|>
+						intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day)))
 				}
 				case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
 				case '{YearMonth.of($y:Int, ${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
@@ -90,27 +90,27 @@ object MacroImpl {
 
 
 	def interpolate_localDate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDate] = {
-		(timeParsers.localDate andThen end).interpolate(sc, args)
+		(timeParsers.localDate <~ end).interpolate(sc, args)
 	}
 
 	def interpolate_localTime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalTime] = {
-		(timeParsers.localTime andThen end).interpolate(sc, args)
+		(timeParsers.localTime <~ end).interpolate(sc, args)
 	}
 
 	def interpolate_localDateTime(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[LocalDateTime] = {
-		(timeParsers.localDateTime andThen end).interpolate(sc, args)
+		(timeParsers.localDateTime <~ end).interpolate(sc, args)
 	}
 
 	def extractor_localDate(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalDate]] = {
-		(timeParsers.localDate andThen end).extractor(sc)
+		(timeParsers.localDate <~ end).extractor(sc)
 	}
 
 	def extractor_localTime(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalTime]] = {
-		(timeParsers.localTime andThen end).extractor(sc)
+		(timeParsers.localTime <~ end).extractor(sc)
 	}
 
 	def extractor_localDateTime(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[LocalDateTime]] = {
-		(timeParsers.localDateTime andThen end).extractor(sc)
+		(timeParsers.localDateTime <~ end).extractor(sc)
 	}
 }
 

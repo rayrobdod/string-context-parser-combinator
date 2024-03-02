@@ -13,4 +13,8 @@ object TypeConformanceCompat {
 	inline def contraSubstituteContra[F[-_], From, To](self: <:<[From, To], ff: F[To]): F[From] = {
 		self.substituteContra[F](ff)
 	}
+
+	inline def equivFlip[From, To](self: =:=[From, To]): =:=[To, From] = {
+		self.flip
+	}
 }

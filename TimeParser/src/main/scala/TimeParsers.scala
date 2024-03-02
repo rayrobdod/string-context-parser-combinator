@@ -64,14 +64,14 @@ object TimeParsers {
 
 		val year:Parser[Expr[Year]] = {
 			val literal:Parser[Expr[Year]] = {
-				(sign andThen digit.repeat(1, 9))
+				(sign <~> digit.repeat(1, 9))
 					.opaque("\"-999999999\"-\"999999999\"")
 					.map(Year.of _)
 					.mapToExpr[Year, Expr, ToExpr, Type]
 					.extractorAtom[Expr, Type, Year]
 			}
 			val variable:Parser[Expr[Year]] = ofType[Year]
-			variable orElse literal
+			variable <|> literal
 		}
 
 		val month:Parser[Expr[Month]] = {
@@ -82,22 +82,22 @@ object TimeParsers {
 					.extractorAtom[Expr, Type, Month]
 			}
 			val variable:Parser[Expr[Month]] = ofType[Month]
-			variable orElse literal
+			variable <|> literal
 		}
 
 		val yearMonth:Parser[Expr[YearMonth]] = {
-			val literal:Parser[Expr[YearMonth]] = (year andThen "-" andThen month)
+			val literal:Parser[Expr[YearMonth]] = (year <~> "-" <~> month)
 			val variable:Parser[Expr[YearMonth]] = ofType[YearMonth]
-			variable orElse literal
+			variable <|> literal
 		}
 
 		val localDate:Parser[Expr[LocalDate]] = {
 			val YearMonthVariantP:Parser[Expr[LocalDate]] = {
-				val interpolator:Interpolator[Expr[LocalDate]] = (yearMonth andThen "-")
+				val interpolator:Interpolator[Expr[LocalDate]] = (yearMonth <~ "-")
 					.flatMap(yearMonthFlatMap)
 				val extractor:Extractor[Expr[LocalDate]] = yearMonth.toExtractor
-					.andThen("-")(typeclass.ContraSequenced.genericUnit[Expr[YearMonth]])
-					.andThen(
+					.<~("-")
+					.<~>(
 						intTwoDigits(1, 31)
 							.mapToExpr[Int, Expr, ToExpr, Type]
 							.extractorAtom[Expr, Type, Int]
@@ -108,7 +108,7 @@ object TimeParsers {
 				paired(interpolator, extractor)
 			}
 			val variable:Parser[Expr[LocalDate]] = ofType[LocalDate]
-			variable orElse YearMonthVariantP
+			variable <|> YearMonthVariantP
 		}
 
 		val hour:Interpolator[Expr[Int]] = {
@@ -140,8 +140,8 @@ object TimeParsers {
 
 		val localTime:Parser[Expr[LocalTime]] = {
 			val literal:Parser[Expr[LocalTime]] = (
-				hour andThen str2interpolator(":") andThen minute andThen (
-							str2interpolator(":") andThen second andThen (str2interpolator(".") andThen nano).optionally()).optionally()
+				hour <~> ":" <~> minute <~> (str2interpolator(":") <~> second <~> (
+						str2interpolator(".") <~> nano).optionally()).optionally()
 				)
 				.map({hmsn =>
 					val (hm, sn) = hmsn
@@ -153,11 +153,11 @@ object TimeParsers {
 				})
 				.extractorAtom[Expr, Type, LocalTime]
 			val variable:Parser[Expr[LocalTime]] = ofType[LocalTime]
-			variable orElse literal
+			variable <|> literal
 		}
 
 		val localDateTime:Parser[Expr[LocalDateTime]] = {
-			(localDate andThen "T" andThen localTime)
+			(localDate <~> "T" <~> localTime)
 		}
 	}
 }

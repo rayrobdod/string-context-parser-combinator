@@ -90,7 +90,7 @@ object MacroImpl {
 		val jFalse = isString("false")
 			.map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
 			.extractorAtom[Expr, Type, JBool]
-		jTrue orElse jFalse
+		jTrue <|> jFalse
 	}
 
 	private def jnumber(using Quotes):Parser[Expr[JValue with JNumber]] = {
@@ -108,9 +108,9 @@ object MacroImpl {
 
 		val stringRepr: Interpolator[String] = (
 			charIn("-").optionally()
-			andThen (charIn("0").map(_.toString) orElse (charIn('1' to '9').map(_.toString) andThen repeatedDigits(0)))
-			andThen (charIn(".").map(_.toString) andThen repeatedDigits(1)).optionally()
-			andThen (charIn("eE").map(_.toString) andThen charIn("+-").optionally() andThen repeatedDigits(1)).optionally()
+			<~> (charIn("0").map(_.toString) <|> (charIn('1' to '9').map(_.toString) <~> repeatedDigits(0)))
+			<~> (charIn(".").map(_.toString) <~> repeatedDigits(1)).optionally()
+			<~> (charIn("eE").map(_.toString) <~> charIn("+-").optionally() <~> repeatedDigits(1)).optionally()
 		)
 			.opaque("Number Literal")
 
@@ -141,7 +141,7 @@ object MacroImpl {
 		val delimiter:Parser[Unit] = Parser.isString("\"")
 		val jCharImmediate:Interpolator[Char] = charWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
 		val jCharEscaped:Interpolator[Char] = (
-			(isString("\\") andThen charFlatCollect({
+			(isString("\\") ~> charFlatCollect({
 				case '\\' => pass.map(_ => '\\')
 				case '/' => pass.map(_ => '/')
 				case '"' => pass.map(_ => '"')
@@ -153,7 +153,7 @@ object MacroImpl {
 				case 'u' => charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(4,4).map(x => Integer.parseInt(x, 16).toChar)
 			}))
 		)
-		val jChar:Interpolator[Char] = jCharEscaped orElse jCharImmediate
+		val jChar:Interpolator[Char] = jCharEscaped <|> jCharImmediate
 		val jCharsImmediate:Parser[Expr[String]] = jChar
 			.repeat(1, strategy = RepeatStrategy.Possessive)
 			.mapToExpr
@@ -167,14 +167,14 @@ object MacroImpl {
 			Extractor.ofType[String],
 		)
 		val content:Parser[Expr[String]] = paired(
-			(jCharsLifted orElse jCharsImmediate)
+			(jCharsLifted <|> jCharsImmediate)
 				.toInterpolator
 				.repeat(strategy = RepeatStrategy.Possessive)
 				.map(strs => concatenateStrings(strs))
 			,
 			(jCharsImmediate).toExtractor
 		)
-		(delimiter andThen content andThen delimiter)
+		(delimiter ~> content <~ delimiter)
 	}
 
 	private def jstring(using Quotes):Parser[Expr[JString]] = {
@@ -182,8 +182,8 @@ object MacroImpl {
 	}
 
 	private def jarray(using Quotes):Parser[Expr[JArray]] = `lazy`(() => {
-		val prefix:Parser[Unit] = isString("[") andThen whitespace
-		val delimiter:Parser[Unit] = isString(",") andThen whitespace
+		val prefix:Parser[Unit] = isString("[") <~> whitespace
+		val delimiter:Parser[Unit] = isString(",") <~> whitespace
 		val suffix:Parser[Unit] = isString("]")
 
 		val interpolator:Interpolator[Expr[JArray]] = {
@@ -194,14 +194,11 @@ object MacroImpl {
 				.map(x => '{ $x.arr })
 				.andThen(whitespace.toInterpolator)
 
-			val splicableValue:Interpolator[Either[Expr[JValue], Expr[List[JValue]]]] = (
-				jvalue.map(x => Left(x)) orElse
-				(
-					isString("..").toInterpolator
-					andThen liftedArray
-					andThen whitespace.toInterpolator
-					).map(x => Right(x))
-			)
+			val splicableValue:Interpolator[Either[Expr[JValue], Expr[List[JValue]]]] = {
+				val value = jvalue.toInterpolator
+				val array = isString("..").toInterpolator ~> liftedArray <~ whitespace.toInterpolator
+				value <+> array
+			}
 
 			val literalPresplice:Interpolator[List[Either[Expr[JValue], Expr[List[JValue]]]]] = (
 				splicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
@@ -218,13 +215,13 @@ object MacroImpl {
 				.contramap((x:Expr[JArray]) => '{ $x.arr })
 		}
 
-		prefix andThen paired(interpolator, extractor) andThen suffix
+		prefix ~> paired(interpolator, extractor) <~ suffix
 	})
 
 	private def jobject(using Quotes):Parser[Expr[JObject]] = `lazy`(() => {
-		val prefix:Parser[Unit] = isString("{") andThen whitespace
-		val separator:Parser[Unit] = isString(":") andThen whitespace
-		val delimiter:Parser[Unit] = isString(",") andThen whitespace
+		val prefix:Parser[Unit] = isString("{") <~> whitespace
+		val separator:Parser[Unit] = isString(":") <~> whitespace
+		val delimiter:Parser[Unit] = isString(",") <~> whitespace
 		val suffix:Parser[Unit] = isString("}")
 
 		val interpolator:Interpolator[Expr[JObject]] = {
@@ -245,18 +242,16 @@ object MacroImpl {
 				)
 				val immediate:Interpolator[Expr[String]] = stringBase.toInterpolator
 
-				(jCharsLifted orElse immediate) andThen whitespace.toInterpolator
+				(jCharsLifted <|> immediate) <~> whitespace.toInterpolator
 			}
 
-			val splicableValue:Interpolator[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]] = (
-				(liftedKeyValue andThen whitespace.toInterpolator)
-					.map(x => Left(x)) orElse
-				(key andThen separator.toInterpolator andThen jvalue.toInterpolator)
+			val splicableValue:Interpolator[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]] = {
+				val keyValue = (liftedKeyValue <~> whitespace.toInterpolator)
+				val keyThenValue = (key <~> separator.toInterpolator <~> jvalue.toInterpolator)
 					.map(x => {val (k, v) = x; '{ Tuple2.apply($k, $v) }})
-					.map(x => Left(x)) orElse
-				(isString("..").toInterpolator andThen liftedObject andThen whitespace.toInterpolator)
-					.map(x => Right(x))
-			)
+				val splice = (isString("..").toInterpolator ~> liftedObject <~> whitespace.toInterpolator)
+				(keyValue <|> keyThenValue) <+> splice
+			}
 
 			val literalPresplice:Interpolator[List[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]]] = (
 				splicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
@@ -273,7 +268,7 @@ object MacroImpl {
 				.contramap((x:Expr[JObject]) => '{ $x.obj })
 		}
 
-		prefix andThen paired(interpolator, extractor) andThen suffix
+		prefix ~> paired(interpolator, extractor) <~ suffix
 	})
 
 	private def jlifted(using Quotes):Parser[Expr[JValue]] = paired(
@@ -297,17 +292,17 @@ object MacroImpl {
 			}
 
 		((
-			jnull.widenToJValue orElse
-			jboolean.widenToJValue orElse
-			jnumber.widenToJValue orElse
-			jstring.widenToJValue orElse
-			jarray.widenToJValue orElse
-			jobject.widenToJValue orElse
+			jnull.widenToJValue <|>
+			jboolean.widenToJValue <|>
+			jnumber.widenToJValue <|>
+			jstring.widenToJValue <|>
+			jarray.widenToJValue <|>
+			jobject.widenToJValue <|>
 			jlifted
-		) andThen whitespace)
+		) <~ whitespace)
 	}
 
-	private def onlyJvalue(using Quotes) = (whitespace andThen jvalue andThen end)
+	private def onlyJvalue(using Quotes) = (whitespace <~> jvalue <~> end)
 
 	def stringContext_json(sc:Expr[scala.StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[JValue] = {
 		onlyJvalue.interpolate(sc, args)

@@ -304,6 +304,17 @@ package ExtractorTest {
 				assertParseFailure(dut, ("0~" :: Nil, ('\u0000', '\u0000')), List(alphaExpectingLine, "\t0~", "\t ^"))
 			}
 		}
+		final class TildeGt extends BaseInterpolatorSuite {
+			test("Rejects a left-hand side that is not a void interpolator") {
+				assertNoDiff(
+					compileErrors("val alpha = Extractor.idExtractors.charWhere(c => true)\nalpha ~> alpha"),
+					"""|error: Cannot prove that Unit <:< Char.
+						|alpha ~> alpha
+						|""".stripMargin + PointerSpacesCompat(6, 13) + """
+						|""".stripMargin
+				)
+			}
+		}
 	}
 	package object orElse {
 		implicit def discriminatedContraEithered[A, B]:typeclass.ContraEithered[Id, A, B, scala.util.Either[A, B]] = {

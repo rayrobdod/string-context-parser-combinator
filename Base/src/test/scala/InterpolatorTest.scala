@@ -294,6 +294,17 @@ package InterpolatorTest {
 				assertParseFailure(dut, ("0~" :: Nil, Nil), List(alphaExpectingLine, "\t0~", "\t ^"))
 			}
 		}
+		final class TildeGt extends BaseInterpolatorSuite {
+			test("Rejects a left-hand side that is not a void interpolator") {
+				assertNoDiff(
+					compileErrors("val alpha = Interpolator.idInterpolators.charWhere(c => true)\nalpha ~> alpha"),
+					"""|error: Cannot prove that Char <:< Unit.
+						|alpha ~> alpha
+						|""".stripMargin + PointerSpacesCompat(6, 13) + """
+						|""".stripMargin
+				)
+			}
+		}
 	}
 	final class orElse extends BaseInterpolatorSuite {
 		import Interpolator.idInterpolators.charIn
