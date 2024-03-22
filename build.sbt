@@ -65,6 +65,25 @@ lazy val sharedSettings = Seq(
 		"-oS",
 	),
 )
+lazy val sharedJsSettings = Seq(
+	tpolecatScalacOptions ++= {
+		val hash = git.gitHeadCommit.value.get
+		val local = (LocalRootProject / baseDirectory).value.toURI.toString
+		val remote = s"https://raw.githubusercontent.com/${githubId}/${hash}"
+		import org.typelevel.scalacoptions.ScalaVersion.V3_0_0
+		import scala.Ordering.Implicits._
+		Set(
+			org.typelevel.scalacoptions.ScalacOption(
+				s"-scalajs-mapSourceURI:$local->$remote/",
+				version => version >= V3_0_0,
+			),
+			org.typelevel.scalacoptions.ScalacOption(
+				s"-P:scalajs:mapSourceURI:$local->$remote/",
+				version => version < V3_0_0,
+			),
+		)
+	},
+)
 
 lazy val base = (projectMatrix in file("Base"))
 	.settings(sharedSettings)
@@ -112,11 +131,14 @@ lazy val base = (projectMatrix in file("Base"))
 		scala213Ver,
 		scala3Ver,
 	))
-	.jsPlatform(scalaVersions = Seq(
-		scala212Ver,
-		scala213Ver,
-		scala3Ver,
-	))
+	.jsPlatform(
+		scalaVersions = Seq(
+			scala212Ver,
+			scala213Ver,
+			scala3Ver,
+		),
+		sharedJsSettings,
+	)
 	.nativePlatform(scalaVersions = Seq(
 		scala212Ver,
 		scala213Ver,
@@ -144,11 +166,14 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		scala213Ver,
 		scala3Ver,
 	))
-	.jsPlatform(scalaVersions = Seq(
-		scala212Ver,
-		scala213Ver,
-		scala3Ver,
-	))
+	.jsPlatform(
+		scalaVersions = Seq(
+			scala212Ver,
+			scala213Ver,
+			scala3Ver,
+		),
+		sharedJsSettings,
+	)
 	.nativePlatform(scalaVersions = Seq(
 		scala212Ver,
 		scala213Ver,
@@ -173,14 +198,18 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		scala213Ver,
 		scala3Ver,
 	))
-	.jsPlatform(scalaVersions = Seq(
+	.jsPlatform(
+		scalaVersions = Seq(
 			scala212Ver,
 			scala213Ver,
 			scala3Ver,
 		),
-		libraryDependencies ++= Seq(
-			"io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
-		),
+		Seq(
+			libraryDependencies ++= Seq(
+				"io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
+			),
+		) ++
+		sharedJsSettings,
 	)
 	.nativePlatform(scalaVersions = Seq(
 			scala212Ver,

@@ -11,6 +11,7 @@
   * `idConcatenateString` for id context
   * `forContextConcatenateString` for scala-2 macro context
   * `quotedConcatenateString` for scala-3 quoted context
+* Fix scalajs sourcemaps to point at github-hosted files instead of a local file that almost certainly does not exist
 
 ## [0.1.0] 2024-02-01
 Initial tagged version
