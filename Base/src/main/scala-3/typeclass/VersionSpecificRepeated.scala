@@ -17,16 +17,15 @@ trait VersionSpecificRepeated {
 			object AccZero extends Acc
 			final class AccOne(val elem: Expr[String]) extends Acc
 			final class AccMany extends Acc {
-				val builder: Builder[Expr[String], Expr[String]] = List.newBuilder.mapResult(stat =>
-					val accumulator:Expr[StringBuilder] = '{new scala.collection.mutable.StringBuilder}
-					import quotes.reflect.*
-					val retval = ValDef.let(Symbol.spliceOwner, "builder$", accumulator.asTerm): accumulatorRef =>
-						val accumulatorRefExpr = accumulatorRef.asExprOf[StringBuilder]
-						Block(
-							stat.map(addend => '{$accumulatorRefExpr.append($addend)}.asTerm),
-							Apply(Select.unique(accumulatorRef, "result"), Nil),
-						)
-					retval.asExprOf[String]
+				val builder: Builder[Expr[String], Expr[String]] = List.newBuilder.mapResult(parts =>
+					'{
+						${
+							parts.foldLeft
+								('{new scala.collection.mutable.StringBuilder})
+								({(builder, part) => '{$builder.append($part)}})
+						}
+							.result
+					}
 				)
 			}
 

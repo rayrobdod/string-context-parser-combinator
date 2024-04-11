@@ -135,38 +135,35 @@ object MacroImpl {
 		val Arbitrary = (ofType[String] <|> uriChar.repeat(1).mapToExpr)
 			.repeat()(using typeclass.Repeated.quotedConcatenateString)
 		val Mapping = {
-			class StringExpr private (val isEmpty: Boolean, private val direct: Option[Expr[String]], private val accStats: List[Expr[StringBuilder] => Expr[Unit]]) {
+			class StringExpr private (val isEmpty: Boolean, private val direct: Option[Expr[String]], private val parts: List[Expr[StringBuilder] => Expr[StringBuilder]]) {
 				def ++(other: StringExpr): StringExpr = {
 					if (this.isEmpty) {
 						other
 					} else if (other.isEmpty) {
 						this
 					} else {
-						new StringExpr(false, None, this.accStats ++: other.accStats)
+						new StringExpr(false, None, this.parts ++: other.parts)
 					}
 				}
 				def result: Expr[String] = {
 					this.direct match {
 						case Some(x) => x
-						case None => {
-							val accumulator:Expr[StringBuilder] = '{new scala.collection.mutable.StringBuilder}
-							import quotes.reflect.*
-							val retval = ValDef.let(Symbol.spliceOwner, "builder$", accumulator.asTerm): accumulatorRef =>
-								val accumulatorRefExpr = accumulatorRef.asExprOf[StringBuilder]
-								Block(
-									accStats.map(accStat => accStat(accumulatorRefExpr).asTerm),
-									Apply(Select.unique(accumulatorRef, "toString"), Nil),
-								)
-							retval.asExprOf[String]
+						case None => '{
+							${
+								parts.foldLeft
+									('{new scala.collection.mutable.StringBuilder})
+									({(builder, part) => part(builder)})
+							}
+								.result
 						}
 					}
 				}
 			}
 			object StringExpr {
 				def empty: StringExpr = new StringExpr(true, Option(Expr("")), Nil)
-				def single(direct: Expr[String]): StringExpr = new StringExpr(false, Some(direct), List(acc => '{$acc.append($direct); ()}))
-				def single(direct: Expr[String], accStats: List[Expr[StringBuilder] => Expr[Unit]]): StringExpr = new StringExpr(false, Some(direct), accStats)
-				def multiple(accStats: List[Expr[StringBuilder] => Expr[Unit]]): StringExpr = new StringExpr(false, None, accStats)
+				def single(direct: Expr[String]): StringExpr = new StringExpr(false, Some(direct), List(acc => '{$acc.append($direct)}))
+				def single(direct: Expr[String], accStats: List[Expr[StringBuilder] => Expr[StringBuilder]]): StringExpr = new StringExpr(false, Some(direct), accStats)
+				def multiple(accStats: List[Expr[StringBuilder] => Expr[StringBuilder]]): StringExpr = new StringExpr(false, None, accStats)
 			}
 
 			implicit def AndThenStringExpr: typeclass.Sequenced[StringExpr, StringExpr, StringExpr] = (a:StringExpr, b:StringExpr) => a ++ b
@@ -197,9 +194,9 @@ object MacroImpl {
 				.map(x =>
 					StringExpr.multiple(
 						List(
-							(sb: Expr[StringBuilder]) => '{ $sb.append($x._1); () },
-							(sb: Expr[StringBuilder]) => '{ $sb.append("="); () },
-							(sb: Expr[StringBuilder]) => '{ $sb.append($x._2); () },
+							(sb: Expr[StringBuilder]) => '{ $sb.append($x._1) },
+							(sb: Expr[StringBuilder]) => '{ $sb.append("=") },
+							(sb: Expr[StringBuilder]) => '{ $sb.append($x._2) },
 						)
 					)
 				)
@@ -209,7 +206,7 @@ object MacroImpl {
 			val map:Interpolator[StringExpr] = ofType[scala.collection.Map[String, String]]
 				.map(m => StringExpr.single(
 					'{ $m.map($tupleConcatFun).mkString("&") },
-					List((sb: Expr[StringBuilder]) => '{$m.map($tupleConcatFun).addString($sb, "&"); ()})
+					List((sb: Expr[StringBuilder]) => '{$m.map($tupleConcatFun).addString($sb, "&")})
 				))
 
 			val mapOrPair:Interpolator[StringExpr] = map <|> pair
