@@ -27,7 +27,8 @@ lazy val sharedSettings = Seq(
 	autoAPIMappings := true,
 	libraryDependencies += {
 		val version = (scalaBinaryVersion.value, crossVersion.value.asInstanceOf[Binary].prefix) match {
-			case ("3", "native0.4_") => "1.0.0-M10"
+			case (_, "native0.5_") => "1.0.0-M11"
+			case ("3", "native0.4_") => "1.0.0-M11"
 			case _ => "0.7.29"
 		}
 		"org.scalameta" %%% "munit" % version % Test,
