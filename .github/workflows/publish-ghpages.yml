@@ -19,11 +19,28 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: cache sbt packages
+      # but with a different name than setup-java would use,
+      # since webStage will pull some artifacts that the other tasks will not
+      # and caches are immutable, meaning without a new cache key,
+      # the webStage artifacts will not be cached
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.ivy2/cache
+          ~/.sbt
+          ~/.cache/coursier
+          !~/.sbt/*.lock
+          !~/**/ivydata-*.properties
+        key: sbt-site-${{ hashFiles('**/*.sbt','**/project/build.properties','**/project/**.scala','**/project/**.sbt') }}
+        restore-keys: |
+          sbt-site-
+          setup-java-Linux-sbt-${{ hashFiles('**/*.sbt','**/project/build.properties','**/project/**.scala','**/project/**.sbt') }}
+          setup-java-Linux-sbt-
     - uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
-        cache: 'sbt'
     - name: Setup Pages
       uses: actions/configure-pages@v4
     - name: Build site
