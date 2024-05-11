@@ -86,7 +86,7 @@ trait BiRepeated[Expr[_], A, Z]
 
 /** Predefined implicit implementations of Repeated */
 object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
-	private def apply[A, Acc, Z](
+	private[typeclass] def apply[A, Acc, Z](
 		initFn: () => Acc,
 		appendFn: (Acc, A) => Acc,
 		resultFn: Acc => Z,
@@ -104,39 +104,33 @@ object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 	 * Repeated units results in a unit
 	 */
 	implicit def unit:Repeated[Unit, Unit] = {
-		final class RepeatedUnit extends Repeated[Unit, Unit] {
-			type Acc = Unit
-			def init():Acc = ()
-			def append(acc:Acc, elem:Unit):Unit = {}
-			def result(acc:Acc):Unit = ()
-		}
-		new RepeatedUnit()
+		Repeated.apply[Unit, Unit, Unit](
+			() => (),
+			(acc, _) => acc,
+			(acc) => acc,
+		)
 	}
 
 	/**
 	 * Creates a String consisting of each of the input Char values in order
 	 */
 	implicit def charToString:Repeated[Char, String] = {
-		final class RepeatedChar extends Repeated[Char, String] {
-			type Acc = StringBuilder
-			def init():Acc = new StringBuilder
-			def append(acc:Acc, elem:Char):Acc = {acc += elem}
-			def result(acc:Acc):String = acc.toString
-		}
-		new RepeatedChar()
+		Repeated.apply[Char, StringBuilder, String](
+			() => new StringBuilder,
+			(acc, elem) => acc += elem,
+			(acc) => acc.toString,
+		)
 	}
 
 	/**
 	 * Creates a String consisting of each of the input CodePoint values in order
 	 */
 	implicit def codepointToString:Repeated[CodePoint, String] = {
-		final class RepeatedCodepoint extends Repeated[CodePoint, String] {
-			type Acc = java.lang.StringBuilder
-			def init():Acc = new java.lang.StringBuilder
-			def append(acc:Acc, elem:CodePoint):Acc = {acc.appendCodePoint(elem.intValue)}
-			def result(acc:Acc):String = acc.toString
-		}
-		new RepeatedCodepoint()
+		Repeated.apply[CodePoint, java.lang.StringBuilder, String](
+			() => new java.lang.StringBuilder,
+			(acc, elem) => acc.appendCodePoint(elem.intValue),
+			(acc) => acc.toString,
+		)
 	}
 
 	/**
@@ -158,13 +152,11 @@ private[typeclass] trait LowPrioRepeated {
 	 * creates a List containing each of the input values
 	 */
 	implicit def toList[A]:Repeated[A, List[A]] = {
-		final class RepeatedGenericToList extends Repeated[A, List[A]] {
-			type Acc = Builder[A, List[A]]
-			def init():Acc = List.newBuilder[A]
-			def append(acc:Acc, elem:A):Acc = {acc += elem}
-			def result(acc:Acc):List[A] = acc.result()
-		}
-		new RepeatedGenericToList()
+		Repeated.apply[A, Builder[A, List[A]], List[A]](
+			() => List.newBuilder[A],
+			(acc, elem) => acc += elem,
+			(acc) => acc.result()
+		)
 	}
 }
 
@@ -179,39 +171,50 @@ private[typeclass] trait LowPrioContraRepeated extends VersionSpecificLowPrioCon
 
 /** Predefined implicit implementations of BiRepeated */
 object BiRepeated extends VersionSpecificBiRepeated with LowPrioBiRepeated {
-	implicit def idUnit:BiRepeated[Id, Unit, Unit] = {
-		new BiRepeated[Id, Unit, Unit] {
-			type Acc = Unit
-			def init():Acc = ()
-			def append(acc:Acc, elem:Unit):Unit = {}
-			def result(acc:Acc):Unit = ()
+	private[typeclass] def apply[Expr[_], A, Acc, Z](
+		initFn: () => Acc,
+		appendFn: (Acc, A) => Acc,
+		resultFn: Acc => Z,
+		headtailFn: PartialExprFunction[Expr, Z, (A, Z)],
+		isEmptyFn: Z => Expr[Boolean],
+	): BiRepeated[Expr, A, Z] = {
+		type Acc2 = Acc
+		new BiRepeated[Expr, A, Z] {
+			type Acc = Acc2
+			def init():Acc = initFn()
+			def append(acc:Acc, elem:A):Acc = appendFn(acc, elem)
+			def result(acc:Acc):Z = resultFn(acc)
 
-			def headTail:PartialExprFunction[Id, Unit, (Unit, Unit)] = {
-				PartialExprFunction[Id, Unit, (Unit, Unit)](
-					_ => true,
-					value => (value, value)
-				)
-			}
-			def isEmpty(it:Unit):Id[Boolean] = true
+			def headTail:PartialExprFunction[Expr, Z, (A, Z)] = headtailFn
+			def isEmpty(it:Z):Expr[Boolean] = isEmptyFn(it)
 		}
+	}
+
+	implicit def idUnit:BiRepeated[Id, Unit, Unit] = {
+		BiRepeated.apply[Id, Unit, Unit, Unit](
+			() => (),
+			(acc, _) => acc,
+			(acc) => acc,
+			PartialExprFunction[Id, Unit, (Unit, Unit)](
+				_ => true,
+				value => (value, value),
+			),
+			_ => true,
+		)
 	}
 }
 
 private[typeclass] trait LowPrioBiRepeated extends VersionSpecificLowPrioBiRepeated {
 	implicit def idToList[A]:BiRepeated[Id, A, List[A]] = {
-		new BiRepeated[Id, A, List[A]] {
-			type Acc = Builder[A, List[A]]
-			def init():Acc = List.newBuilder[A]
-			def append(acc:Acc, elem:A):Acc = {acc += elem}
-			def result(acc:Acc):List[A] = acc.result()
-
-			def headTail:PartialExprFunction[Id, List[A], (A, List[A])] = {
-				PartialExprFunction[Id, List[A], (A, List[A])](
-					it => it.nonEmpty,
-					it => ((it.head, it.tail))
-				)
-			}
-			def isEmpty(it:List[A]):Boolean = it.isEmpty
-		}
+		BiRepeated.apply[Id, A, Builder[A, List[A]], List[A]](
+			() => List.newBuilder[A],
+			(acc, elem) => {acc += elem},
+			(acc) => acc.result(),
+			PartialExprFunction[Id, List[A], (A, List[A])](
+				it => it.nonEmpty,
+				it => ((it.head, it.tail)),
+			),
+			it => it.isEmpty,
+		)
 	}
 }

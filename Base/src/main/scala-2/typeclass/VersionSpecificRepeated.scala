@@ -112,49 +112,39 @@ trait VersionSpecificBiRepeated {
 			}
 
 			implicit override def unit:BiRepeated[c.Expr, Unit, Unit] = {
-				new BiRepeated[c.Expr, Unit, Unit] {
-					type Acc = Unit
-					override def init():Acc = ()
-					override def append(acc:Acc, elem:Unit):Unit = {}
-					override def result(acc:Acc):Unit = ()
-
-					override def headTail:PartialExprFunction[c.Expr, Unit, (Unit, Unit)] = {
-						PartialExprFunction[c.Expr, Unit, (Unit, Unit)](
-							_ => exprTrue,
-							value => (value, value)
-						)
-					}
-					override def isEmpty(it:Unit):c.Expr[Boolean] = exprTrue
-				}
+				BiRepeated.apply[c.Expr, Unit, Unit, Unit](
+					() => (),
+					(acc, _) => acc,
+					(acc) => acc,
+					PartialExprFunction[c.Expr, Unit, (Unit, Unit)](
+						_ => exprTrue,
+						value => (value, value)
+					),
+					_ => exprTrue,
+				)
 			}
 
 			implicit override def toExprList[A](implicit typA:c.TypeTag[A]):BiRepeated[c.Expr, c.Expr[A], c.Expr[List[A]]] = {
-				new BiRepeated[c.Expr, c.Expr[A], c.Expr[List[A]]] {
-					type Acc = Builder[c.Tree, List[c.Tree]]
-					override def init():Acc = List.newBuilder[c.Tree]
-					override def append(acc:Acc, elem:c.Expr[A]):Acc = {acc += elem.tree}
-					override def result(acc:Acc):c.Expr[List[A]] = {
+				BiRepeated.apply[c.Expr, c.Expr[A], Builder[c.Tree, List[c.Tree]], c.Expr[List[A]]](
+					() => List.newBuilder[c.Tree],
+					(acc, elem) => {acc += elem.tree},
+					(acc) => {
 						c.Expr[List[A]](
 							c.universe.Apply(
 								selectTermNames[Nothing]("_root_", "scala", "collection", "immutable", "List", "apply").tree,
 								acc.result()
 							)
 						)
-					}
-
-					override def headTail:PartialExprFunction[c.Expr, c.Expr[List[A]], (c.Expr[A], c.Expr[List[A]])] = {
-						PartialExprFunction(
-							it => select[List[A], Boolean](it, "nonEmpty"),
-							it => (
-								select[List[A], A](it, "head"),
-								select[List[A], List[A]](it, "tail")
-							)
+					},
+					PartialExprFunction(
+						it => select[List[A], Boolean](it, "nonEmpty"),
+						it => (
+							select[List[A], A](it, "head"),
+							select[List[A], List[A]](it, "tail")
 						)
-					}
-					override def isEmpty(it:c.Expr[List[A]]):c.Expr[Boolean] = {
-						select[List[A], Boolean](it, "isEmpty")
-					}
-				}
+					),
+					it => select[List[A], Boolean](it, "isEmpty"),
+				)
 			}
 		}
 	}
