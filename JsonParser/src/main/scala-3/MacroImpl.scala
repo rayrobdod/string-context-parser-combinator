@@ -101,11 +101,11 @@ object MacroImpl {
 		)
 			.opaque("Number Literal")
 
-		val interpolator = stringRepr.map({s => '{JDecimal(BigDecimal(${Expr(s)}))}})
+		val interpolator = stringRepr.map({s => '{JDecimal(${Expr(BigDecimal(s))})}})
 
 		val extractor = stringRepr
 			.map:
-				s => '{BigDecimal(${Expr(s)})}
+				s => Expr(BigDecimal(s))
 			.extractorAtom[Expr, Type, BigDecimal]
 			.toExtractor
 			.contramap[Expr[JValue & JNumber]]:
