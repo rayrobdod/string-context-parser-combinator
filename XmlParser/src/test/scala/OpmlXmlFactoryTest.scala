@@ -173,11 +173,6 @@ final class OpmlXmlFactoryTest extends munit.FunSuite {
 				|  name.rayrobdod.stringContextParserCombinatorExample.xml.OpmlXmlFactory.
 				|    OutlineAttribute
 				| | name.rayrobdod.stringContextParserCombinatorExample.xml.Opml.OutlineTag)*
-				|
-				|The following import might make progress towards fixing the problem:
-				|
-				|  import munit.Clue.generate
-				|
 				|			compileErrors(""".stripMargin + "\"\"\"" + """xml"<outline text='section'><head /></outline>""".stripMargin + "\"\"\"\"" + """),
 				|               ^
 				|error:
@@ -186,11 +181,6 @@ final class OpmlXmlFactoryTest extends munit.FunSuite {
 				|  name.rayrobdod.stringContextParserCombinatorExample.xml.OpmlXmlFactory.
 				|    OutlineAttribute
 				| | name.rayrobdod.stringContextParserCombinatorExample.xml.Opml.OutlineTag)*
-				|
-				|The following import might make progress towards fixing the problem:
-				|
-				|  import munit.Clue.generate
-				|
 				|			compileErrors(""".stripMargin + "\"\"\"" + """xml"<outline text='section'><head /></outline>""".stripMargin + "\"\"\"\"" + """),
 				|               ^
 				|""".stripMargin
