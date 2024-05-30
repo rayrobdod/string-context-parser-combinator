@@ -207,15 +207,6 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		) ++
 		sharedJsSettings,
 	)
-	.nativePlatform(scalaVersions = Seq(
-			scala212Ver,
-			scala213Ver,
-			scala3Ver,
-		),
-		libraryDependencies ++= Seq(
-			"io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
-		),
-	)
 
 lazy val uri = (projectMatrix in file("UriParser"))
 	.dependsOn(base)
