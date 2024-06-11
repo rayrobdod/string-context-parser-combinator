@@ -9,11 +9,8 @@ final class Digits(val value:Int)
 
 object Digit {
 	def apply(x:Char):Digit = {
-		if ('0' <= x && x <= '9') {
-			new Digit(x - '0')
-		} else {
-			throw new IllegalArgumentException("Expected ascii digit")
-		}
+		require('0' <= x && x <= '9', "Expected ascii digit")
+		new Digit(x - '0')
 	}
 
 	implicit def given_Repeated:Repeated[Digit, Digits] = new Repeated[Digit, Digits]{

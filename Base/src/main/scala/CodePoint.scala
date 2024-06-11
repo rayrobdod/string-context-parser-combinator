@@ -6,7 +6,7 @@ import scala.math.Ordering
  * Represents a unicode codepoint
  */
 final class CodePoint private (val intValue:Int) {
-	if (! Character.isValidCodePoint(intValue)) throw new IllegalArgumentException(s"$intValue")
+	require(Character.isValidCodePoint(intValue), s"$intValue is not a valid codepoint")
 
 	override def toString:String = new String(Array[Int](intValue), 0, 1)
 	override def hashCode:Int = intValue
