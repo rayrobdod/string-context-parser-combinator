@@ -1,4 +1,4 @@
-val scala212Ver = "2.12.19"
+val scala212Ver = "2.12.20"
 val scala213Ver = "2.13.14"
 val scala3Ver = "3.3.3"
 
