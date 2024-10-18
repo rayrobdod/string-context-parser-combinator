@@ -5,6 +5,22 @@ import scala.reflect.macros.whitebox.Context
 import name.rayrobdod.stringContextParserCombinator._
 
 package datetime {
+	private object TypeTags {
+		private final class StaticTypeCreator(name: String) extends scala.reflect.api.TypeCreator {
+			override def apply[U <: scala.reflect.api.Universe with Singleton](m: scala.reflect.api.Mirror[U]): U#Type = {
+				m.staticClass(name).asType.toTypeConstructor
+			}
+		}
+
+		def year(c: Context): c.TypeTag[Year] = c.universe.TypeTag[Year](c.universe.rootMirror, new StaticTypeCreator("java.time.Year"))
+		def month(c: Context): c.TypeTag[Month] = c.universe.TypeTag[Month](c.universe.rootMirror, new StaticTypeCreator("java.time.Month"))
+		def yearMonth(c: Context): c.TypeTag[YearMonth] = c.universe.TypeTag[YearMonth](c.universe.rootMirror, new StaticTypeCreator("java.time.YearMonth"))
+		def dayOfMonth(c: Context): c.TypeTag[DayOfMonth] = c.universe.TypeTag[DayOfMonth](c.universe.rootMirror, new StaticTypeCreator("name.rayrobdod.stringContextParserCombinatorExample.datetime.DayOfMonth"))
+		def localDate(c: Context): c.TypeTag[LocalDate] = c.universe.TypeTag[LocalDate](c.universe.rootMirror, new StaticTypeCreator("java.time.LocalDate"))
+		def localTime(c: Context): c.TypeTag[LocalTime] = c.universe.TypeTag[LocalTime](c.universe.rootMirror, new StaticTypeCreator("java.time.LocalTime"))
+		def localDateTime(c: Context): c.TypeTag[LocalDateTime] = c.universe.TypeTag[LocalDateTime](c.universe.rootMirror, new StaticTypeCreator("java.time.LocalDateTime"))
+	}
+
 	final class MacroImpl(val c:Context {type PrefixType = DateTimeStringContext}) {
 		import c.universe._
 
@@ -19,6 +35,14 @@ package datetime {
 		private[this] implicit val thisCToExpr:typeclass.ToExprMapping[c.Expr, c.universe.Liftable, c.TypeTag] = typeclass.ToExprMapping.forContext(c)
 
 		import TimeParsers.intTwoDigits
+
+		implicit val ttYear: c.TypeTag[Year] = TypeTags.year(c)
+		implicit val ttMonth: c.TypeTag[Month] = TypeTags.month(c)
+		implicit val ttYearMonth: c.TypeTag[YearMonth] = TypeTags.yearMonth(c)
+		implicit val ttLocalDate: c.TypeTag[LocalDate] = TypeTags.localDate(c)
+		implicit val ttLocalTime: c.TypeTag[LocalTime] = TypeTags.localTime(c)
+		implicit val ttLocalDateTime: c.TypeTag[LocalDateTime] = TypeTags.localDateTime(c)
+		implicit val ttDayOfMonth: c.TypeTag[DayOfMonth] = TypeTags.dayOfMonth(c)
 
 		private[this] implicit object sequenced_YearMonth extends typeclass.BiSequenced[c.Expr[Year], c.Expr[Month], c.Expr[YearMonth]] {
 			def aggregate(left:c.Expr[Year], right:c.Expr[Month]):c.Expr[YearMonth] = {

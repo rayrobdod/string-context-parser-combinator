@@ -55,11 +55,11 @@ trait VersionSpecificBiOptionally {
 			)
 
 			override def toExprOption[A](implicit typA:c.TypeTag[A]):BiOptionally[c.Expr, c.Expr[A], c.Expr[Option[A]]] = BiOptionally.apply(
-				selectTermNames[Option[A]]("_root_", "scala", "None"),
+				selectTermNames[Option[A]]("_root_", "scala", "None")(TypeTags.option(c)),
 				value => {
 					val rootTree = c.universe.Ident(c.universe.TermName("_root_"))
 					val namesTree = List("scala", "Some", "apply").foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
-					c.Expr[Option[A]](c.universe.Apply(namesTree, List(value.tree)))
+					c.Expr[Option[A]](c.universe.Apply(namesTree, List(value.tree)))(TypeTags.option(c))
 				},
 				value => select[Option[A], Boolean](value, "isEmpty"),
 				PartialExprFunction(

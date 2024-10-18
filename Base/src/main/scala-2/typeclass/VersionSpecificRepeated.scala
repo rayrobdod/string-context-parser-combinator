@@ -13,7 +13,6 @@ trait VersionSpecificRepeated {
 	def forContextConcatenateString(c:Context):Repeated[c.Expr[String], c.Expr[String]] = {
 		import c.universe.Tree
 		import c.universe.Quasiquote
-		val ttString0 = c.universe.typeTag[String]
 		final class ConcatenateString extends Repeated[c.Expr[String], c.Expr[String]] {
 			val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
 			val accumulatorTypeTree = c.universe.TypeTree(
@@ -27,8 +26,6 @@ trait VersionSpecificRepeated {
 				q"new $accumulatorTypeTree()",
 			)
 
-			implicit val ttString: c.TypeTag[String] = ttString0
-
 			sealed trait Acc
 			final object AccZero extends Acc
 			final class AccOne(val elem: c.Expr[String]) extends Acc
@@ -39,7 +36,7 @@ trait VersionSpecificRepeated {
 							stat,
 							q"$accumulatorIdent.toString"
 						)
-					)
+					)(TypeTags.string(c))
 				)
 			}
 
@@ -60,7 +57,7 @@ trait VersionSpecificRepeated {
 			}
 			def result(acc:Acc):c.Expr[String] = {
 				acc match {
-					case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
+					case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))(TypeTags.string(c))
 					case accOne: AccOne => accOne.elem
 					case accMany: AccMany => accMany.builder.result()
 				}
@@ -134,7 +131,7 @@ trait VersionSpecificBiRepeated {
 								selectTermNames[Nothing]("_root_", "scala", "collection", "immutable", "List", "apply").tree,
 								acc.result()
 							)
-						)
+						)(TypeTags.list(c))
 					},
 					PartialExprFunction(
 						it => select[List[A], Boolean](it, "nonEmpty"),
