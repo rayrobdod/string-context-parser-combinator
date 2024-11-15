@@ -7,6 +7,22 @@ private[typeclass] trait VersionSpecificEithered extends LowPrioEithered {
 	implicit def unitUnit:Eithered[Unit, Unit, Unit] = symmetric[Unit]
 	implicit def unitGeneric[B, Z](implicit ev:Optionally[B, Z]):Eithered[Unit, B, Z] = Eithered(_ => ev.none, ev.some _)
 	implicit def genericUnit[A, Z](implicit ev:Optionally[A, Z]):Eithered[A, Unit, Z] = Eithered(ev.some _, _ => ev.none)
+
+	/**
+	 * @version 0.1.1
+	 */
+	trait Eithereds[Expr[+_]] {
+		def splicePiece[A]: Eithered[Expr[A], Expr[Iterable[A]], Repeated.SplicePiece[Expr, A]]
+	}
+	/**
+	 * @version 0.1.1
+	 */
+	def forContext(c:Context):Eithereds[c.Expr] = {
+		new Eithereds[c.Expr] {
+			def splicePiece[A]: Eithered[c.Expr[A], c.Expr[Iterable[A]], Repeated.SplicePiece[c.Expr, A]] =
+				Eithered(new Repeated.SplicePiece.One(_), new Repeated.SplicePiece.Many(_))
+		}
+	}
 }
 
 private[typeclass] trait LowPrioEithered {

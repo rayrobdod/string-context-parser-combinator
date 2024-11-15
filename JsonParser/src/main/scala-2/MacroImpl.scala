@@ -6,30 +6,6 @@ import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
-	private[this] def assembleCollection[A](parts:List[Either[c.Expr[A], c.Expr[List[A]]]])(implicit builderType: c.universe.TypeTag[scala.collection.mutable.Builder[A, List[A]]]):c.Expr[List[A]] = {
-		val builderName = c.freshName(c.universe.TermName("builder"))
-		val builderTypeTree = c.universe.TypeTree(builderType.tpe)
-		val builderExpr = c.Expr(c.universe.Ident(builderName))(builderType)
-
-		val createBuilder = c.universe.ValDef(
-			c.universe.NoMods,
-			builderName,
-			builderTypeTree,
-			c.universe.reify(List.newBuilder).tree
-		)
-		val insertBuilder = parts.map(part => part match {
-			case Left(single) => c.universe.reify(builderExpr.splice.+=(single.splice)).tree
-			case Right(group) => c.universe.reify(builderExpr.splice.++=(group.splice)).tree
-		})
-
-		c.Expr[List[A]](
-			c.universe.Block(
-				createBuilder :: insertBuilder,
-				c.universe.reify(builderExpr.splice.result()).tree
-			)
-		)
-	}
-
 	private[this] def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]]:LiftFunction[c.type, Lifter, c.Expr[Z]] = {
 		new LiftFunction[c.type, Lifter, c.Expr[Z]] {
 			def apply[A](lifter:c.Expr[Lifter[A]], a:c.Expr[A]):c.Expr[Z] = {
@@ -186,18 +162,20 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 					.andThen(whitespace.toInterpolator)
 			}
 
-			val splicableValue:Interpolator[Either[c.Expr[JValue], c.Expr[List[JValue]]]] = {
+			val splicableValues: Interpolator[typeclass.Repeated.SplicePiece[c.Expr, JValue]] = {
+				implicit val eitherSplicePiece: typeclass.Eithered[c.Expr[JValue], c.Expr[List[JValue]], typeclass.Repeated.SplicePiece[c.Expr,JValue]] = typeclass.Eithered.forContext(c).splicePiece
+
 				val value = jvalue.toInterpolator
 				val array = (isString("..").toInterpolator ~> liftedArray)
-				value <+> array
+				value <|> array
 			}
 
-			val literalPresplice:Interpolator[List[Either[c.Expr[JValue], c.Expr[List[JValue]]]]] = (
-				splicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
-			)
-
-			literalPresplice
-				.map(xs => assembleCollection(xs))
+			splicableValues
+				.repeat(
+					delimiter = delimiter.toInterpolator,
+					strategy = RepeatStrategy.Possessive)(
+					typeclass.Repeated.forContextFromSplicesToExprList(c)
+				)
 				.map(x => c.universe.reify(JArray.apply(x.splice)))
 		}
 
@@ -236,20 +214,22 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				(jCharsLifted <|> immediate) <~ whitespace.toInterpolator
 			}
 
-			val splicableValue:Interpolator[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]] = {
+			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = {
+				implicit val eitherSplicePiece: typeclass.Eithered[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = typeclass.Eithered.forContext(c).splicePiece
+
 				val keyValue = (liftedKeyValue <~ whitespace.toInterpolator)
 				val keyThenValue = (key <~ separator.toInterpolator <~> jvalue.toInterpolator)
 					.map(x => {val (k, v) = x; c.universe.reify(Tuple2.apply(k.splice, v.splice))})
 				val mapping = (isString("..").toInterpolator ~> liftedObject <~ whitespace.toInterpolator)
-				(keyValue <|> keyThenValue) <+> mapping
+				(keyValue <|> keyThenValue) <|> mapping
 			}
 
-			val literalPresplice:Interpolator[List[Either[c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]]]]] = (
-					splicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
-			)
-
-			literalPresplice
-				.map(xs => assembleCollection(xs))
+			splicableValues
+				.repeat(
+					delimiter = delimiter.toInterpolator,
+					strategy = RepeatStrategy.Possessive)(
+					typeclass.Repeated.forContextFromSplicesToExprList(c)
+				)
 				.map(x => c.universe.reify(JObject.apply(x.splice)))
 		}
 

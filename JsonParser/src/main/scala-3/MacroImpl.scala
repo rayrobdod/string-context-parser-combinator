@@ -7,19 +7,6 @@ import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
-	private def assembleCollection[A]
-			(parts:List[Either[Expr[A], Expr[List[A]]]])
-			(using Type[A], Quotes)
-	:Expr[List[A]] = {
-		val builder = parts.foldLeft('{ List.newBuilder[A] })({(builder, part) =>
-			part match {
-				case Left(single) => '{ $builder.addOne($single) }
-				case Right(group) => '{ $builder.addAll($group) }
-			}
-		})
-		'{ $builder.result() }
-	}
-
 	import scala.language.higherKinds
 	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Expr[Z]] = {
 		new LiftFunction[Lifter, Expr[Z]] {
@@ -180,18 +167,20 @@ object MacroImpl {
 				.map(x => '{ $x.arr })
 				.andThen(whitespace.toInterpolator)
 
-			val splicableValue:Interpolator[Either[Expr[JValue], Expr[List[JValue]]]] = {
+			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[Expr,JValue]] = {
+				given typeclass.Eithered[Expr[JValue], Expr[List[JValue]], typeclass.Repeated.SplicePiece[Expr,JValue]] = typeclass.Eithered.quotedSplicePiece
+
 				val value = jvalue.toInterpolator
 				val array = isString("..").toInterpolator ~> liftedArray <~ whitespace.toInterpolator
-				value <+> array
+				value <|> array
 			}
 
-			val literalPresplice:Interpolator[List[Either[Expr[JValue], Expr[List[JValue]]]]] = (
-				splicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
-			)
-
-			literalPresplice
-				.map(xs => assembleCollection(xs))
+			splicableValues
+				.repeat(
+					delimiter = delimiter.toInterpolator,
+					strategy = RepeatStrategy.Possessive)(
+					typeclass.Repeated.quotedFromSplicesToExprList
+				)
 				.map(x => '{ JArray.apply($x)})
 		}
 
@@ -231,20 +220,22 @@ object MacroImpl {
 				(jCharsLifted <|> immediate) <~> whitespace.toInterpolator
 			}
 
-			val splicableValue:Interpolator[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]] = {
+			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[Expr,(String, JValue)]] = {
+				given typeclass.Eithered[Expr[(String, JValue)], Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[Expr,(String, JValue)]] = typeclass.Eithered.quotedSplicePiece
+
 				val keyValue = (liftedKeyValue <~> whitespace.toInterpolator)
 				val keyThenValue = (key <~> separator.toInterpolator <~> jvalue.toInterpolator)
 					.map(x => {val (k, v) = x; '{ Tuple2.apply($k, $v) }})
 				val splice = (isString("..").toInterpolator ~> liftedObject <~> whitespace.toInterpolator)
-				(keyValue <|> keyThenValue) <+> splice
+				(keyValue <|> keyThenValue) <|> splice
 			}
 
-			val literalPresplice:Interpolator[List[Either[Expr[(String, JValue)], Expr[List[(String, JValue)]]]]] = (
-				splicableValue.repeat(delimiter = delimiter.toInterpolator, strategy = RepeatStrategy.Possessive)
-			)
-
-			literalPresplice
-				.map(xs => assembleCollection(xs))
+			splicableValues
+				.repeat(
+					delimiter = delimiter.toInterpolator,
+					strategy = RepeatStrategy.Possessive)(
+					typeclass.Repeated.quotedFromSplicesToExprList
+				)
 				.map(x => '{ JObject.apply($x)})
 		}
 

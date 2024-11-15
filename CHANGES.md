@@ -11,6 +11,15 @@
   * `idConcatenateString` for id context
   * `forContextConcatenateString` for scala-2 macro context
   * `quotedConcatenateString` for scala-3 quoted context
+* Add `Repeat.SplicePiece`; representing either zero, one, or many items; and typeclass instances using `SplicePiece`
+  * for scala-2 macro context:
+    * `Either.forContextSplicePiece` to combine a `Interpolator[c.Expr[A]]` and a `Interpolator[c.Expr[List[A]]]` into a `Interpolator[SplicePiece[c.Expr, A]]`
+    * `Repeated.forContextFromSplicesToExprList` to splice the SplicePieces together into a `c.Expr[List[A]]`
+    * `Repeated.forContextFromSplicesUsingBuilder` to splice the SplicePieces together using a arbitrary Builder
+  * for scala-3 quoted context:
+    * `Either.quotedSplicePiece` to combine a `Interpolator[Expr[A]]` and a `Interpolator[Expr[List[A]]]` into a `Interpolator[SplicePiece[Expr, A]]`
+    * `Repeated.quotedFromSplicesToExprList` to splice the SplicePieces together into a `Expr[List[A]]`
+    * `Repeated.quotedFromSplicesUsingBuilder` to splice the SplicePieces together using a arbitrary Builder
 * Fix scalajs sourcemaps to point at github-hosted files instead of a local file that almost certainly does not exist
 
 ## [0.1.0] 2024-02-01

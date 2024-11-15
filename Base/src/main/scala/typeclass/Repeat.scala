@@ -144,6 +144,19 @@ object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 			(acc:StringBuilder) => acc.toString,
 		)
 	}
+
+	/**
+	 * @version 0.1.1
+	 */
+	sealed trait SplicePiece[Expr[+_], +A]
+	/**
+	 * @version 0.1.1
+	 */
+	object SplicePiece {
+		final class Zero[Expr[+_]] extends SplicePiece[Expr, Nothing]
+		final class One[Expr[+_], +A](val elem: Expr[A]) extends SplicePiece[Expr, A]
+		final class Many[Expr[+_], +A](val iter: Expr[Iterable[A]]) extends SplicePiece[Expr, A]
+	}
 }
 
 private[typeclass] trait LowPrioRepeated {
