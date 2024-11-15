@@ -25,28 +25,44 @@ private[xml] object XmlParser {
 	final case class InterpolatedAttribute(data: Expr[Any]) extends ThingInAttributePosition
 
 
-	val xmlNameFirstChar:BitSet = {
-		import scala.Predef.intWrapper
-		val pattern = java.util.regex.Pattern.compile("""[A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\x{10000}-\x{EFFFF}]""")
+	private val xmlNameFirstChar:BitSet = {
 		val builder = BitSet.newBuilder
-		(0 until 0x110000)
-			.filter(x => pattern.matcher(new String(Array[Int](x), 0, 1)).matches)
-			.foreach(builder.+= _)
-		builder.result
+		builder ++= 'A'.toInt to 'Z'
+		builder += '_'
+		builder ++= 'a'.toInt to 'z'
+		builder ++= 0x00C0 to 0x00D6
+		builder ++= 0x00D8 to 0x00F6
+		builder ++= 0x00F8 to 0x02FF
+		builder ++= 0x0370 to 0x037D
+		builder ++= 0x037F to 0x1FFF
+		builder ++= 0x200C to 0x200D
+		builder ++= 0x2070 to 0x218F
+		builder ++= 0x2C00 to 0x2FEF
+		builder ++= 0x3001 to 0xD7FF
+		builder ++= 0xF900 to 0xFDCF
+		builder ++= 0xFDF0 to 0xFFFD
+		builder ++= 0x10000 to 0xEFFFF
+		builder.result()
 	}
-	val xmlNameRestChar:BitSet = {
-		import scala.Predef.intWrapper
-		val pattern = java.util.regex.Pattern.compile("""[\-\.0-9\u00B7\u0300-\u036F\u203F-\u2040]""")
+	private val xmlNameRestChar:BitSet = {
 		val builder = BitSet.newBuilder
-		(0 until 0x110000)
-			.filter(x => pattern.matcher(new String(Array[Int](x), 0, 1)).matches)
-			.foreach(builder.+= _)
-		builder.result
+		builder += '-'
+		builder += '.'
+		builder ++= '0'.toInt to '9'
+		builder += 0x00B7
+		builder ++= 0x0300 to 0x036F
+		builder ++= 0x203F to 0x2040
+		builder.result()
 	}
-	val xmlAllowedChar:BitSet = {
-		import scala.Predef.intWrapper
-		val bits = Seq(0x9, 0xA, 0xD) ++ (0x20 to 0xD7FF) ++ (0xE000 to 0xFFFD) ++ (0x10000 to 0x10FFFF)
-		BitSet(bits:_*)
+	private val xmlAllowedChar:BitSet = {
+		val builder = BitSet.newBuilder
+		builder += 0x9
+		builder += 0xA
+		builder += 0xD
+		builder ++= 0x20 to 0xD7FF
+		builder ++= 0xE000 to 0xFFFD
+		builder ++= 0x10000 to 0x10FFFF
+		builder.result()
 	}
 
 	private val whitespace:Interpolator[Unit] = charIn("\n\r\t ").map(_ => ())
