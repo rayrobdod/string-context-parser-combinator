@@ -76,19 +76,25 @@ trait VersionSpecificRepeated {
 	 * @param ifZero the Expr to use when combining zero items together.
 	 *     If None, `newAccumulator.result()` will be used.
 	 *     If Some, should ideally be equivalent to but more efficient than the None expr.
-	 * @param ifOne the Expr to use when combining one scalar item together.
-	 *     If None, `newAccumulator.+=(item).result()` will be used.
-	 *     If Some, should ideally be equivalent to but more efficient than the None expr.
+	 * @param ifOneScalar the Expr to use when combining one scalar item together.
+	 *     When not defined, `newAccumulator.+=(item).result()` will be used.
+	 *     The definition should be equivalent to but more efficient than the undefined expr.
+	 * @param ifOneSplice the Expr to use when combining one splice item together.
+	 *     When not defined, `newAccumulator.++=(item).result()` will be used.
+	 *     The definition should be equivalent to but more efficient than the undefined expr.
 	 * @version 0.1.1
 	 */
 	def forContextFromSplicesUsingBuilder[A, Z](c:Context)(
 			newAccumulator: c.Expr[Builder[A, Z]],
 			ifZero: Option[() => c.Expr[Z]],
-			ifOne: Option[(c.Expr[A]) => c.Expr[Z]],
+			ifOneScalar: PartialFunction[c.Expr[A], c.Expr[Z]],
+			ifOneSplice: PartialFunction[c.Expr[Iterable[A]], c.Expr[Z]],
 			)(implicit
 			accumulatorType: c.universe.TypeTag[Builder[A, Z]],
 			zType: c.universe.TypeTag[Z],
 	): Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] = {
+		// using default arguments confuses the typechecker (found `c.Expr` required `x$1.Expr`), so don't provide default arguments
+
 		import c.universe.Tree
 		import c.universe.Quasiquote
 
@@ -107,7 +113,8 @@ trait VersionSpecificRepeated {
 
 			sealed trait Acc
 			final object AccZero extends Acc
-			final class AccOne(val elem: c.Expr[A]) extends Acc
+			final class AccOneScalar(val elem: c.Expr[A]) extends Acc
+			final class AccOneSplice(val iter: c.Expr[Iterable[A]]) extends Acc
 			final class AccMany extends Acc {
 				val builder: Builder[Tree, c.Expr[Z]] = List.newBuilder.mapResult(stat =>
 					c.Expr[Z](
@@ -124,15 +131,10 @@ trait VersionSpecificRepeated {
 				case AccZero =>
 					elem match {
 						case _: SplicePiece.Zero[c.Expr] => AccZero
-						case elemOne: SplicePiece.One[c.Expr, A] => new AccOne(elemOne.elem)
-						case elemMany: SplicePiece.Many[c.Expr, A] => {
-							val retval = new AccMany()
-							retval.builder += accumulatorValDef
-							retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-							retval
-						}
+						case elemOne: SplicePiece.One[c.Expr, A] => new AccOneScalar(elemOne.elem)
+						case elemMany: SplicePiece.Many[c.Expr, A] => new AccOneSplice(elemMany.iter)
 					}
-				case accOne: AccOne => {
+				case accOne: AccOneScalar => {
 					elem match {
 						case _: SplicePiece.Zero[c.Expr] => accOne
 						case elemOne: SplicePiece.One[c.Expr, A] =>
@@ -145,6 +147,23 @@ trait VersionSpecificRepeated {
 							val retval = new AccMany()
 							retval.builder += accumulatorValDef
 							retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
+							retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
+							retval
+					}
+				}
+				case accOne: AccOneSplice => {
+					elem match {
+						case _: SplicePiece.Zero[c.Expr] => accOne
+						case elemOne: SplicePiece.One[c.Expr, A] =>
+							val retval = new AccMany()
+							retval.builder += accumulatorValDef
+							retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
+							retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
+							retval
+						case elemMany: SplicePiece.Many[c.Expr, A] =>
+							val retval = new AccMany()
+							retval.builder += accumulatorValDef
+							retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
 							retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
 							retval
 					}
@@ -165,7 +184,8 @@ trait VersionSpecificRepeated {
 			def result(acc:Acc):c.Expr[Z] = {
 				acc match {
 					case AccZero => ifZero.map(_.apply()).getOrElse(c.Expr[Z](q"$newAccumulator.result()"))
-					case accOne: AccOne => ifOne.map(_.apply(accOne.elem)).getOrElse(c.Expr[Z](q"$newAccumulator.+=(${accOne.elem}).result()"))
+					case accOne: AccOneScalar => ifOneScalar.applyOrElse(accOne.elem, (e: c.Expr[A]) => c.Expr[Z](q"$newAccumulator.+=(${e}).result()"))
+					case accOne: AccOneSplice => ifOneSplice.applyOrElse(accOne.iter, (es: c.Expr[Iterable[A]]) => c.Expr[Z](q"$newAccumulator.++=(${es}).result()"))
 					case accMany: AccMany => accMany.builder.result()
 				}
 			}
@@ -185,7 +205,8 @@ trait VersionSpecificRepeated {
 		forContextFromSplicesUsingBuilder[A, List[A]](c)(
 			c.universe.reify(List.newBuilder),
 			Option(() => c.universe.reify(List.empty)),
-			Option((a: c.Expr[A]) => c.universe.reify(List(a.splice))),
+			{case (a: c.Expr[A]) => c.universe.reify(List(a.splice))},
+			{case (a: c.Expr[_]) if a.staticType <:< zType.tpe => c.Expr[List[A]](a.tree)},
 		)
 	}
 }

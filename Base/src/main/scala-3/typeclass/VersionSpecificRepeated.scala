@@ -61,27 +61,34 @@ trait VersionSpecificRepeated {
 	 * @param ifZero the Expr to use when combining zero items together.
 	 *     If None, `'{$newAccumulator.result()}` will be used.
 	 *     If Some, should be equivalent to but more efficient than the None expr.
-	 * @param ifOne the Expr to use when combining one scalar item together.
-	 *     If None, `'{$newAccumulator.addOne($item).result()}` will be used.
-	 *     If Some, should be equivalent to but more efficient than the None expr.
+	 * @param ifOneScalar the Expr to use when combining one scalar item together.
+	 *     When not defined, `'{$newAccumulator.addOne($item).result()}` will be used.
+	 *     The definition should be equivalent to but more efficient than the undefined expr.
+	 * @param ifOneSplice the Expr to use when combining one splice item together.
+	 *     When not defined, `'{$newAccumulator.addAll($item).result()}` will be used.
+	 *     The definition should be equivalent to but more efficient than the undefined expr.
 	 * @version 0.1.1
 	 */
 	def quotedFromSplicesUsingBuilder[A, Z](
 			newAccumulator: Expr[Builder[A, Z]],
 			ifZero: Option[() => Expr[Z]] = None,
-			ifOne: Option[(Expr[A]) => Expr[Z]] = None,
+			ifOneScalar: PartialFunction[Expr[A], Expr[Z]] = PartialFunction.empty,
+			ifOneSplice: PartialFunction[Expr[Iterable[A]], Expr[Z]] = PartialFunction.empty
 			)(using Quotes, Type[A], Type[Z], Type[Builder[A, Z]],
 	): Repeated[SplicePiece[Expr, A], Expr[Z]] = {
 		final class FromSplicesUsingBuilder extends Repeated[SplicePiece[Expr, A], Expr[Z]] {
 			sealed trait Acc
 			object AccZero extends Acc
-			final class AccOne(val elem: Expr[A]) extends Acc
+			final class AccOneScalar(val elem: Expr[A]) extends Acc
+			final class AccOneSplice(val iter: Expr[Iterable[A]]) extends Acc
 			final class AccMany extends Acc {
 				val builder: Builder[Expr[Builder[A, Z]] => Expr[_], Expr[Z]] = List.newBuilder.mapResult(parts =>
 					'{
 						val accumulator: Builder[A, Z] = ${newAccumulator}
-						${Expr.block(parts.map(part => part('accumulator)), '{()})}
-						accumulator.result()
+						${Expr.block(
+							parts.map(part => part('accumulator)),
+							'{accumulator.result()}
+						)}
 					}
 				)
 			}
@@ -91,14 +98,10 @@ trait VersionSpecificRepeated {
 				case AccZero =>
 					elem match {
 						case _: SplicePiece.Zero[Expr] => AccZero
-						case elemOne: SplicePiece.One[Expr, A] => new AccOne(elemOne.elem)
-						case elemMany: SplicePiece.Many[Expr, A] => {
-							val retval = new AccMany()
-							retval.builder += {(acc) => '{$acc.addAll(${elemMany.iter})}}
-							retval
-						}
+						case elemOne: SplicePiece.One[Expr, A] => new AccOneScalar(elemOne.elem)
+						case elemMany: SplicePiece.Many[Expr, A] => new AccOneSplice(elemMany.iter)
 					}
-				case accOne: AccOne => {
+				case accOne: AccOneScalar => {
 					elem match {
 						case _: SplicePiece.Zero[Expr] => accOne
 						case elemOne: SplicePiece.One[Expr, A] =>
@@ -109,6 +112,21 @@ trait VersionSpecificRepeated {
 						case elemMany: SplicePiece.Many[Expr, A] =>
 							val retval = new AccMany()
 							retval.builder += {(acc) => '{$acc.addOne(${accOne.elem})}}
+							retval.builder += {(acc) => '{$acc.addAll(${elemMany.iter})}}
+							retval
+					}
+				}
+				case accOne: AccOneSplice => {
+					elem match {
+						case _: SplicePiece.Zero[Expr] => accOne
+						case elemOne: SplicePiece.One[Expr, A] =>
+							val retval = new AccMany()
+							retval.builder += {(acc) => '{$acc.addAll(${accOne.iter})}}
+							retval.builder += {(acc) => '{$acc.addOne(${elemOne.elem})}}
+							retval
+						case elemMany: SplicePiece.Many[Expr, A] =>
+							val retval = new AccMany()
+							retval.builder += {(acc) => '{$acc.addAll(${accOne.iter})}}
 							retval.builder += {(acc) => '{$acc.addAll(${elemMany.iter})}}
 							retval
 					}
@@ -129,7 +147,8 @@ trait VersionSpecificRepeated {
 			def result(acc:Acc):Expr[Z] = {
 				acc match {
 					case AccZero => ifZero.map(_.apply()).getOrElse('{$newAccumulator.result()})
-					case accOne: AccOne => ifOne.map(_.apply(accOne.elem)).getOrElse('{$newAccumulator.addOne(${accOne.elem}).result()})
+					case accOne: AccOneScalar => ifOneScalar.applyOrElse(accOne.elem, e => '{$newAccumulator.addOne(${e}).result()})
+					case accOne: AccOneSplice => ifOneSplice.applyOrElse(accOne.iter, es => '{$newAccumulator.addAll(${es}).result()})
 					case accMany: AccMany => accMany.builder.result()
 				}
 			}
@@ -145,7 +164,8 @@ trait VersionSpecificRepeated {
 		quotedFromSplicesUsingBuilder[A, List[A]](
 			'{ List.newBuilder },
 			Option(() => '{ List.empty }),
-			Option((a: Expr[A]) => '{ List($a) }),
+			{(a: Expr[A]) => '{List($a)}},
+			{case '{ $xs: List[A] } => xs},
 		)
 }
 
