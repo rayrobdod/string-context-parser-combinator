@@ -83,17 +83,17 @@ trait VersionSpecificInterpolatorModule {
 	 * Create a Interpolators that can parse Exprs belonging to the specified Context
 	 * @group InterpolatorGroup
 	 */
-	def contextInterpolators(c:Context):Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
+	def contextInterpolators(c:Context):Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.Expr, c.TypeTag] = {
 		new Interpolator.Interpolators[c.Expr, c.universe.Liftable, c.TypeTag]
 				with ExprIndependentInterpolators[c.Expr[Any]]
-				with LiftedInterpolator[c.type] {
+				with LiftedInterpolator[c.Expr, c.TypeTag] {
 			override def `lazy`[A](fn:Function0[Interpolator[A]]):Interpolator[A] =
 				new Interpolator[A](internal.DelayedConstruction.interpolator(fn))
 
 			override def ofType[A](implicit tpe: c.TypeTag[A]): Interpolator[c.Expr[A]] =
 				new Interpolator[c.Expr[A]](new internal.OfType[c.type, A](tpe))
 
-			override def lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]):Interpolator[Z] =
+			override def lifted[Lifter[_], Z](lift:LiftFunction[c.Expr, c.TypeTag, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]):Interpolator[Z] =
 				new Interpolator[Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
 		}
 	}
@@ -102,13 +102,13 @@ trait VersionSpecificInterpolatorModule {
 	 *
 	 * @group InterpolatorGroup
 	 */
-	trait LiftedInterpolator[C <: Context with Singleton] {
+	trait LiftedInterpolator[Expr[+_], Type[_]] {
 		/**
 		 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 		 *
 		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 		 * @group Arg
 		 */
-		def lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCInterpolator[C#Expr[Any], Z]
+		def lifted[Lifter[_], Z](lift:LiftFunction[Expr, Type, Lifter, Z], description:String)(implicit lifterTypeTag:Type[Lifter[_]]):SCInterpolator[Expr[Any], Z]
 	}
 }

@@ -68,7 +68,7 @@ trait VersionSpecificInterpolatorModule extends ExprIndependentInterpolators[Any
 	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 	 * @group Arg
 	 */
-	def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using Quotes, Type[Lifter]):SCInterpolator[Expr[Any], Z] =
+	def lifted[Lifter[_], Z](lift:LiftFunction[Expr, Type, Lifter, Z], description:String)(using Quotes, Type[Lifter]):SCInterpolator[Expr[Any], Z] =
 		new SCInterpolator(internal.Lifted(lift, ExpectingDescription(description)))
 
 
@@ -76,17 +76,18 @@ trait VersionSpecificInterpolatorModule extends ExprIndependentInterpolators[Any
 	 * Create an Interpolators that can parse `quoted.Expr`s
 	 * @group InterpolatorGroup
 	 */
-	def quotedInterpolators(using Quotes):Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type] & LiftedInterpolator = {
+	def quotedInterpolators(using Quotes):Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type] & LiftedInterpolator[quoted.Expr, quoted.Type] = {
 		new Interpolator.Interpolators[quoted.Expr, quoted.ToExpr, quoted.Type]
 				with ExprIndependentInterpolators[quoted.Expr[Any]]
-				with LiftedInterpolator {
+				with LiftedInterpolator[quoted.Expr, quoted.Type]
+		{
 			override def `lazy`[A](fn:Function0[SCInterpolator[quoted.Expr[Any], A]]):SCInterpolator[quoted.Expr[Any], A] =
 				new SCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 			override def ofType[A](implicit tpe: Type[A]): SCInterpolator[Expr[Any], Expr[A]] =
 				new SCInterpolator(new internal.OfType[A])
 
-			override def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using quoted.Type[Lifter]):SCInterpolator[Expr[Any], Z] =
+			override def lifted[Lifter[_], Z](lift:LiftFunction[quoted.Expr, quoted.Type, Lifter, Z], description:String)(using quoted.Type[Lifter]):SCInterpolator[Expr[Any], Z] =
 				new SCInterpolator(internal.Lifted(lift, ExpectingDescription(description)))
 		}
 	}
@@ -95,13 +96,13 @@ trait VersionSpecificInterpolatorModule extends ExprIndependentInterpolators[Any
 	 *
 	 * @group InterpolatorGroup
 	 */
-	trait LiftedInterpolator {
+	trait LiftedInterpolator[Expr[+_], Type[_ <: AnyKind]] {
 		/**
 		 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
 		 *
 		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 		 * @group Arg
 		 */
-		def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(using quoted.Type[Lifter]):SCInterpolator[Expr[Any], Z]
+		def lifted[Lifter[_], Z](lift:LiftFunction[Expr, Type, Lifter, Z], description:String)(using Type[Lifter]):SCInterpolator[Expr[Any], Z]
 	}
 }

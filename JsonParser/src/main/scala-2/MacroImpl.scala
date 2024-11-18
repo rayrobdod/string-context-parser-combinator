@@ -6,8 +6,8 @@ import org.json4s._
 import name.rayrobdod.stringContextParserCombinator._
 
 final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
-	private[this] def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]]:LiftFunction[c.type, Lifter, c.Expr[Z]] = {
-		new LiftFunction[c.type, Lifter, c.Expr[Z]] {
+	private[this] def myLiftFunction[Z, Lifter[A] <: Lift[A, Z]]:LiftFunction[c.Expr, c.TypeTag, Lifter, c.Expr[Z]] = {
+		new LiftFunction[c.Expr, c.TypeTag, Lifter, c.Expr[Z]] {
 			def apply[A](lifter:c.Expr[Lifter[A]], a:c.Expr[A]):c.Expr[Z] = {
 				c.Expr(
 					c.universe.Apply(

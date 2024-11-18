@@ -7,7 +7,7 @@ private[stringContextParserCombinator]
 object Lifted {
 	def apply[Lifter[_], Z](
 		c:Context)(
-		lift:LiftFunction[c.type, Lifter, Z],
+		lift:LiftFunction[c.Expr, c.TypeTag, Lifter, Z],
 		description:ExpectingDescription
 		)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]
 	):Interpolator[c.Expr[_], Z] = {

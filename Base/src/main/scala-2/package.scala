@@ -83,5 +83,7 @@ package object stringContextParserCombinator {
 
 package stringContextParserCombinator {
 	/** Support for Interpolator.contextInterpolators.lifted; represents a macro-level function that combines a CC[A] and an A. */
-	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
+	trait LiftFunction[Expr[+_], Type[_], -CC[_], +Z] {
+		def apply[A](lifter:Expr[CC[A]], elem:Expr[A]):Z
+	}
 }

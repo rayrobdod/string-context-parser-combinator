@@ -13,11 +13,11 @@ object Lifted {
 		def transpose:Option[MyTuple[A, Lifter]] = lifter.map(x => MyTuple(value, x))
 	}
 	private final class MyTuple[A : Type, Lifter[_]](value:Expr[A], lifter:Expr[Lifter[A]]) {
-		def liftApply[Z](lift:LiftFunction[Lifter, Z])(using Quotes):Z = lift.apply[A](lifter, value)
+		def liftApply[Z](lift:LiftFunction[Expr, Type, Lifter, Z])(using Quotes):Z = lift.apply[A](lifter, value)
 	}
 
 	def apply[Lifter[_], Z](
-		lift:LiftFunction[Lifter, Z],
+		lift:LiftFunction[Expr, Type, Lifter, Z],
 		description:ExpectingDescription,
 		)(using
 		Type[Lifter],

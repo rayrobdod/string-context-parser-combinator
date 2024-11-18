@@ -8,8 +8,8 @@ import name.rayrobdod.stringContextParserCombinator._
 
 object MacroImpl {
 	import scala.language.higherKinds
-	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Lifter, Expr[Z]] = {
-		new LiftFunction[Lifter, Expr[Z]] {
+	private def myLiftFunction[Z : Type, Lifter[A] <: Lift[A, Z] : Type]:LiftFunction[Expr, Type, Lifter, Expr[Z]] = {
+		new LiftFunction[Expr, Type, Lifter, Expr[Z]] {
 			def apply[A](lifter:Expr[Lifter[A]], a:Expr[A])(using Type[A], Quotes):Expr[Z] = lifter match {
 				// Lifter being a Lift.jvalue implies that A =:= Z
 				case '{ Lift.jvalue } => a.asExprOf[Z]
@@ -27,7 +27,7 @@ object MacroImpl {
 	 * (i.e. `Lift.string.apply("abcd").values`).
 	 * This will bypass that wrapping, at least for the built-in `Lift.string`.
 	 */
-	private object stringLiftFunction extends LiftFunction[Lift.String, Expr[String]] {
+	private object stringLiftFunction extends LiftFunction[Expr, Type, Lift.String, Expr[String]] {
 		def apply[A](lifter:Expr[Lift.String[A]], a:Expr[A])(using Type[A], Quotes):Expr[String] = lifter match {
 			// Lifter being a Lift.jvalue implies that A =:= Z, and for Lift.String, Z =:= JString
 			case '{ Lift.jvalue } => '{ ${a.asExprOf[JString]}.values }
