@@ -19,3 +19,27 @@ final class IdConcatenateString extends BaseInterpolatorSuite {
 		assertParseSuccess(dut, ("ab" :: "cd" :: "ef" :: Nil, "12" :: "34" :: Nil), "ab12cd34ef")
 	}
 }
+
+final class IdFromSplicesToList extends BaseInterpolatorSuite {
+	import Repeated.SplicePiece
+	val dut = (ofType[SplicePiece[Id, Int]])
+		.repeat()(using Repeated.idFromSplicesToList)
+		.andThen(end)
+
+	test ("Nil") {
+		assertParseSuccess(dut, ("" :: Nil, Nil), Nil)
+	}
+	test ("Zero") {
+		assertParseSuccess(dut, ("" :: "" :: Nil, SplicePiece.Zero[Id]() :: Nil), Nil)
+	}
+	test ("Scalar") {
+		assertParseSuccess(dut, ("" :: "" :: Nil, SplicePiece.One[Id, Int](42) :: Nil), 42 :: Nil)
+	}
+	test ("Splice") {
+		assertParseSuccess(dut, ("" :: "" :: Nil, SplicePiece.Many[Id, Int](3 to 6) :: Nil), 3 :: 4 :: 5 :: 6 :: Nil)
+	}
+	test ("Mix") {
+		assertParseSuccess(dut, ("" :: "" :: "" :: "" :: Nil,
+			SplicePiece.Many[Id, Int](4 to 2 by -1) :: SplicePiece.Zero[Id]() :: SplicePiece.One[Id, Int](151) :: Nil), 4 :: 3 :: 2 :: 151 :: Nil)
+	}
+}

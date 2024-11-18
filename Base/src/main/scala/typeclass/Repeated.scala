@@ -146,6 +146,37 @@ object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 	}
 
 	/**
+	 * @param newAccumulator a Function0 that creates a new Builder
+	 * @version 0.1.1
+	 */
+	def idFromSplicesUsingBuilder[A, Z](
+		newAccumulator: () => Builder[A, Z],
+	): Repeated[SplicePiece[Id, A], Z] = {
+		final class FromSplicesUsingBuilder extends Repeated[SplicePiece[Id, A], Z] {
+			type Acc = Builder[A, Z]
+			def init(): Acc = newAccumulator()
+			def append(acc: Acc, piece: SplicePiece[Id, A]): Acc = {
+				piece match {
+					case SplicePiece.Zero() =>
+						acc
+					case SplicePiece.One(elem) =>
+						acc.+=(elem)
+					case SplicePiece.Many(iter) =>
+						acc.++=(iter)
+				}
+			}
+			def result(acc: Acc): Z = acc.result()
+		}
+		new FromSplicesUsingBuilder()
+	}
+
+	/**
+	 * @version 0.1.1
+	 */
+	implicit def idFromSplicesToList[A]: Repeated[SplicePiece[Id, A], List[A]] =
+		idFromSplicesUsingBuilder(() => List.newBuilder)
+
+	/**
 	 * @version 0.1.1
 	 */
 	sealed trait SplicePiece[Expr[+_], +A]
