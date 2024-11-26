@@ -51,47 +51,48 @@ package object internal {
 	 * Returns a string that describes which codepoints match the predicate
 	 */
 	private def describeCodepointPredicate(predicate:Int => Boolean, domainMax: Int):ExpectingDescription = {
-		val builder = new StringBuilder()
-		var inMatchingBlock:Boolean = false
-		var firstCharOfBlock:Int = 0
+		ExpectingDescription.delayed({
+			val builder = new StringBuilder()
+			var inMatchingBlock:Boolean = false
+			var firstCharOfBlock:Int = 0
 
-		(0 to domainMax).foreach({c =>
-			if (predicate(c)) {
-				if (inMatchingBlock) {
-					// continue
-				} else {
-					inMatchingBlock = true
-					firstCharOfBlock = c
-				}
-			} else {
-				if (inMatchingBlock) {
-					builder.++=("'")
-					builder.++=(escape(firstCharOfBlock))
-					if (firstCharOfBlock != c - 1) {
-						builder.++=("'<=c<='")
-						builder.++=(escape((c - 1)))
+			(0 to domainMax).foreach({c =>
+				if (predicate(c)) {
+					if (inMatchingBlock) {
+						// continue
+					} else {
+						inMatchingBlock = true
+						firstCharOfBlock = c
 					}
-					builder.++=("' or ")
-					inMatchingBlock = false
 				} else {
-					// continue
+					if (inMatchingBlock) {
+						builder.++=("'")
+						builder.++=(escape(firstCharOfBlock))
+						if (firstCharOfBlock != c - 1) {
+							builder.++=("'<=c<='")
+							builder.++=(escape((c - 1)))
+						}
+						builder.++=("' or ")
+						inMatchingBlock = false
+					} else {
+						// continue
+					}
 				}
+			})
+			if (inMatchingBlock) {
+				builder.++=("'")
+				builder.++=(escape(firstCharOfBlock))
+				builder.++=("'<=c<='")
+				builder.++=(escape(domainMax))
+				builder.++=("' or ")
 			}
-		})
-		if (inMatchingBlock) {
-			builder.++=("'")
-			builder.++=(escape(firstCharOfBlock))
-			builder.++=("'<=c<='")
-			builder.++=(escape(domainMax))
-			builder.++=("' or ")
-		}
-		ExpectingDescription(
+
 			if (builder.length > 4) {
 				builder.substring(0, builder.length - 4)
 			} else {
 				"nothing"
 			}
-		)
+		})
 	}
 
 	/* * * Leaf parsers * * */

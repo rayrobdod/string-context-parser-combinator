@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased-Major]
+* Improve performance of `codePointWhere` and `charWhere` if default error message is not needed
+
 ## [Unreleased]
 * Add symbolic operators to Parser, Extractor and Interpolator
   * `<~>` and `<|>` as aliases for `andThen` and `orElse`, respectively
