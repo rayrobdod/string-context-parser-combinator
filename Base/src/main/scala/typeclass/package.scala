@@ -14,6 +14,7 @@ package name.rayrobdod.stringContextParserCombinator
  * | `orElse` | [[Eithered]] | [[ContraEithered]] | [[BiEithered]] |
  * | `repeat` | [[Repeated]] | [[ContraRepeated]] | [[BiRepeated]] |
  * | `optionally` | [[Optionally]] | [[ContraOptionally]] | [[BiOptionally]] |
+ * | `mapToExpr` | [[ToExprMapping]] | N/A | N/A |
  *
  * Thus, if you are only working with interpolators, then you'll only need to work with the unprefixed typeclasses.
  *

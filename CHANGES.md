@@ -13,7 +13,7 @@
   * `quotedConcatenateString` for scala-3 quoted context
 * Add `Repeat.SplicePiece`; representing either zero, one, or many items; and typeclass instances using `SplicePiece`
   * for scala-2 macro context:
-    * `Either.forContextSplicePiece` to combine a `Interpolator[c.Expr[A]]` and a `Interpolator[c.Expr[List[A]]]` into a `Interpolator[SplicePiece[c.Expr, A]]`
+    * `Either.forContext().splicePiece` to combine a `Interpolator[c.Expr[A]]` and a `Interpolator[c.Expr[List[A]]]` into a `Interpolator[SplicePiece[c.Expr, A]]`
     * `Repeated.forContextFromSplicesToExprList` to splice the SplicePieces together into a `c.Expr[List[A]]`
     * `Repeated.forContextFromSplicesUsingBuilder` to splice the SplicePieces together using a arbitrary Builder
   * for scala-3 quoted context:

@@ -3,7 +3,7 @@ package name.rayrobdod.stringContextParserCombinator
 import scala.reflect.ClassTag
 
 /**
- * The data needed to create am Unapply
+ * The data needed to create an Unapply
  */
 private[stringContextParserCombinator]
 final case class UnapplyExpr[+Expr[_], +Type[_], -A] (

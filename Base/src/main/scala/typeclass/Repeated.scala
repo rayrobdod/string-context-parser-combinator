@@ -177,10 +177,12 @@ object Repeated extends VersionSpecificRepeated with LowPrioRepeated {
 		idFromSplicesUsingBuilder(() => List.newBuilder)
 
 	/**
+	 * Represents either zero items, one item or a sequence of items.
 	 * @version 0.1.1
 	 */
 	sealed trait SplicePiece[Expr[+_], +A]
 	/**
+	 * The [[SplicePiece]] cases
 	 * @version 0.1.1
 	 */
 	object SplicePiece {

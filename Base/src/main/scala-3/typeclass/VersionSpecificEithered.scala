@@ -8,6 +8,9 @@ private[typeclass] trait VersionSpecificEithered extends LowPrioEithered {
 	given unitAny[B, Z](using ev:Optionally[B, Z]):Eithered[Unit, B, Z] = Eithered(_ => ev.none, ev.some _)
 	given anyUnit[A, Z](using ev:Optionally[A, Z]):Eithered[A, Unit, Z] = Eithered(ev.some _, _ => ev.none)
 
+	/**
+	 * @since 0.1.1
+	 */
 	def quotedSplicePiece[A]: Eithered[Expr[A], Expr[Iterable[A]], Repeated.SplicePiece[Expr, A]] =
 			Eithered(new Repeated.SplicePiece.One(_), new Repeated.SplicePiece.Many(_))
 }
