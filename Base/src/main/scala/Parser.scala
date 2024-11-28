@@ -154,6 +154,8 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 		this.andThen(rhs)(ev)
 
 	/**
+	 * Returns a parser which invokes this parser, and upon success invokes the other parser,
+	 * discarding the Unit result from the other parser
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
@@ -161,6 +163,8 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 		this.andThen(rhs)(typeclass.BiSequenced.genericUnit)
 
 	/**
+	 * Returns a parser which invokes this parser, and upon success invokes the other parser,
+	 * discarding the Unit result from this parser
 	 * @group Sequence
 	 * @since 0.1.1
 	 */

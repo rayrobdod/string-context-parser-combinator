@@ -189,6 +189,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		this.andThen(rhs)(ev)
 
 	/**
+	 * Returns a parser which invokes this parser, and upon success invokes the other parser,
+	 * discarding the Unit result from the other parser
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
@@ -196,6 +198,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		this.andThen(rhs)(typeclass.Sequenced.genericUnit)
 
 	/**
+	 * Returns a parser which invokes this parser, and upon success invokes the other parser,
+	 * discarding the Unit result from this parser
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
@@ -203,6 +207,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		this.map(ev).andThen(rhs)(typeclass.Sequenced.unitGeneric)
 
 	/**
+	 * Returns a parser which invokes this parser, and upon success invokes the other parser,
+	 * prepending the result from this parser to the List result from the other parser
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
