@@ -9,13 +9,13 @@
   * `<::>` on Interpolator only as a specialization of `andThen` which prepends the left side to a list on the right side
 * Add built-in but explicit Repeated instances for concatenating strings
   * `idConcatenateString` for id context
-  * `forContextConcatenateString` for scala-2 macro context
+  * `forContext(c).concatenateString` for scala-2 macro context
   * `quotedConcatenateString` for scala-3 quoted context
 * Add `Repeat.SplicePiece`; representing either zero, one, or many items; and typeclass instances using `SplicePiece`
   * for scala-2 macro context:
-    * `Either.forContext().splicePiece` to combine a `Interpolator[c.Expr[A]]` and a `Interpolator[c.Expr[List[A]]]` into a `Interpolator[SplicePiece[c.Expr, A]]`
-    * `Repeated.forContextFromSplicesToExprList` to splice the SplicePieces together into a `c.Expr[List[A]]`
-    * `Repeated.forContextFromSplicesUsingBuilder` to splice the SplicePieces together using a arbitrary Builder
+    * `Either.forContext(c).splicePiece` to combine a `Interpolator[c.Expr[A]]` and a `Interpolator[c.Expr[List[A]]]` into a `Interpolator[SplicePiece[c.Expr, A]]`
+    * `Repeated.forContext(c).fromSplicesToExprList` to splice the SplicePieces together into a `c.Expr[List[A]]`
+    * `Repeated.forContext(c).fromSplicesUsingBuilder` to splice the SplicePieces together using a arbitrary Builder
   * for scala-3 quoted context:
     * `Either.quotedSplicePiece` to combine a `Interpolator[Expr[A]]` and a `Interpolator[Expr[List[A]]]` into a `Interpolator[SplicePiece[Expr, A]]`
     * `Repeated.quotedFromSplicesToExprList` to splice the SplicePieces together into a `Expr[List[A]]`

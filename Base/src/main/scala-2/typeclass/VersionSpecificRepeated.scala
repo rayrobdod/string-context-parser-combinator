@@ -8,206 +8,232 @@ import Repeated.SplicePiece
 private[typeclass]
 trait VersionSpecificRepeated {
 	/**
-	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
 	 * @since 0.1.1
 	 */
-	def forContextConcatenateString(c:Context):Repeated[c.Expr[String], c.Expr[String]] = {
-		import c.universe.Tree
-		import c.universe.Quasiquote
-		val ttString0 = c.universe.typeTag[String]
-		final class ConcatenateString extends Repeated[c.Expr[String], c.Expr[String]] {
-			val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
-			val accumulatorTypeTree = c.universe.TypeTree(
-				c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
-			)
-			val accumulatorIdent = c.universe.Ident(accumulatorName)
-			val accumulatorValDef = c.universe.ValDef(
-				c.universe.NoMods,
-				accumulatorName,
-				accumulatorTypeTree,
-				q"new $accumulatorTypeTree()",
-			)
+	trait Repeateds[Expr[+_], Type[_]] {
+		/**
+		 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
+		 * @since 0.1.1
+		 */
+		def concatenateString: Repeated[Expr[String], Expr[String]]
 
-			implicit val ttString: c.TypeTag[String] = ttString0
+		/**
+		 * Splice a sequence of `SplicePiece`s together using a Builder
+		 * @param newAccumulator an Expr creating a new Builder
+		 * @param ifZero the Expr to use when combining zero items together.
+		 *     If None, `newAccumulator.result()` will be used.
+		 *     If Some, should ideally be equivalent to but more efficient than the None expr.
+		 * @param ifOneScalar the Expr to use when combining one scalar item together.
+		 *     When not defined, `newAccumulator.+=(item).result()` will be used.
+		 *     The definition should be equivalent to but more efficient than the undefined expr.
+		 * @param ifOneSplice the Expr to use when combining one splice item together.
+		 *     When not defined, `newAccumulator.++=(item).result()` will be used.
+		 *     The definition should be equivalent to but more efficient than the undefined expr.
+		 * @version 0.1.1
+		 */
+		def fromSplicesUsingBuilder[A, Z](
+				newAccumulator: Expr[Builder[A, Z]],
+				ifZero: Option[() => Expr[Z]],
+				ifOneScalar: PartialFunction[Expr[A], Expr[Z]],
+				ifOneSplice: PartialFunction[Expr[Iterable[A]], Expr[Z]],
+				)(implicit
+				accumulatorType: Type[Builder[A, Z]],
+				zType: Type[Z],
+		): Repeated[SplicePiece[Expr, A], Expr[Z]]
 
-			sealed trait Acc
-			final object AccZero extends Acc
-			final class AccOne(val elem: c.Expr[String]) extends Acc
-			final class AccMany extends Acc {
-				val builder: Builder[Tree, c.Expr[String]] = List.newBuilder.mapResult(stat =>
-					c.Expr[String](
-						c.universe.Block(
-							stat,
-							q"$accumulatorIdent.toString"
-						)
-					)
-				)
-			}
-
-			def init():Acc = AccZero
-			def append(acc:Acc, elem:c.Expr[String]):Acc = acc match {
-				case AccZero => new AccOne(elem)
-				case accOne: AccOne => {
-					val retval = new AccMany()
-					retval.builder += accumulatorValDef
-					retval.builder += q"$accumulatorIdent.append(${accOne.elem})"
-					retval.builder += q"$accumulatorIdent.append($elem)"
-					retval
-				}
-				case accMany: AccMany => {
-					accMany.builder += q"$accumulatorIdent.append($elem)"
-					accMany
-				}
-			}
-			def result(acc:Acc):c.Expr[String] = {
-				acc match {
-					case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
-					case accOne: AccOne => accOne.elem
-					case accMany: AccMany => accMany.builder.result()
-				}
-			}
-		}
-		new ConcatenateString()
+		/**
+		 * Splice a sequence of `SplicePiece`s together into a `List`
+		 * @version 0.1.1
+		 */
+		implicit def fromSplicesToExprList[A](implicit
+				accumulatorType: Type[Builder[A, List[A]]],
+				zType: Type[List[A]],
+		): Repeated[SplicePiece[Expr, A], Expr[List[A]]]
 	}
 
-	/**
-	 * Splice a sequence of `SplicePiece`s together using a Builder
-	 * @param newAccumulator an Expr creating a new Builder
-	 * @param ifZero the Expr to use when combining zero items together.
-	 *     If None, `newAccumulator.result()` will be used.
-	 *     If Some, should ideally be equivalent to but more efficient than the None expr.
-	 * @param ifOneScalar the Expr to use when combining one scalar item together.
-	 *     When not defined, `newAccumulator.+=(item).result()` will be used.
-	 *     The definition should be equivalent to but more efficient than the undefined expr.
-	 * @param ifOneSplice the Expr to use when combining one splice item together.
-	 *     When not defined, `newAccumulator.++=(item).result()` will be used.
-	 *     The definition should be equivalent to but more efficient than the undefined expr.
-	 * @version 0.1.1
-	 */
-	def forContextFromSplicesUsingBuilder[A, Z](c:Context)(
-			newAccumulator: c.Expr[Builder[A, Z]],
-			ifZero: Option[() => c.Expr[Z]],
-			ifOneScalar: PartialFunction[c.Expr[A], c.Expr[Z]],
-			ifOneSplice: PartialFunction[c.Expr[Iterable[A]], c.Expr[Z]],
-			)(implicit
-			accumulatorType: c.universe.TypeTag[Builder[A, Z]],
-			zType: c.universe.TypeTag[Z],
-	): Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] = {
-		// using default arguments confuses the typechecker (found `c.Expr` required `x$1.Expr`), so don't provide default arguments
-
-		import c.universe.Tree
-		import c.universe.Quasiquote
-
-		final class FromSplicesUsingBuilder extends Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] {
-			val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
-			val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
-			val accumulatorIdent = c.universe.Ident(accumulatorName)
-			val accumulatorExpr = c.Expr(accumulatorIdent)(accumulatorType)
-
-			val accumulatorValDef = c.universe.ValDef(
-				c.universe.NoMods,
-				accumulatorName,
-				accumulatorTypeTree,
-				newAccumulator.tree
-			)
-
-			sealed trait Acc
-			final object AccZero extends Acc
-			final class AccOneScalar(val elem: c.Expr[A]) extends Acc
-			final class AccOneSplice(val iter: c.Expr[Iterable[A]]) extends Acc
-			final class AccMany extends Acc {
-				val builder: Builder[Tree, c.Expr[Z]] = List.newBuilder.mapResult(stat =>
-					c.Expr[Z](
-						c.universe.Block(
-							stat,
-							q"$accumulatorIdent.result()"
-						)
+	def forContext(c:Context):Repeateds[c.Expr, c.TypeTag] = {
+		new Repeateds[c.Expr, c.TypeTag] {
+			def concatenateString:Repeated[c.Expr[String], c.Expr[String]] = {
+				import c.universe.Tree
+				import c.universe.Quasiquote
+				val ttString0 = c.universe.typeTag[String]
+				final class ConcatenateString extends Repeated[c.Expr[String], c.Expr[String]] {
+					val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
+					val accumulatorTypeTree = c.universe.TypeTree(
+						c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
 					)
+					val accumulatorIdent = c.universe.Ident(accumulatorName)
+					val accumulatorValDef = c.universe.ValDef(
+						c.universe.NoMods,
+						accumulatorName,
+						accumulatorTypeTree,
+						q"new $accumulatorTypeTree()",
+					)
+
+					implicit val ttString: c.TypeTag[String] = ttString0
+
+					sealed trait Acc
+					final object AccZero extends Acc
+					final class AccOne(val elem: c.Expr[String]) extends Acc
+					final class AccMany extends Acc {
+						val builder: Builder[Tree, c.Expr[String]] = List.newBuilder.mapResult(stat =>
+							c.Expr[String](
+								c.universe.Block(
+									stat,
+									q"$accumulatorIdent.toString"
+								)
+							)
+						)
+					}
+
+					def init():Acc = AccZero
+					def append(acc:Acc, elem:c.Expr[String]):Acc = acc match {
+						case AccZero => new AccOne(elem)
+						case accOne: AccOne => {
+							val retval = new AccMany()
+							retval.builder += accumulatorValDef
+							retval.builder += q"$accumulatorIdent.append(${accOne.elem})"
+							retval.builder += q"$accumulatorIdent.append($elem)"
+							retval
+						}
+						case accMany: AccMany => {
+							accMany.builder += q"$accumulatorIdent.append($elem)"
+							accMany
+						}
+					}
+					def result(acc:Acc):c.Expr[String] = {
+						acc match {
+							case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
+							case accOne: AccOne => accOne.elem
+							case accMany: AccMany => accMany.builder.result()
+						}
+					}
+				}
+				new ConcatenateString()
+			}
+
+			def fromSplicesUsingBuilder[A, Z](
+					newAccumulator: c.Expr[Builder[A, Z]],
+					ifZero: Option[() => c.Expr[Z]],
+					ifOneScalar: PartialFunction[c.Expr[A], c.Expr[Z]],
+					ifOneSplice: PartialFunction[c.Expr[Iterable[A]], c.Expr[Z]],
+					)(implicit
+					accumulatorType: c.universe.TypeTag[Builder[A, Z]],
+					zType: c.universe.TypeTag[Z],
+			): Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] = {
+				// using default arguments confuses the typechecker (found `c.Expr` required `x$1.Expr`), so don't provide default arguments
+
+				import c.universe.Tree
+				import c.universe.Quasiquote
+
+				final class FromSplicesUsingBuilder extends Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] {
+					val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
+					val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
+					val accumulatorIdent = c.universe.Ident(accumulatorName)
+					val accumulatorExpr = c.Expr(accumulatorIdent)(accumulatorType)
+
+					val accumulatorValDef = c.universe.ValDef(
+						c.universe.NoMods,
+						accumulatorName,
+						accumulatorTypeTree,
+						newAccumulator.tree
+					)
+
+					sealed trait Acc
+					final object AccZero extends Acc
+					final class AccOneScalar(val elem: c.Expr[A]) extends Acc
+					final class AccOneSplice(val iter: c.Expr[Iterable[A]]) extends Acc
+					final class AccMany extends Acc {
+						val builder: Builder[Tree, c.Expr[Z]] = List.newBuilder.mapResult(stat =>
+							c.Expr[Z](
+								c.universe.Block(
+									stat,
+									q"$accumulatorIdent.result()"
+								)
+							)
+						)
+					}
+
+					def init():Acc = AccZero
+					def append(acc:Acc, elem:SplicePiece[c.Expr, A]):Acc = acc match {
+						case AccZero =>
+							elem match {
+								case _: SplicePiece.Zero[c.Expr] => AccZero
+								case elemOne: SplicePiece.One[c.Expr, A] => new AccOneScalar(elemOne.elem)
+								case elemMany: SplicePiece.Many[c.Expr, A] => new AccOneSplice(elemMany.iter)
+							}
+						case accOne: AccOneScalar => {
+							elem match {
+								case _: SplicePiece.Zero[c.Expr] => accOne
+								case elemOne: SplicePiece.One[c.Expr, A] =>
+									val retval = new AccMany()
+									retval.builder += accumulatorValDef
+									retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
+									retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
+									retval
+								case elemMany: SplicePiece.Many[c.Expr, A] =>
+									val retval = new AccMany()
+									retval.builder += accumulatorValDef
+									retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
+									retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
+									retval
+							}
+						}
+						case accOne: AccOneSplice => {
+							elem match {
+								case _: SplicePiece.Zero[c.Expr] => accOne
+								case elemOne: SplicePiece.One[c.Expr, A] =>
+									val retval = new AccMany()
+									retval.builder += accumulatorValDef
+									retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
+									retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
+									retval
+								case elemMany: SplicePiece.Many[c.Expr, A] =>
+									val retval = new AccMany()
+									retval.builder += accumulatorValDef
+									retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
+									retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
+									retval
+							}
+						}
+						case accMany: AccMany => {
+							elem match {
+								case _: SplicePiece.Zero[c.Expr] =>
+									// do nothing
+								case elemOne: SplicePiece.One[c.Expr, A] =>
+									accMany.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
+								case elemMany: SplicePiece.Many[c.Expr, A] =>
+									accMany.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
+							}
+							accMany
+						}
+					}
+
+					def result(acc:Acc):c.Expr[Z] = {
+						acc match {
+							case AccZero => ifZero.map(_.apply()).getOrElse(c.Expr[Z](q"$newAccumulator.result()"))
+							case accOne: AccOneScalar => ifOneScalar.applyOrElse(accOne.elem, (e: c.Expr[A]) => c.Expr[Z](q"$newAccumulator.+=(${e}).result()"))
+							case accOne: AccOneSplice => ifOneSplice.applyOrElse(accOne.iter, (es: c.Expr[Iterable[A]]) => c.Expr[Z](q"$newAccumulator.++=(${es}).result()"))
+							case accMany: AccMany => accMany.builder.result()
+						}
+					}
+
+				}
+				new FromSplicesUsingBuilder()
+			}
+
+			def fromSplicesToExprList[A](implicit
+					accumulatorType: c.universe.TypeTag[Builder[A, List[A]]],
+					zType: c.universe.TypeTag[List[A]],
+			): Repeated[SplicePiece[c.Expr, A], c.Expr[List[A]]] = {
+				this.fromSplicesUsingBuilder[A, List[A]](
+					c.universe.reify(List.newBuilder),
+					Option(() => c.universe.reify(List.empty)),
+					{case (a: c.Expr[A]) => c.universe.reify(List(a.splice))},
+					{case (a: c.Expr[_]) if a.staticType <:< zType.tpe => c.Expr[List[A]](a.tree)},
 				)
 			}
-
-			def init():Acc = AccZero
-			def append(acc:Acc, elem:SplicePiece[c.Expr, A]):Acc = acc match {
-				case AccZero =>
-					elem match {
-						case _: SplicePiece.Zero[c.Expr] => AccZero
-						case elemOne: SplicePiece.One[c.Expr, A] => new AccOneScalar(elemOne.elem)
-						case elemMany: SplicePiece.Many[c.Expr, A] => new AccOneSplice(elemMany.iter)
-					}
-				case accOne: AccOneScalar => {
-					elem match {
-						case _: SplicePiece.Zero[c.Expr] => accOne
-						case elemOne: SplicePiece.One[c.Expr, A] =>
-							val retval = new AccMany()
-							retval.builder += accumulatorValDef
-							retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
-							retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
-							retval
-						case elemMany: SplicePiece.Many[c.Expr, A] =>
-							val retval = new AccMany()
-							retval.builder += accumulatorValDef
-							retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
-							retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-							retval
-					}
-				}
-				case accOne: AccOneSplice => {
-					elem match {
-						case _: SplicePiece.Zero[c.Expr] => accOne
-						case elemOne: SplicePiece.One[c.Expr, A] =>
-							val retval = new AccMany()
-							retval.builder += accumulatorValDef
-							retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
-							retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
-							retval
-						case elemMany: SplicePiece.Many[c.Expr, A] =>
-							val retval = new AccMany()
-							retval.builder += accumulatorValDef
-							retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
-							retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-							retval
-					}
-				}
-				case accMany: AccMany => {
-					elem match {
-						case _: SplicePiece.Zero[c.Expr] =>
-							// do nothing
-						case elemOne: SplicePiece.One[c.Expr, A] =>
-							accMany.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
-						case elemMany: SplicePiece.Many[c.Expr, A] =>
-							accMany.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-					}
-					accMany
-				}
-			}
-
-			def result(acc:Acc):c.Expr[Z] = {
-				acc match {
-					case AccZero => ifZero.map(_.apply()).getOrElse(c.Expr[Z](q"$newAccumulator.result()"))
-					case accOne: AccOneScalar => ifOneScalar.applyOrElse(accOne.elem, (e: c.Expr[A]) => c.Expr[Z](q"$newAccumulator.+=(${e}).result()"))
-					case accOne: AccOneSplice => ifOneSplice.applyOrElse(accOne.iter, (es: c.Expr[Iterable[A]]) => c.Expr[Z](q"$newAccumulator.++=(${es}).result()"))
-					case accMany: AccMany => accMany.builder.result()
-				}
-			}
-
 		}
-		new FromSplicesUsingBuilder()
-	}
-
-	/**
-	 * Splice a sequence of `SplicePiece`s together into a `List`
-	 * @version 0.1.1
-	 */
-	def forContextFromSplicesToExprList[A](c: Context)(implicit
-			accumulatorType: c.universe.TypeTag[Builder[A, List[A]]],
-			zType: c.universe.TypeTag[List[A]],
-	): Repeated[SplicePiece[c.Expr, A], c.Expr[List[A]]] = {
-		forContextFromSplicesUsingBuilder[A, List[A]](c)(
-			c.universe.reify(List.newBuilder),
-			Option(() => c.universe.reify(List.empty)),
-			{case (a: c.Expr[A]) => c.universe.reify(List(a.splice))},
-			{case (a: c.Expr[_]) if a.staticType <:< zType.tpe => c.Expr[List[A]](a.tree)},
-		)
 	}
 }
 

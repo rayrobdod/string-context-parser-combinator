@@ -27,6 +27,8 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	import leafParsers._
 	private[this] val myInterpolators = Interpolator.contextInterpolators(c)
 	import myInterpolators.lifted
+	private[this] val myRepeateds = typeclass.Repeated.forContext(c)
+	import myRepeateds._
 	private[this] val myBiEithered = typeclass.BiEithered.forContext(c)
 	import myBiEithered._
 	private[this] val myBiRepeateds = typeclass.BiRepeated.forContext(c)
@@ -133,7 +135,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val content:Parser[c.Expr[String]] = paired(
 			(jCharsLifted <|> jCharsImmediate)
 				.toInterpolator
-				.repeat(strategy = RepeatStrategy.Possessive)(typeclass.Repeated.forContextConcatenateString(c))
+				.repeat(strategy = RepeatStrategy.Possessive)(concatenateString)
 			,
 			(jCharsImmediate).toExtractor
 		)
@@ -173,8 +175,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			splicableValues
 				.repeat(
 					delimiter = delimiter.toInterpolator,
-					strategy = RepeatStrategy.Possessive)(
-					typeclass.Repeated.forContextFromSplicesToExprList(c)
+					strategy = RepeatStrategy.Possessive,
 				)
 				.map(x => c.universe.reify(JArray.apply(x.splice)))
 		}
@@ -227,8 +228,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			splicableValues
 				.repeat(
 					delimiter = delimiter.toInterpolator,
-					strategy = RepeatStrategy.Possessive)(
-					typeclass.Repeated.forContextFromSplicesToExprList(c)
+					strategy = RepeatStrategy.Possessive,
 				)
 				.map(x => c.universe.reify(JObject.apply(x.splice)))
 		}

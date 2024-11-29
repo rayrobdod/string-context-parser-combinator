@@ -131,7 +131,7 @@ object MacroImpl {
 		val opaquePart:Interpolator[c.Expr[String]] = {
 			val variable:Interpolator[c.Expr[String]] = ofType[String]
 			val literal:Interpolator[c.Expr[String]] = (uriNoSlashChar <~> uriChar.repeat()).mapToExpr
-			(variable <|> literal).repeat()(typeclass.Repeated.forContextConcatenateString(c))
+			(variable <|> literal).repeat()(typeclass.Repeated.forContext(c).concatenateString)
 		}
 
 
@@ -142,7 +142,7 @@ object MacroImpl {
 
 		val fragmentOrQueryString:Interpolator[c.Expr[String]] = {
 			val Arbitrary = (ofType[String] <|> uriChar.repeat(1).mapToExpr)
-				.repeat()(typeclass.Repeated.forContextConcatenateString(c))
+				.repeat()(typeclass.Repeated.forContext(c).concatenateString)
 			val Mapping = {
 				val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
 				val accumulatorTypeTree = c.universe.TypeTree(
