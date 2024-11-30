@@ -37,9 +37,10 @@ lazy val sharedSettings = Seq(
 			"-doc-title", name.value,
 			"-doc-version", (if ("-SNAPSHOT" == version.value) {"SNAPSHOT"} else {version.value}),
 			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.md").toString,
+			"-doc-source-url", s"https://github.com/${githubId}/tree/${if (version.value.endsWith("-SNAPSHOT")) {git.gitHeadCommit.value.get} else {version.value}}€{FILE_PATH}.scala",
 			"-implicits",
 			"-groups",
-			"-sourcepath", baseDirectory.value.toString,
+			"-sourcepath", baseDirectory.value.getParentFile.getParentFile.getParentFile.toString,
 		)
 		case _ => Seq(
 			"-doc-root-content", ((Compile / scalaSource).value / "rootdoc.md").toString,
