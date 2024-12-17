@@ -11,11 +11,11 @@ jobs:
     name: Test-${{ matrix.os }}-${{ matrix.java }}
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: 'zulu'
-        java-version: ${{ matrix.java }}
-        cache: 'sbt'
+        apps: sbt
+        jvm: zulu:${{matrix.java}}
     - name: set sbt settings
       run: echo "Global / parallelExecution := false">parallelExecution.sbt
     - name: sbt test
