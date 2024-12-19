@@ -26,11 +26,11 @@ jobs:
     name: MigrationManager
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: 'zulu'
-        java-version: 8
-        cache: 'sbt'
+        apps: sbt
+        jvm: zulu:8
     - name: sbt mimaReportBinaryIssues
       run: sbt mimaReportBinaryIssues
     - name: sbt tastyMiMaReportIssues
