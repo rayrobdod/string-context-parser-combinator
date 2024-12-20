@@ -11,11 +11,11 @@ jobs:
     name: Test-${{ matrix.os }}-${{ matrix.java }}
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: 'zulu'
-        java-version: ${{ matrix.java }}
-        cache: 'sbt'
+        apps: sbt
+        jvm: zulu:${{matrix.java}}
     - name: set sbt settings
       run: echo "Global / parallelExecution := false">parallelExecution.sbt
     - name: sbt test
@@ -26,11 +26,11 @@ jobs:
     name: MigrationManager
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: 'zulu'
-        java-version: 8
-        cache: 'sbt'
+        apps: sbt
+        jvm: zulu:8
     - name: sbt mimaReportBinaryIssues
       run: sbt mimaReportBinaryIssues
     - name: sbt tastyMiMaReportIssues
@@ -46,11 +46,11 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: 'zulu'
-        java-version: ${{ matrix.java }}
-        cache: 'sbt'
+        apps: sbt
+        jvm: zulu:${{matrix.java}}
     - name: publishLocal
       run: sbt publishLocal
     - name: move local publish to somewhere upload-artifact can reach

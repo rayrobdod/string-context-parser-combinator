@@ -20,7 +20,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: cache sbt packages
-      # but with a different name than setup-java would use,
+      # but with a different name than coursier/cache-action would use,
       # since webStage will pull some artifacts that the other tasks will not
       # and caches are immutable, meaning without a new cache key,
       # the webStage artifacts will not be cached
@@ -37,10 +37,10 @@ jobs:
           sbt-site-
           setup-java-Linux-sbt-${{ hashFiles('**/*.sbt','**/project/build.properties','**/project/**.scala','**/project/**.sbt') }}
           setup-java-Linux-sbt-
-    - uses: actions/setup-java@v4
+    - uses: coursier/setup-action@v1
       with:
-        distribution: 'zulu'
-        java-version: '17'
+        apps: sbt
+        jvm: zulu:17
     - name: Setup Pages
       uses: actions/configure-pages@v4
     - name: Build site
