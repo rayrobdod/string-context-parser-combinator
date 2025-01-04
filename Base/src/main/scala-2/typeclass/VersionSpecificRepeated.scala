@@ -51,6 +51,9 @@ trait VersionSpecificRepeated {
 		): Repeated[SplicePiece[Expr, A], Expr[List[A]]]
 	}
 
+	/**
+	 * @since 0.1.1
+	 */
 	def forContext(c:Context):Repeateds[c.Expr, c.TypeTag] = {
 		new Repeateds[c.Expr, c.TypeTag] {
 			def concatenateString:Repeated[c.Expr[String], c.Expr[String]] = {
