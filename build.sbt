@@ -266,8 +266,8 @@ publish / skip := true
 
 enablePlugins(StageWebsitePlugin)
 webSnapshotVariants := Map(
-	"2.12" -> (base.jvm(scala212Ver) / Compile / doc).value,
-	"2.13" -> (base.jvm(scala213Ver) / Compile / doc).value,
-	"3" -> (base.jvm(scala3Ver) / Compile / doc).value,
+	"2.12" -> (base.jvm(scala212Ver) / Compile / packageDoc / mappings).value,
+	"2.13" -> (base.jvm(scala213Ver) / Compile / packageDoc / mappings).value,
+	"3" -> (base.jvm(scala3Ver) / Compile / packageDoc / mappings).value,
 )
 webStage / mappings += ((base.jvm(scala3Ver) / sourceDirectory).value / "docs" / "versions.json") -> "versions.json",

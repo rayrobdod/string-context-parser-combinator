@@ -16,8 +16,8 @@ object StageWebsitePlugin extends AutoPlugin {
 	object autoImport {
 		val webStage = taskKey[Seq[File]]("Create a local directory with all the files laid out as they would be in the website")
 		val webMakePagesIndex = taskKey[File]("Generates a root index page for the multi-versioned documentation site")
-		val webSnapshotVariants = taskKey[Map[String, File]]("snapshot documentations to include in the multi-versioned documentation site")
-		val webPublishedVariants = taskKey[Map[String, Map[String, File]]]("published documentations to include in the multi-versioned documentation site")
+		val webSnapshotVariants = taskKey[Map[String, Seq[(File, String)]]]("snapshot documentations to include in the multi-versioned documentation site")
+		val webPublishedVariants = taskKey[Map[String, Map[String, Seq[(File, String)]]]]("published documentations to include in the multi-versioned documentation site")
 	}
 	import autoImport._
 
@@ -45,7 +45,7 @@ object StageWebsitePlugin extends AutoPlugin {
 
 				val unzipdir = cacheDir / "unzip" / scalaVersion / myVersion
 				sbt.IO.unzip(docjar, unzipdir)
-				scalaVersion -> unzipdir
+				scalaVersion -> ((unzipdir ** AllPassFilter).pair(f => unzipdir.relativize(f).map(_.toString)))
 			}).toMap
 		}).toMap
 	}.tag(sbt.Tags.Network)
@@ -112,8 +112,10 @@ object StageWebsitePlugin extends AutoPlugin {
 			val variants = publishedVariants + snapshotVariants
 
 			variants.toSeq.flatMap({case (myVersion, myVersionVariants) =>
-				myVersionVariants.toSeq.flatMap({case (scalaVersion, rootdir) =>
-					(rootdir ** AllPassFilter).pair(f => rootdir.relativize(f).map(p => s"${myVersion}${webDirectorySuffixForScalaVersion(scalaVersion)}/${p.toString}"))
+				myVersionVariants.toSeq.flatMap({case (scalaVersion, mappings) =>
+					mappings.map({case (file, path) =>
+						((file, s"${myVersion}${webDirectorySuffixForScalaVersion(scalaVersion)}/${path}"))
+					})
 				})
 			})
 		},
@@ -127,6 +129,7 @@ object StageWebsitePlugin extends AutoPlugin {
 
 			(webStage / mappings).value.map{case (srcFile, name) =>
 				val tarFile = tarDir / name
+				Files.createDirectories(tarFile.getParentFile.toPath)
 				Files.copy(srcFile.toPath, tarFile.toPath, COPY_ATTRIBUTES, REPLACE_EXISTING)
 				tarFile
 			}
