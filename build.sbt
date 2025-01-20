@@ -270,4 +270,4 @@ webSnapshotVariants := Map(
 	"2.13" -> (base.jvm(scala213Ver) / Compile / packageDoc / mappings).value,
 	"3" -> (base.jvm(scala3Ver) / Compile / packageDoc / mappings).value,
 )
-webStage / mappings += ((base.jvm(scala3Ver) / sourceDirectory).value / "docs" / "versions.json") -> "versions.json",
+webStage / mappings += ((base.jvm(scala3Ver) / sourceDirectory).value / "docs" / "versions.json") -> "versions.json"
