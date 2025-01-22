@@ -26,7 +26,7 @@ lazy val sharedSettings = Seq(
 	),
 	autoAPIMappings := true,
 	libraryDependencies += {
-		"org.scalameta" %%% "munit" % "1.0.4" % Test,
+		"org.scalameta" %%% "munit" % "1.1.0" % Test,
 	},
 	tpolecatExcludeOptions ++= Set(
 		org.typelevel.scalacoptions.ScalacOptions.warnUnusedNoWarn,
