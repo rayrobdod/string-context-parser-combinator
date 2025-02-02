@@ -190,7 +190,7 @@ s2"2 + 2 = ${2 + 2}" // List("2 + 2 = ", "4")
 s2"${2 + 2} = 2 + 2" // List("4", " = 2 + 2")
 ```
 
-We have a `Interpolator[Seq[String]]`, and we can map a `Seq[String]` to an `String` to finish the simple string context reimplementation.
+We have a `Interpolator[List[String]]`, and we can map a `List[String]` to an `String` to finish the simple string context reimplementation.
 
 ```scala
 //{
@@ -272,7 +272,7 @@ so the `<|>`-combination of the two parts changes in the same way, but no source
  val segment = anyChars <|> anyArg
 ```
 
-Lastly, the `segments` mapping has to be changed from a `Seq[String] => String` to a `Seq[Expr[String]] => Expr[String]`.
+Lastly, the `segments` mapping has to be changed from a `List[String] => String` to a `List[Expr[String]] => Expr[String]`.
 
 ```diff
  val segments = segment
