@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## Unreleased
 * Add symbolic operators to Parser, Extractor and Interpolator
   * `<~>` and `<|>` as aliases for `andThen` and `orElse`, respectively
   * `~>` and `<~` as specializations of `andThen` when one side or the other is Unit
@@ -22,5 +22,5 @@
     * `Repeated.quotedFromSplicesUsingBuilder` to splice the SplicePieces together using a arbitrary Builder
 * Fix scalajs sourcemaps to point at github-hosted files instead of a local file that almost certainly does not exist
 
-## [0.1.0] 2024-02-01
+## [0.1.0](https://github.com/rayrobdod/string-context-parser-combinator/releases/tag/0.1.0) – 2024-02-01
 Initial tagged version
