@@ -114,13 +114,49 @@ lazy val base = (projectMatrix in file("Base"))
 			)
 			case _ => Seq()
 		}),
-		mimaPreviousArtifacts := Set(organization.value %% name.value % "0.1.0"),
-		tastyMiMaPreviousArtifacts := mimaPreviousArtifacts.value,
 		console / initialCommands := """
 			import scala.quoted.{Expr, Quotes}
 			import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators._
 			import name.rayrobdod.stringContextParserCombinator.typeclass._
 		""",
+		mimaPreviousArtifacts := Set(
+			organization.value %% name.value % "0.1.0",
+		),
+		tastyMiMaPreviousArtifacts := mimaPreviousArtifacts.value,
+		mimaBinaryIssueFilters ++= {
+			import com.typesafe.tools.mima.core._
+			Seq(
+				ProblemFilters.exclude[IncompatibleMethTypeProblem]("name.rayrobdod.stringContextParserCombinator.ExpectingSet#NonEmpty.*"),
+				ProblemFilters.exclude[IncompatibleMethTypeProblem]("name.rayrobdod.stringContextParserCombinator.internal.*"),
+				ProblemFilters.exclude[IncompatibleResultTypeProblem]("name.rayrobdod.stringContextParserCombinator.ExpectingSet#NonEmpty.*"),
+				ProblemFilters.exclude[IncompatibleResultTypeProblem]("name.rayrobdod.stringContextParserCombinator.internal.package.describeCodepointPredicate"),
+				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.Expecting$package"),
+				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.Expecting$package$"),
+			)
+		},
+		tastyMiMaConfig ~= { prevConfig =>
+			import scala.collection.JavaConverters._
+			import tastymima.intf._
+			prevConfig
+				.withMoreArtifactPrivatePackages(Seq(
+					"name.rayrobdod.stringContextParserCombinator.internal",
+				).asJava)
+				.withMoreProblemFilters(Seq(
+					ProblemMatcher.make(ProblemKind.AbstractClass, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription"),
+					ProblemMatcher.make(ProblemKind.IncompatibleTypeChange, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
+					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.Expecting.*"),
+					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
+					ProblemMatcher.make(ProblemKind.MissingClass, "name.rayrobdod.stringContextParserCombinator.Expecting$package$"),
+					ProblemMatcher.make(ProblemKind.MissingParent, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription"),
+					ProblemMatcher.make(ProblemKind.MissingParent, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription$"),
+					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.Expecting.*"),
+					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription.*"),
+					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
+					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.Input.consume"),
+					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.internal.*"),
+					ProblemMatcher.make(ProblemKind.RestrictedVisibilityChange, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription.*"),
+				).asJava)
+		},
 	)
 	.jvmPlatform(scalaVersions = Seq(
 		scala212Ver,
