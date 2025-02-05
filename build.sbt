@@ -32,6 +32,18 @@ lazy val sharedSettings = Seq(
 		org.typelevel.scalacoptions.ScalacOptions.warnUnusedNoWarn,
 		org.typelevel.scalacoptions.ScalacOptions.privateWarnUnusedNoWarn,
 	),
+	Compile / ifDefDeclarations ++= (scalaBinaryVersion.value match {
+		case "2.12" | "2.13" =>
+			Seq("scalaEpochVersion:2")
+		case "3" =>
+			Nil
+	}),
+	Test / ifDefDeclarations ++= (scalaBinaryVersion.value match {
+		case "2.12" | "2.13" =>
+			Seq("scalaEpochVersion:2")
+		case "3" =>
+			Nil
+	}),
 	Compile / doc / scalacOptions ++= (scalaBinaryVersion.value match {
 		case "2.12" | "2.13" => Seq(
 			"-doc-title", name.value,
@@ -128,12 +140,17 @@ lazy val base = (projectMatrix in file("Base"))
 		mimaBinaryIssueFilters ++= {
 			import com.typesafe.tools.mima.core._
 			Seq(
+				ProblemFilters.exclude[DirectMissingMethodProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.BiEithered.eitherAnyUnit"),
+				ProblemFilters.exclude[DirectMissingMethodProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.BiEithered.eitherUnitAny"),
 				ProblemFilters.exclude[IncompatibleMethTypeProblem]("name.rayrobdod.stringContextParserCombinator.ExpectingSet#NonEmpty.*"),
 				ProblemFilters.exclude[IncompatibleMethTypeProblem]("name.rayrobdod.stringContextParserCombinator.internal.*"),
 				ProblemFilters.exclude[IncompatibleResultTypeProblem]("name.rayrobdod.stringContextParserCombinator.ExpectingSet#NonEmpty.*"),
 				ProblemFilters.exclude[IncompatibleResultTypeProblem]("name.rayrobdod.stringContextParserCombinator.internal.package.describeCodepointPredicate"),
+				ProblemFilters.exclude[IncompatibleResultTypeProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.*"),
 				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.Expecting$package"),
 				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.Expecting$package$"),
+				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.VersionSpecific*"),
+				ProblemFilters.exclude[MissingTypesProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.*"),
 			)
 		},
 		tastyMiMaConfig ~= { prevConfig =>
@@ -148,7 +165,9 @@ lazy val base = (projectMatrix in file("Base"))
 					ProblemMatcher.make(ProblemKind.IncompatibleTypeChange, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
 					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.Expecting.*"),
 					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
+					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.typeclass.*"),
 					ProblemMatcher.make(ProblemKind.MissingClass, "name.rayrobdod.stringContextParserCombinator.Expecting$package$"),
+					ProblemMatcher.make(ProblemKind.MissingClass, "name.rayrobdod.stringContextParserCombinator.typeclass.VersionSpecific*"),
 					ProblemMatcher.make(ProblemKind.MissingParent, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription"),
 					ProblemMatcher.make(ProblemKind.MissingParent, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription$"),
 					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.Expecting.*"),
@@ -181,6 +200,7 @@ lazy val base = (projectMatrix in file("Base"))
 
 lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)
+	.disablePlugins(IfDefPlugin)
 	.disablePlugins(MimaPlugin)
 	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
@@ -216,6 +236,7 @@ lazy val json = (projectMatrix in file("JsonParser"))
 
 lazy val time = (projectMatrix in file("TimeParser"))
 	.dependsOn(base)
+	.disablePlugins(IfDefPlugin)
 	.disablePlugins(MimaPlugin)
 	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
@@ -260,6 +281,7 @@ lazy val time = (projectMatrix in file("TimeParser"))
 
 lazy val uri = (projectMatrix in file("UriParser"))
 	.dependsOn(base)
+	.disablePlugins(IfDefPlugin)
 	.disablePlugins(MimaPlugin)
 	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
@@ -279,6 +301,7 @@ lazy val uri = (projectMatrix in file("UriParser"))
 
 lazy val xml = (projectMatrix in file("XmlParser"))
 	.dependsOn(base)
+	.disablePlugins(IfDefPlugin)
 	.disablePlugins(MimaPlugin)
 	.disablePlugins(TastyMiMaPlugin)
 	.settings(sharedSettings)
