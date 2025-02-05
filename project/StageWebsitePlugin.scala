@@ -22,7 +22,7 @@ object StageWebsitePlugin extends AutoPlugin {
 	import autoImport._
 
 	val webPublishedVariantsTask = Def.task{
-		val myVersions = Seq("0.1.0")
+		val myVersions = Seq("0.1.1", "0.1.0")
 		val scalaVersions = Seq("2.12", "2.13", "3")
 
 		val config = InlineIvyConfiguration.apply()
