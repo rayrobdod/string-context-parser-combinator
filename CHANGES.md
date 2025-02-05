@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.1...HEAD)
+* Improve performance of `codePointWhere` and `charWhere` if default error message is not needed
+
 ## [0.1.1](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.0...0.1.1) – 2025-02-04
 * Add symbolic operators to Parser, Extractor and Interpolator
   * `<~>` and `<|>` as aliases for `andThen` and `orElse`, respectively

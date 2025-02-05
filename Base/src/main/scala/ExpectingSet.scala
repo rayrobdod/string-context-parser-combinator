@@ -8,7 +8,10 @@ sealed trait ExpectingSet[Pos] {
 
 private[stringContextParserCombinator]
 object ExpectingSet {
-	final case class NonEmpty[Pos : Ordering](val maxPosition:Pos, val descriptionsAtMaxPosition:Set[ExpectingDescription]) extends ExpectingSet[Pos] {
+	final case class NonEmpty[Pos : Ordering](
+			val maxPosition:Pos,
+			val descriptionsAtMaxPosition:Seq[ExpectingDescription]
+	) extends ExpectingSet[Pos] {
 		override def ++(other: ExpectingSet[Pos]): ExpectingSet[Pos] = {
 			import Ordering.Implicits.infixOrderingOps
 			other match {
@@ -22,6 +25,16 @@ object ExpectingSet {
 		override def mapDescriptions(fn: ExpectingDescription => ExpectingDescription):ExpectingSet[Pos] = {
 			new NonEmpty[Pos](maxPosition, descriptionsAtMaxPosition.map(fn))
 		}
+
+		def renderDescriptions: String =
+			// `sorted` and `distinct` to make result deterministic
+			descriptionsAtMaxPosition
+				.view
+				.map(_.render)
+				.distinct
+				.toList
+				.sorted
+				.mkString("Expected ", " or ", "")
 	}
 
 	final case class Empty[Pos]() extends ExpectingSet[Pos] {
@@ -29,12 +42,12 @@ object ExpectingSet {
 		override def mapDescriptions(fn: ExpectingDescription => ExpectingDescription):ExpectingSet[Pos] = this
 	}
 
-	def apply[Pos : Ordering](a:Expecting[Pos]):ExpectingSet[Pos] = new NonEmpty(a.position, Set(a.description))
+	def apply[Pos : Ordering](a:Expecting[Pos]):ExpectingSet[Pos] = new NonEmpty(a.position, Seq(a.description))
 
 	def fromSpecific[Pos : Ordering](as:Iterable[Expecting[Pos]]):ExpectingSet[Pos] = {
 		if (as.nonEmpty) {
 			val maxPosition = as.map(_.position).reduce({(a, b) => if (Ordering[Pos].gt(a, b)) a else b})
-			new NonEmpty(maxPosition, as.collect({case ex if ex.position == maxPosition => ex.description}).toSet)
+			new NonEmpty(maxPosition, as.collect({case ex if ex.position == maxPosition => ex.description}).toSeq)
 		} else {
 			new Empty
 		}

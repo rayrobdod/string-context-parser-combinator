@@ -65,9 +65,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 			case f:Failure[Int] => {
 				val msg = f.expecting match {
 					case ExpectingSet.Empty() => "Parsing Failed"
-					case ExpectingSet.NonEmpty(position, descriptions) => {
-						// `sorted` to make result deterministic
-						val exp = descriptions.toList.sortBy(_.toString).mkString("Expected ", " or ", "")
+					case set @ ExpectingSet.NonEmpty(position, _) => {
+						val exp = set.renderDescriptions
 						val instr = sc.parts.mkString(argString)
 						val pointer = (" " * position) + "^"
 
