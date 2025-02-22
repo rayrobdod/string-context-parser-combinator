@@ -7,9 +7,9 @@ import scala.collection.mutable.Builder
  * Describes how to combine a homogeneous sequence of zero-or-more values.
  *
  * When a Repeated is used:
- *  * first, `init` to create an initial value for the accumulator
- *  * then, `append` is called once for each component item in order, using the accumulator and the component item as parameters and returning the next accumulator value
- *  * lastly, `result` is called with the final accumulator value, and the result of this call is overall result.
+ *  - first, `init` to create an initial value for the accumulator
+ *  - then, `append` is called once for each component item in order, using the accumulator and the component item as parameters and returning the next accumulator value
+ *  - lastly, `result` is called with the final accumulator value, and the result of this call is overall result.
  *
  * `init` will be called anew on each use, so it is possible to use a mutable accumulator
  * by creating a new builder in the `init` method

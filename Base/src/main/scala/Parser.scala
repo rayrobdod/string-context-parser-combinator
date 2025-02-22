@@ -173,9 +173,9 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
-	 *   * If this parser run succeeded, return this internal's success
-	 *   * If this parser failed and consumed input, return this parser's failure
-	 *   * If this parser failed but did not consume input, run the other parser and return the other parser's result
+	 *  - If this parser run succeeded, return this internal's success
+	 *  - If this parser failed and consumed input, return this parser's failure
+	 *  - If this parser failed but did not consume input, run the other parser and return the other parser's result
 	 *
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one

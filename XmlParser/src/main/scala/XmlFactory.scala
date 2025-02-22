@@ -3,20 +3,20 @@ package name.rayrobdod.stringContextParserCombinatorExample.xml
 /**
  * A marker trait that can be implicitly picked up by XmlParser
  *
- * * elements
- * * attributes
- * * values
- * * entities
- * * processInstructions
- * * text
- * * comment
- * * cdata
- * * prefixes
- * * uris
+ *  - elements
+ *  - attributes
+ *  - values
+ *  - entities
+ *  - processInstructions
+ *  - text
+ *  - comment
+ *  - cdata
+ *  - prefixes
+ *  - uris
  *
  * As well as methods with these names:
- * * literal
- * * interpolation
+ *  - literal
+ *  - interpolation
  */
 trait XmlFactory
 

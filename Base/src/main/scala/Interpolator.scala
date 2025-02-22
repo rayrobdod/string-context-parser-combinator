@@ -149,8 +149,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 
 	/**
 	 * Creates a parser that will
-	 *    * when interpolating, act like this parser
-	 *    * when extractoring, invoke this parser and check that the extractor input is equal to the parsed value
+	 *  - when interpolating, act like this parser
+	 *  - when extractoring, invoke this parser and check that the extractor input is equal to the parsed value
 	 *
 	 * The extractor parsing will probably fail if this parser expects to find holes.
 	 * @group Misc
@@ -216,9 +216,9 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
-	 *   * If this parser run succeeded, return this internal's success
-	 *   * If this parser failed and consumed input, return this parser's failure
-	 *   * If this parser failed but did not consume input, run the other parser and return the other parser's result
+	 *  - If this parser run succeeded, return this internal's success
+	 *  - If this parser failed and consumed input, return this parser's failure
+	 *  - If this parser failed but did not consume input, run the other parser and return the other parser's result
 	 *
 	 * @tparam Z the result parser's parsed value type
 	 * @param rhs the parser to call after this one
