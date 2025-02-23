@@ -22,7 +22,7 @@ final class CodePoint private (val intValue:Int) {
 	def isBmp:Boolean = Character.isBmpCodePoint(intValue)
 	def isDefined:Boolean = Character.isDefined(intValue)
 	def isDigit:Boolean = Character.isDigit(intValue)
-	def isIdentifierIgnorable:Boolean = Character.isDigit(intValue)
+	def isIdentifierIgnorable:Boolean = Character.isIdentifierIgnorable(intValue)
 	def isIdeographic:Boolean = Character.isIdeographic(intValue)
 	def isISOControl:Boolean = Character.isISOControl(intValue)
 	def isJavaIdentifierPart:Boolean = Character.isJavaIdentifierPart(intValue)

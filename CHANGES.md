@@ -2,6 +2,7 @@
 
 ## [Unreleased](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.1...HEAD)
 * Improve performance of `codePointWhere` and `charWhere` if default error message is not needed
+* Fix `CodePoint::isIdentifierIgnorable` to forward to the correct `j.l.Character` method
 
 ## [0.1.1](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.0...0.1.1) – 2025-02-04
 * Add symbolic operators to Parser, Extractor and Interpolator
