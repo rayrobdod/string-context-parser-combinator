@@ -1,5 +1,6 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import scala.collection.immutable.Seq
 import scala.reflect.macros.blackbox.Context
 import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
 
