@@ -154,6 +154,8 @@ lazy val base = (projectMatrix in file("Base"))
 				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.VersionSpecific*"),
 				ProblemFilters.exclude[MissingClassProblem]("name.rayrobdod.stringContextParserCombinator.VersionSpecific*"),
 				ProblemFilters.exclude[MissingTypesProblem]("name.rayrobdod.stringContextParserCombinator.typeclass.*"),
+				ProblemFilters.exclude[MissingTypesProblem]("name.rayrobdod.stringContextParserCombinator.Extractor"),
+				ProblemFilters.exclude[MissingTypesProblem]("name.rayrobdod.stringContextParserCombinator.Extractor$"),
 				ProblemFilters.exclude[MissingTypesProblem]("name.rayrobdod.stringContextParserCombinator.Interpolator"),
 				ProblemFilters.exclude[MissingTypesProblem]("name.rayrobdod.stringContextParserCombinator.Interpolator$"),
 			)
@@ -168,6 +170,8 @@ lazy val base = (projectMatrix in file("Base"))
 				.withMoreProblemFilters(Seq(
 					ProblemMatcher.make(ProblemKind.AbstractClass, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription"),
 					ProblemMatcher.make(ProblemKind.IncompatibleTypeChange, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
+					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.Extractor"),
+					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.Extractor$"),
 					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.Expecting.*"),
 					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.ExpectingSet.*"),
 					ProblemMatcher.make(ProblemKind.InternalError, "name.rayrobdod.stringContextParserCombinator.typeclass.*"),
@@ -184,6 +188,8 @@ lazy val base = (projectMatrix in file("Base"))
 					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.Input.consume"),
 					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.internal.*"),
 					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.VersionSpecificParser.interpolate"),
+					ProblemMatcher.make(ProblemKind.MissingTermMember, "name.rayrobdod.stringContextParserCombinator.VersionSpecificExtractorModule.*"),
+					ProblemMatcher.make(ProblemKind.MissingTypeMember, "name.rayrobdod.stringContextParserCombinator.VersionSpecificExtractorModule.*"),
 					ProblemMatcher.make(ProblemKind.RestrictedVisibilityChange, "name.rayrobdod.stringContextParserCombinator.ExpectingDescription.*"),
 				).asJava)
 		},

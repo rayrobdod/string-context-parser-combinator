@@ -1,5 +1,6 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import com.eed3si9n.ifdef.ifdef
 import scala.annotation.nowarn
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
@@ -31,8 +32,8 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * @groupprio Misc 1999
  */
 final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] override val impl: internal.Extractor[Expr, Type, A]
-) extends VersionSpecificExtractor[Expr, Type, A] {
+		protected[stringContextParserCombinator] val impl: internal.Extractor[Expr, Type, A]
+) {
 
 	/**
 	 * Extract subexpressions from the given value according to the given StringContext
@@ -78,6 +79,123 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 					}
 				}
 				throw new ParseException(msg)
+			}
+		}
+	}
+
+	/**
+	 * Build an extractor that will extract values from a value of type A based on the provided StringContext
+	 * @group Parse
+	 */
+	@ifdef("scalaEpochVersion:2")
+	final def extractor[UnexprA](
+		c: scala.reflect.macros.blackbox.Context)(
+		extensionClassName:String)(
+		value:c.Expr[UnexprA])(
+		implicit ev:c.Expr[UnexprA] <:< A,
+		@nowarn("msg=never used") ev2:c.Expr[_] =:= Expr[_],
+		@nowarn("msg=never used") ev3:c.TypeTag[_] =:= Type[_],
+		ttUnexprA:c.TypeTag[UnexprA]
+	):c.Expr[Any] = {
+		implicit val given_Position:Position[c.universe.Position] = PositionGivens.given_ExprPosition_Position(c)
+		implicit val given_Ordering:Ordering[c.universe.Position] = PositionGivens.given_ExprPosition_Ordering(c)
+
+		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
+		val StringContextApply = stringContextApply(c)
+
+		import c.universe.ApplyTag
+		import c.universe.SelectTag
+		val strings = c.prefix.tree.duplicate match {
+			case c.universe.Apply(
+				ExtensionClassSelectChain(),
+				List(StringContextApply(strings))
+			) => {
+				strings.map({x => (c.eval(x), x.tree.pos)})
+			}
+			case c.universe.Select(
+				c.universe.Apply(
+					ExtensionClassSelectChain(),
+					List(StringContextApply(strings))
+				),
+				Name(_)
+			) => {
+				strings.map({x => (c.eval(x), x.tree.pos)})
+			}
+			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
+		}
+		val args = strings.init.map(x => (((), x._2 + x._1.size)))
+
+		val input = new Input[Unit, c.universe.Position](strings, args)
+		implicit val exprs:UnapplyExprs[c.Expr, c.TypeTag] = UnapplyExprs.forContext(c)
+
+		impl.asInstanceOf[internal.Extractor[c.Expr, c.TypeTag, A]].extractor(input)(implicitly, exprs) match {
+			case s:Success[_, _, _] => {
+				val expr:UnapplyExpr[c.Expr, c.TypeTag, A] = s.choicesHead.value
+				val condition = ev.andThen(expr.condition)
+				val parts = expr.parts.map(_.contramapValue(ev))
+
+				parts.size match {
+					case 0 =>
+						AssembleUnapply.zero(c)(value, ttUnexprA, condition)
+					case 1 =>
+						AssembleUnapply.one(c)(value, ttUnexprA, condition, parts(0))
+					case _ =>
+						AssembleUnapply.many(c)(value, ttUnexprA, condition, parts)
+				}
+			}
+			case f:Failure[c.universe.Position] => {
+				reportFailure(c)(f)
+			}
+		}
+	}
+
+	/**
+	 * Parses a StringContext into an extractor
+	 *
+	 * @example
+	 * ```
+	 * def valueImpl(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[Result]] = {
+	 *   val myParser:Extractor[Expr[Result]] = ???
+	 *   myParser.extractor(sc)
+	 * }
+	 *
+	 * extension (inline sc:scala.StringContext)
+	 *	  inline def value:Unapply[Result] =
+	 *	    ${valueImpl('sc)}
+	 * ```
+	 * @group Parse
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	final def extractor[UnexprA](
+		sc: scala.quoted.Expr[scala.StringContext]
+	)(implicit
+		quotes: scala.quoted.Quotes,
+		typA: scala.quoted.Type[UnexprA],
+		subtupExprA: scala.quoted.Expr[UnexprA] <:< A,
+		equalExprBool: scala.quoted.Expr[Boolean] =:= Expr[Boolean],
+		equalTypBool: scala.quoted.Type[Boolean] =:= Type[Boolean],
+	): scala.quoted.Expr[Unapply[UnexprA]] = {
+		import scala.quoted.{Expr => _, quotes => _, _}
+		import quotes.reflect.asTerm
+		import PositionGivens.given
+
+		val strings = InterpolatorImpl.stringContextFromExpr(sc)
+		val strings2 = strings.map(x => ((x.valueOrAbort, x.asTerm.pos))).toList
+		val args2 = strings2.init.map(x => (((), x._2 + x._1.size)))
+
+		val input = new Input[Unit, quotes.reflect.Position](strings2, args2)
+		implicit val exprs:UnapplyExprs[quoted.Expr, quoted.Type] = UnapplyExprs.forQuoted
+
+		impl.asInstanceOf[internal.Extractor[quoted.Expr, quoted.Type, A]].extractor(input) match {
+			case s:Success[_, _, _] => {
+				val unexpr = summon[quoted.Expr[UnexprA] <:< A]
+
+				val expr:UnapplyExpr[quoted.Expr, quoted.Type, quoted.Expr[UnexprA]] = unexpr.substituteContra(s.choicesHead.value)
+
+				InterpolatorImpl.unapplyExprToExpr(expr)
+			}
+			case f:Failure[quotes.reflect.Position] => {
+				reportFailure(f)
 			}
 		}
 	}
@@ -247,12 +365,23 @@ final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinato
 object Extractor
 		extends VersionSpecificExtractorModule
 {
+	@ifdef("scalaBinaryVersion:3")
+	type Extractor[A] = SCExtractor[scala.quoted.Expr, scala.quoted.Type, A]
+
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
 	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
+
+	/**
+	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
+	 * @group Arg
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def ofType[A](implicit typA: scala.quoted.Type[A], quotes: scala.quoted.Quotes): SCExtractor[scala.quoted.Expr, scala.quoted.Type, scala.quoted.Expr[A]] =
+		new SCExtractor(new internal.OfType[A])
 
 	/**
 	 * A trait that provides Extractor factory methods that conform to a particular
@@ -381,6 +510,49 @@ object Extractor
 				new this.Extractor(new internal.OfClass(tpe))
 		}
 	}
+
+	/**
+	 * Create a Extractors that can parse Exprs belonging to the specified Context
+	 * @group ExtractorGroup
+	 */
+	@ifdef("scalaEpochVersion:2")
+	def contextExtractors(c:scala.reflect.macros.blackbox.Context):Extractor.Extractors[c.Expr, c.TypeTag] = {
+		new Extractor.Extractors[c.Expr, c.TypeTag]
+				with ExprIndependentExtractors[c.Expr, c.TypeTag] {
+			override def `lazy`[A](fn:Function0[SCExtractor[c.Expr, c.TypeTag, A]]):SCExtractor[c.Expr, c.TypeTag, A] =
+				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
+
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCExtractor[c.Expr, c.TypeTag, c.Expr[A]] =
+				new SCExtractor(new internal.OfType[c.type, A](tpe))
+		}
+	}
+
+	/**
+	 * Create an Extractors that can parse `quoted.Expr`s
+	 * @group ExtractorGroup
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def quotedExtractors(implicit quotes: scala.quoted.Quotes):Extractor.Extractors[scala.quoted.Expr, scala.quoted.Type] = {
+		import scala.quoted.*
+		new Extractor.Extractors[Expr, Type]
+				with ExprIndependentExtractors[Expr, Type] {
+			override def `lazy`[A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
+
+			override def ofType[A](implicit tpe: Type[A]): SCExtractor[Expr, Type, Expr[A]] =
+				new SCExtractor(new internal.OfType[A])
+		}
+	}
+}
+
+@ifdef("scalaEpochVersion:2")
+private[stringContextParserCombinator]
+trait VersionSpecificExtractorModule {
+}
+
+@ifdef("scalaBinaryVersion:3")
+private[stringContextParserCombinator]
+trait VersionSpecificExtractorModule extends ExprIndependentExtractors[scala.quoted.Expr, scala.quoted.Type] {
 }
 
 /**
