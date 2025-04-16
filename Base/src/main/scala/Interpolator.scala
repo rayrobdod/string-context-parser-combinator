@@ -1,5 +1,6 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import com.eed3si9n.ifdef.ifdef
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
@@ -29,8 +30,8 @@ import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpo
  * @groupprio Misc 1999
  */
 final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] override val impl: internal.Interpolator[Expr, A]
-) extends VersionSpecificInterpolator[Expr, A] {
+		protected[stringContextParserCombinator] val impl: internal.Interpolator[Expr, A]
+) {
 
 	/**
 	 * Processes an immediate string context and its arguments into a value
@@ -74,6 +75,109 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 					}
 				}
 				throw new ParseException(msg)
+			}
+		}
+	}
+
+	/**
+	 * Parses a StringContext and its arguments into a value
+	 *
+	 * @example
+	 * {{{
+	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
+	 *   val myParser:Interpolator[Expr[Result]] = ???
+	 *   myParser.interpolate(c)("package.ValueStringContext")(args)
+	 * }
+	 *
+	 * implicit final class ValueStringContext(val sc:scala.StringContext) extends AnyVal {
+	 *   def value(args:Any*):Result = macro valueImpl
+	 * }
+	 *
+	 * // alternatively
+	 * implicit final class ValueStringContext(val sc:scala.StringContext) {
+	 *   object value {
+	 *     def apply(args:Any*):Result = macro valueImpl
+	 *   }
+	 * }
+	 * }}}
+	 * @group Parse
+	 */
+	@ifdef("scalaEpochVersion:2")
+	final def interpolate(c:scala.reflect.macros.blackbox.Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
+		implicit val given_Position:Position[c.universe.Position] = PositionGivens.given_ExprPosition_Position(c)
+		implicit val given_Ordering:Ordering[c.universe.Position] = PositionGivens.given_ExprPosition_Ordering(c)
+
+		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
+		val StringContextApply = stringContextApply(c)
+
+		import c.universe.ApplyTag
+		import c.universe.SelectTag
+		val strings = c.prefix.tree.duplicate match {
+			// for methods on the extension object
+			case c.universe.Apply(
+				ExtensionClassSelectChain(),
+				List(StringContextApply(strings))
+			) => {
+				strings.map({x => (c.eval(x), x.tree.pos)})
+			}
+			// for `apply` methods on an object in the extension object
+			case c.universe.Select(
+				c.universe.Apply(
+					ExtensionClassSelectChain(),
+					List(StringContextApply(strings))
+				),
+				Name(_)
+			) => {
+				strings.map({x => (c.eval(x), x.tree.pos)})
+			}
+			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
+		}
+
+		val input = new Input[Expr, c.universe.Position](strings, args.toList.map(arg => (ev(arg), arg.tree.pos)))
+
+		impl.interpolate(input) match {
+			case s:Success[_, _, _] => {
+				s.choicesHead.value
+			}
+			case f:Failure[c.universe.Position] => {
+				reportFailure(c)(f)
+			}
+		}
+	}
+
+	/**
+	 * Parses a StringContext and its arguments into a value
+	 *
+	 * @example
+	 * ```
+	 * extension (inline sc:StringContext)
+	 *   inline def prefix(inline args:Any*):Result =
+	 *     ${prefixImpl('sc, 'args)}
+	 *
+	 * def prefixImpl(sc:Expr[StringContext], args:Expr[Seq[Any]])(using Quotes):Expr[Result] =
+	 *   val interpolator:Interpolator[Expr[Result]] = ???
+	 *   interpolator.interpolate(sc, args)
+	 * ```
+	 * @group Parse
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	final def interpolate(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(implicit quotes: quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
+		import quotes.reflect.asTerm
+		import quotes.reflect.Position
+		import PositionGivens.given
+
+		val strings = InterpolatorImpl.stringContextFromExpr(sc)
+		val strings2 = strings.map(x => ((x.valueOrAbort, x.asTerm.pos))).toList
+		val args2 = scala.quoted.Varargs.unapply(args).get.toList.map(arg => (ev(arg), arg.asTerm.pos))
+
+		val input = new Input[Expr, Position](strings2, args2)
+
+		impl.interpolate(input) match {
+			case s:Success[_, _, _] => {
+				s.choicesHead.value
+			}
+			case f:Failure[Position] => {
+				reportFailure(f)
 			}
 		}
 	}
@@ -306,15 +410,36 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
  * @groupprio Misc 999
  */
 object Interpolator
-		extends VersionSpecificInterpolatorModule
-		with ExprIndependentInterpolators[Any]
+		extends ExprIndependentInterpolators[Any]
 {
+	@ifdef("scalaBinaryVersion:3")
+	type Interpolator[A] = SCPCInterpolator[scala.quoted.Expr[Any], A]
+
+
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
 	def `lazy`[Expr, A](fn:Function0[SCPCInterpolator[Expr, A]]):SCPCInterpolator[Expr, A] =
 		new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
+
+	/**
+	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
+	 * @group Arg
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def ofType[A](implicit typ: scala.quoted.Type[A], quotes: scala.quoted.Quotes): SCPCInterpolator[scala.quoted.Expr[Any], scala.quoted.Expr[A]] =
+		new SCPCInterpolator(new internal.OfType[A])
+
+	/**
+	 * A parser that succeeds if the next part of the in put is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
+	 *
+	 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+	 * @group Arg
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit quotes: scala.quoted.Quotes, typ: scala.quoted.Type[Lifter]):SCPCInterpolator[scala.quoted.Expr[Any], Z] =
+		new SCPCInterpolator(internal.Lifted(lift, ExpectingDescription(description)))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
 	/**
@@ -432,6 +557,36 @@ object Interpolator
 	}
 
 	/**
+	 *
+	 * @group InterpolatorGroup
+	 */
+	@ifdef("scalaEpochVersion:2")
+	trait LiftedInterpolator[C <: scala.reflect.macros.blackbox.Context with Singleton] {
+		/**
+		 * A parser that succeeds if the next part of the input is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
+		 *
+		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+		 * @group Arg
+		 */
+		def lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCPCInterpolator[C#Expr[Any], Z]
+	}
+
+	/**
+	 *
+	 * @group InterpolatorGroup
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	trait LiftedInterpolator {
+		/**
+		 * A parser that succeeds if the next part of the input is an `arg` and Lifter parameterized on `arg`'s type can be implicitly summoned
+		 *
+		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
+		 * @group Arg
+		 */
+		def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: scala.quoted.Type[Lifter]):SCPCInterpolator[scala.quoted.Expr[Any], Z]
+	}
+
+	/**
 	 * Returns an Interpolators that can parse raw values
 	 * @group InterpolatorGroup
 	 */
@@ -442,6 +597,48 @@ object Interpolator
 
 			override def ofType[A](implicit tpe: ClassTag[A]): this.Interpolator[A] =
 				new this.Interpolator(new internal.OfClass(tpe))
+		}
+	}
+
+	/**
+	 * Create a Interpolators that can parse Exprs belonging to the specified Context
+	 * @group InterpolatorGroup
+	 */
+	@ifdef("scalaEpochVersion:2")
+	def contextInterpolators(c: scala.reflect.macros.blackbox.Context): Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
+		new Interpolators[c.Expr, c.universe.Liftable, c.TypeTag]
+				with ExprIndependentInterpolators[c.Expr[Any]]
+				with LiftedInterpolator[c.type] {
+			override def `lazy`[A](fn:Function0[SCPCInterpolator[c.Expr[Any], A]]): SCPCInterpolator[c.Expr[Any], A] =
+				new SCPCInterpolator[c.Expr[Any], A](internal.DelayedConstruction.interpolator(fn))
+
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCInterpolator[c.Expr[Any], c.Expr[A]] =
+				new SCPCInterpolator[c.Expr[Any], c.Expr[A]](new internal.OfType[c.type, A](tpe))
+
+			override def lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]): SCPCInterpolator[c.Expr[Any], Z] =
+				new SCPCInterpolator[c.Expr[Any], Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
+		}
+	}
+
+	/**
+	 * Create an Interpolators that can parse `quoted.Expr`s
+	 * @group InterpolatorGroup
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def quotedInterpolators(implicit quotes: scala.quoted.Quotes): Interpolators[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type] with LiftedInterpolator = {
+		new Interpolators[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type]
+				with ExprIndependentInterpolators[scala.quoted.Expr[Any]]
+				with LiftedInterpolator {
+			import scala.quoted.*
+
+			override def `lazy`[A](fn:Function0[SCPCInterpolator[quoted.Expr[Any], A]]):SCPCInterpolator[quoted.Expr[Any], A] =
+				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
+
+			override def ofType[A](implicit tpe: Type[A]): SCPCInterpolator[Expr[Any], Expr[A]] =
+				new SCPCInterpolator(new internal.OfType[A])
+
+			override def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: quoted.Type[Lifter]):SCPCInterpolator[Expr[Any], Z] =
+				new SCPCInterpolator(internal.Lifted(lift, ExpectingDescription(description)))
 		}
 	}
 }

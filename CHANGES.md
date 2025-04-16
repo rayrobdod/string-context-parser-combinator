@@ -3,6 +3,13 @@
 ## [Unreleased](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.1...HEAD)
 * Improve performance of `codePointWhere` and `charWhere` if default error message is not needed
 * Fix `CodePoint::isIdentifierIgnorable` to forward to the correct `j.l.Character` method
+* Flatten typeclass's companion's inheritance hierarchy
+  * Include pages for the companion's scala-2 `Context` inner classes in scala-2 docs
+    (was previously not included since, despite being visible via inheritance, class was still an inner class of a package-private trait)
+  * Use `ifdef` annotation instead of inheritance for scala-version-specific methods
+* Flatten Interpolator, Extractor, Parser and companions' inheritance hierarchy
+  * Include pages for `Interpolator.LiftedInterpolator` inner classes in docs
+  * Use `ifdef` annotation instead of inheritance for scala-version-specific methods
 
 ## [0.1.1](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.0...0.1.1) – 2025-02-04
 * Add symbolic operators to Parser, Extractor and Interpolator

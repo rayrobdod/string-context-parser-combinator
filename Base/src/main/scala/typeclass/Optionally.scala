@@ -1,6 +1,8 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
+import com.eed3si9n.ifdef.ifdef
+
 /**
  * Describes how to represent an optional value
  *
@@ -113,7 +115,7 @@ private[typeclass] trait LowPrioOptionally {
  * Predefined implicit implementations of ContraOptionally
  * and methods to create new ContraOptionally
   */
-object ContraOptionally extends VersionSpecificContraOptionally with LowPrioContraOptionally {
+object ContraOptionally extends LowPrioContraOptionally {
 	/**
 	 * Constructs an `ContraOptionally` from a set of functions corresponding to each of ContraOptionally's methods
 	 */
@@ -129,17 +131,43 @@ object ContraOptionally extends VersionSpecificContraOptionally with LowPrioCont
 	}
 
 	implicit def idUnit:ContraOptionally[Id, Unit, Unit] = BiOptionally.idUnit
+
+	@ifdef("scalaEpochVersion:2")
+	trait ContraOptionallys[Expr[_], Type[_]] extends LowPrioContraOptionallys[Expr, Type] {
+		implicit def unit:ContraOptionally[Expr, Unit, Unit]
+	}
+	@ifdef("scalaEpochVersion:2")
+	trait LowPrioContraOptionallys[Expr[_], Type[_]] {
+		implicit def toExprOption[A](implicit typA:Type[A]):ContraOptionally[Expr, Expr[A], Expr[Option[A]]]
+	}
+
+	@ifdef("scalaEpochVersion:2")
+	def forContext(c:scala.reflect.macros.blackbox.Context):ContraOptionallys[c.Expr, c.TypeTag] = {
+		new ContraOptionallys[c.Expr, c.TypeTag] {
+			private[this] val backing = BiOptionally.forContext(c)
+
+			override def unit:ContraOptionally[c.Expr, Unit, Unit] = backing.unit
+			override def toExprOption[A](implicit typA:c.TypeTag[A]):ContraOptionally[c.Expr, c.Expr[A], c.Expr[Option[A]]] = backing.toExprOption[A]
+		}
+	}
+
+	@ifdef("scalaBinaryVersion:3")
+	implicit def quotedUnit(implicit quotes: scala.quoted.Quotes):BiOptionally[scala.quoted.Expr, Unit, Unit] = BiOptionally.quotedUnit
+
 }
 
-private[typeclass] trait LowPrioContraOptionally extends VersionSpecificLowPrioContraOptionally {
+private[typeclass] trait LowPrioContraOptionally {
 	implicit def idToOption[A]:ContraOptionally[Id, A, Option[A]] = BiOptionally.idToOption
+
+	@ifdef("scalaBinaryVersion:3")
+	implicit def quotedToExprOption[A](implicit quotes: scala.quoted.Quotes, typA: scala.quoted.Type[A]):BiOptionally[scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[Option[A]]] = BiOptionally.quotedToExprOption
 }
 
 /**
  * Predefined implicit implementations of BiOptionally
  * and methods to create new BiOptionally
   */
-object BiOptionally extends VersionSpecificBiOptionally with LowPrioBiOptionally {
+object BiOptionally extends LowPrioBiOptionally {
 	/**
 	 * Constructs an `BiOptionally` from a set of functions corresponding to each of BiOptionally's methods
 	 */
@@ -164,9 +192,62 @@ object BiOptionally extends VersionSpecificBiOptionally with LowPrioBiOptionally
 		_ => true,
 		PartialExprFunction.identity[Id, Unit](true)
 	)
+
+	@ifdef("scalaEpochVersion:2")
+	trait BiOptionallys[Expr[_], Type[_]] extends LowPrioBiOptionallys[Expr, Type] {
+		implicit def unit:BiOptionally[Expr, Unit, Unit]
+	}
+	@ifdef("scalaEpochVersion:2")
+	trait LowPrioBiOptionallys[Expr[_], Type[_]] {
+		implicit def toExprOption[A](implicit typA:Type[A]):BiOptionally[Expr, Expr[A], Expr[Option[A]]]
+	}
+
+	@ifdef("scalaEpochVersion:2")
+	def forContext(c:scala.reflect.macros.blackbox.Context):BiOptionallys[c.Expr, c.TypeTag] = {
+		new BiOptionallys[c.Expr, c.TypeTag] {
+			private[this] val exprTrue = c.Expr[Boolean](c.universe.Literal(c.universe.Constant(true)))
+			private[this] def select[A, Z](qualifier:c.Expr[A], name:String)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+				c.Expr[Z](c.universe.Select(qualifier.tree, c.universe.TermName(name)))
+			}
+			private[this] def selectTermNames[Z](root:String, names:String*)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+				val rootTree = c.universe.Ident(c.universe.TermName(root))
+				val namesTree = names.foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
+				c.Expr[Z](namesTree)
+			}
+
+			override def unit:BiOptionally[c.Expr, Unit, Unit] = BiOptionally.apply(
+				(),
+				_ => (),
+				_ => exprTrue,
+				PartialExprFunction.identity(exprTrue)
+			)
+
+			override def toExprOption[A](implicit typA:c.TypeTag[A]):BiOptionally[c.Expr, c.Expr[A], c.Expr[Option[A]]] = BiOptionally.apply(
+				selectTermNames[Option[A]]("_root_", "scala", "None"),
+				value => {
+					val rootTree = c.universe.Ident(c.universe.TermName("_root_"))
+					val namesTree = List("scala", "Some", "apply").foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
+					c.Expr[Option[A]](c.universe.Apply(namesTree, List(value.tree)))
+				},
+				value => select[Option[A], Boolean](value, "isEmpty"),
+				PartialExprFunction(
+					value => select[Option[A], Boolean](value, "nonEmpty"),
+					value => select[Option[A], A](value, "get")
+				)
+			)
+		}
+	}
+
+	@ifdef("scalaBinaryVersion:3")
+	implicit def quotedUnit(implicit quotes: scala.quoted.Quotes):BiOptionally[scala.quoted.Expr, Unit, Unit] = BiOptionally.apply(
+		(),
+		_ => (),
+		_ => scala.quoted.Expr(true),
+		PartialExprFunction.identity(scala.quoted.Expr(true)),
+	)
 }
 
-private[typeclass] trait LowPrioBiOptionally extends VersionSpecificLowPrioBiOptionally {
+private[typeclass] trait LowPrioBiOptionally {
 	implicit def idToOption[A]:BiOptionally[Id, A, Option[A]] = BiOptionally.apply[Id, A, Option[A]](
 		None,
 		Some.apply _,
@@ -176,4 +257,8 @@ private[typeclass] trait LowPrioBiOptionally extends VersionSpecificLowPrioBiOpt
 			_.get
 		)
 	)
+
+	@ifdef("scalaBinaryVersion:3")
+	implicit def quotedToExprOption[A](implicit quotes: scala.quoted.Quotes, typ: scala.quoted.Type[A]):BiOptionally[scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[Option[A]]] =
+		OptionallyImpl.quotedToExprOption[A]
 }

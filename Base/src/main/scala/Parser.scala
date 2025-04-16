@@ -1,5 +1,6 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import com.eed3si9n.ifdef.ifdef
 import scala.collection.immutable.Set
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
@@ -34,8 +35,8 @@ import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
  * @groupprio Convert 2000
  */
 final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] override val impl: internal.Parser[Expr, Type, A]
-) extends VersionSpecificParser[Expr, Type, A] {
+		protected[stringContextParserCombinator] val impl: internal.Parser[Expr, Type, A]
+) {
 
 	/**
 	 * Returns an Interpolator that interpolates like this parser would
@@ -60,11 +61,107 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 	}
 
 	/**
+	 * Parses a StringContext and its arguments into a value
+	 *
+	 * @example
+	 * {{{
+	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
+	 *   val myParser:Interpolator[Expr[Result]] = ???
+	 *   myParser.interpolate(c)("package.ValueStringContext")(args)
+	 * }
+	 *
+	 * implicit final class ValueStringContext(val sc:scala.StringContext) extends AnyVal {
+	 *   def value(args:Any*):Result = macro valueImpl
+	 * }
+	 *
+	 * // alternatively
+	 * implicit final class ValueStringContext(val sc:scala.StringContext) {
+	 *   object value {
+	 *     def apply(args:Any*):Result = macro valueImpl
+	 *   }
+	 * }
+	 * }}}
+	 * @group Parse
+	 */
+	@ifdef("scalaEpochVersion:2")
+	final def interpolate(c: scala.reflect.macros.blackbox.Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[Any] <:< Expr[Any]):A = {
+		new Interpolator(this.impl).interpolate(c)(extensionClassName)(args)
+	}
+
+	/**
+	 * Parses a StringContext and its arguments into a value
+	 *
+	 * @example
+	 * ```
+	 * def valueImpl(sc:Expr[scala.StringContext],
+	 *         args:Expr[Seq[Any]])(using Quotes):Expr[Result] = {
+	 *   val myParser:Interpolator[Expr[Result]] = ???
+	 *   myParser.interpolate(sc, args)
+	 * }
+	 *
+	 * extension (inline sc:scala.StringContext)
+	 *	  inline def value(inline args:Any*):Result =
+	 *	    ${valueImpl('sc, 'args)}
+	 * ```
+	 * @group Parse
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	final def interpolate(sc:scala.quoted.Expr[scala.StringContext], args:scala.quoted.Expr[Seq[Any]])(implicit q:scala.quoted.Quotes, ev:scala.quoted.Expr[Any] <:< Expr[Any]):A = {
+		new Interpolator(this.impl).interpolate(sc, args)
+	}
+
+	/**
 	 * Extract subexpressions from the given value according to the given StringContext
 	 * @group Parse
 	 */
 	def extract(sc:StringContext, value:A)(implicit ev:Id[Any] =:= Expr[Any], ev2:ClassTag[Any] =:= Type[Any]):Option[Seq[Any]] =
 		this.toExtractor.extract(sc, value)
+
+	/**
+	 * Build an extractor that will extract values from a value of type A based on the provided StringContext
+	 * @group Parse
+	 */
+	@ifdef("scalaEpochVersion:2")
+	final def extractor[UnexprA](
+		c: scala.reflect.macros.blackbox.Context)(
+		extensionClassName:String)(
+		value:c.Expr[UnexprA])(
+		implicit ev:c.Expr[UnexprA] <:< A,
+		ev2:c.Expr[_] =:= Expr[_],
+		ev3:c.TypeTag[_] =:= Type[_],
+		ttUnexprA:c.TypeTag[UnexprA]
+	):c.Expr[Any] = {
+		new Extractor(this.impl).extractor(c)(extensionClassName)(value)
+	}
+
+	/**
+	 * Parses a StringContext into an extractor
+	 *
+	 * @example
+	 * ```
+	 * def valueImpl(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[Result]] = {
+	 *   val myParser:Extractor[Expr[Result]] = ???
+	 *   myParser.extractor(sc)
+	 * }
+	 *
+	 * extension (inline sc:scala.StringContext)
+	 *	  inline def value:Unapply[Result] =
+	 *	    ${valueImpl('sc)}
+	 * ```
+	 * @group Parse
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	final def extractor[UnexprA](
+		sc:scala.quoted.Expr[scala.StringContext]
+	)(implicit
+		quotes: scala.quoted.Quotes,
+		typeA: scala.quoted.Type[UnexprA],
+		exprA: scala.quoted.Expr[UnexprA] <:< A,
+		exprBool: scala.quoted.Expr[Boolean] =:= Expr[Boolean],
+		typeBool: scala.quoted.Type[Boolean] =:= Type[Boolean],
+	):scala.quoted.Expr[Unapply[UnexprA]] = {
+		new Extractor(this.impl).extractor(sc)
+	}
 
 	/**
 	 * Returns an interpolator which invokes this parser, then modifies a successful result according to fn
@@ -249,6 +346,21 @@ final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
 object Parser
 		extends VersionSpecificParserModule
 {
+	@ifdef("scalaBinaryVersion:3")
+	type Parser[A] = SCPCParser[quoted.Expr, quoted.Type, A]
+	@ifdef("scalaBinaryVersion:3")
+	type Extractor[A] = SCPCExtractor[quoted.Expr, quoted.Type, A]
+	@ifdef("scalaBinaryVersion:3")
+	type Interpolator[A] = SCPCInterpolator[quoted.Expr[Any], A]
+
+	/**
+	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
+	 * @group Arg
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def ofType[A](implicit typA: scala.quoted.Type[A], quoted: scala.quoted.Quotes): SCPCParser[scala.quoted.Expr, scala.quoted.Type, scala.quoted.Expr[A]] =
+		new SCPCParser(new internal.OfType[A])
+
 	/**
 	 * A parser that acts like the Interpolator when interpolating, and like the Extractor when extracting
 	 * @group Misc
@@ -405,6 +517,54 @@ object Parser
 				new this.Parser(new internal.OfClass(tpe))
 		}
 	}
+
+	/**
+	 * Create a Parsers that can parse Exprs belonging to the specified Context
+	 * @group ParserGroup
+	 */
+	@ifdef("scalaEpochVersion:2")
+	def contextParsers(c:scala.reflect.macros.blackbox.Context):Parser.Parsers[c.Expr, c.universe.Liftable, c.TypeTag] = {
+		new Parser.Parsers[c.Expr, c.universe.Liftable, c.TypeTag]
+				with ExprIndependentParsers[c.Expr, c.TypeTag] {
+			override def `lazy`[A](fn:Function0[SCPCParser[c.Expr, c.TypeTag, A]]):SCPCParser[c.Expr, c.TypeTag, A] =
+				new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
+
+			override def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):SCPCParser[c.Expr, c.TypeTag, A] =
+				new SCPCParser(new internal.Paired(interpolator.impl, extractor.impl))
+
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCParser[c.Expr, c.TypeTag, c.Expr[A]] =
+				new SCPCParser(new internal.OfType[c.type, A](tpe))
+		}
+	}
+
+	/**
+	 * Create an Parsers that can parse `quoted.Expr`s
+	 * @group ParserGroup
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def quotedParsers(implicit quotes: scala.quoted.Quotes):Parser.Parsers[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type] = {
+		new Parser.Parsers[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type]
+				with ExprIndependentParsers[scala.quoted.Expr, scala.quoted.Type] {
+			override def `lazy`[A](fn:Function0[SCPCParser[scala.quoted.Expr, scala.quoted.Type, A]]):SCPCParser[scala.quoted.Expr, scala.quoted.Type, A] =
+				new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
+
+			override def paired[A](interpolator:SCPCInterpolator[scala.quoted.Expr[Any], A], extractor:SCPCExtractor[scala.quoted.Expr, scala.quoted.Type, A]):SCPCParser[scala.quoted.Expr, scala.quoted.Type, A] =
+				new SCPCParser(new internal.Paired(interpolator.impl, extractor.impl))
+
+			override def ofType[A](implicit tpe: scala.quoted.Type[A]): SCPCParser[scala.quoted.Expr, scala.quoted.Type, scala.quoted.Expr[A]] =
+				new SCPCParser(new internal.OfType[A])
+		}
+	}
+}
+
+@ifdef("scalaEpochVersion:2")
+private[stringContextParserCombinator]
+trait VersionSpecificParserModule {
+}
+
+@ifdef("scalaBinaryVersion:3")
+private[stringContextParserCombinator]
+trait VersionSpecificParserModule extends ExprIndependentParsers[scala.quoted.Expr, scala.quoted.Type] {
 }
 
 /**
