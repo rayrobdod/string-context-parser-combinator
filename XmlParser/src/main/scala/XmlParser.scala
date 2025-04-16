@@ -126,7 +126,7 @@ private[xml] object XmlParser {
 		)
 	}
 
-	private def interpolation(factory: Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def interpolation(factory: Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		import quotes.reflect._
 		ofType[Any]
 			.map({(value) =>
@@ -140,7 +140,7 @@ private[xml] object XmlParser {
 			})
 	}
 
-	private def attribute(factory:Expr[XmlFactory])(using Quotes):Interpolator[Attribute] = {
+	private def attribute(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[Attribute] = {
 		def valueText(excluding:Char) = (charRef <|> xmlAllowedChar("<&" + excluding)).repeat(1)
 			.map({data =>
 				import quotes.reflect._
@@ -161,7 +161,7 @@ private[xml] object XmlParser {
 			.map((k,v) => Attribute(k, v.map(_.asExpr)))
 	}
 
-	private def cdata(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def cdata(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		given typeclass.Eithered[CodePoint, String, String] with
 			def left(elem:CodePoint):String = elem.toString
 			def right(elem:String):String = elem
@@ -185,7 +185,7 @@ private[xml] object XmlParser {
 			})
 	}
 
-	private def entity(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def entity(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		(isString("&") ~> xmlName <~ isString(";"))
 			.map({name =>
 				import quotes.reflect._
@@ -196,7 +196,7 @@ private[xml] object XmlParser {
 			.attempt
 	}
 
-	private def text(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def text(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		(charRef <|> xmlAllowedChar("<&")).repeat(1)
 			.map({data =>
 				import quotes.reflect._
@@ -206,7 +206,7 @@ private[xml] object XmlParser {
 			})
 	}
 
-	private def comment(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def comment(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		(
 			isString("<!--")
 			~> (
@@ -223,7 +223,7 @@ private[xml] object XmlParser {
 			})
 	}
 
-	private def processingInstruction(factory:Expr[XmlFactory])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def processingInstruction(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
 		(
 			isString("<?")
 			~> xmlName.filter(_ != "xml", "not `xml`")
@@ -242,7 +242,7 @@ private[xml] object XmlParser {
 			})
 	}
 
-	private def fragment(factory:Expr[XmlFactory], nsb: NamespaceBinding)(using Quotes):Interpolator[List[quotes.reflect.Term]] = {
+	private def fragment(factory:Expr[XmlFactory[_]], nsb: NamespaceBinding)(using Quotes):Interpolator[List[quotes.reflect.Term]] = {
 		(
 			interpolation(factory) <|>
 			entity(factory) <|>
@@ -254,7 +254,7 @@ private[xml] object XmlParser {
 		).repeat()
 	}
 
-	private def elem(factory:Expr[XmlFactory], nsb:NamespaceBinding)(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def elem(factory:Expr[XmlFactory[_]], nsb:NamespaceBinding)(using Quotes):Interpolator[quotes.reflect.Term] = {
 		import quotes.reflect._
 		(
 			isString("<") ~>
@@ -341,7 +341,7 @@ private[xml] object XmlParser {
 	}
 
 
-	def interpolate(sc:Expr[scala.StringContext], args:Expr[Seq[Any]], factory:Expr[XmlFactory])(using Quotes):Expr[Any] = {
+	def interpolate[Z](sc:Expr[scala.StringContext], args:Expr[Seq[Any]], factory:Expr[XmlFactory[Z]])(using Type[Z], Quotes):Expr[Z] = {
 		import quotes.reflect.*
 		val (factoryExpr, factoryType) = factory match {case '{ $x: t } => ((x, Type.of[t])) }
 
@@ -355,7 +355,7 @@ private[xml] object XmlParser {
 			.selectAndApplyToArgsMaybeDynamicMaybeVarargs
 				("literal")
 				((fragment(factoryExpr, initialNsb) <~> end).interpolate(sc, args))
-			.asExpr
+			.asExprOf[Z]
 	}
 
 	def classSymbolThatDoesntResultInBadSymbolicReferenceWhenLookingForAnObjectContainedClass(name:String)(using Quotes):quotes.reflect.Symbol = {

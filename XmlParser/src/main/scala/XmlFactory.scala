@@ -18,7 +18,7 @@ package name.rayrobdod.stringContextParserCombinatorExample.xml
  *  - literal
  *  - interpolation
  */
-trait XmlFactory
+trait XmlFactory[Z]
 
 object XmlFactory:
 	/** An `XmlFactory.entities` implementation that handles only the predefined entities */
@@ -29,7 +29,7 @@ object XmlFactory:
 		val quot:A = fn('"')
 		val apos:A = fn('\'')
 
-	given default:XmlFactory with
+	given default:XmlFactory[scala.xml.NodeSeq] with
 		import scala.language.dynamics
 		enum IEitherPrefixUri:
 			case PrefixOnly(prefix:String)

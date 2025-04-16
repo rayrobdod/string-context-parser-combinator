@@ -39,7 +39,7 @@ package Opml:
 	case class OutlineTag(text:String, typ:Option[String], children: Seq[OutlineTag])
 
 
-object OpmlXmlFactory extends XmlFactory:
+object OpmlXmlFactory extends XmlFactory[Any]:
 	import Opml.*
 	import scala.language.dynamics
 

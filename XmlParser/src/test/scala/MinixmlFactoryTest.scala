@@ -10,7 +10,7 @@ package minixml:
 	final case class Text(content:String) extends Node
 	final case class Elem(name:QName, attrs: Map[QName, String], childs: Seq[Node]) extends Node
 
-object MinixmlFactory extends XmlFactory:
+object MinixmlFactory extends XmlFactory[minixml.Elem]:
 	import minixml.*
 
 	inline def literal(arg:Any):arg.type = arg
