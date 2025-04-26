@@ -13,7 +13,7 @@ object Void {
 		}
 	}
 
-	def extractor[Expr[_], Type[_], A](
+	def extractor[Expr[+_], Type[_], A](
 		backing:Extractor[Expr, Type, A],
 	):Extractor[Expr, Type, Unit] = {
 		new Extractor[Expr, Type, Unit] {
@@ -23,7 +23,7 @@ object Void {
 		}
 	}
 
-	def parser[Expr[_], Type[_], A](
+	def parser[Expr[+_], Type[_], A](
 		backing:Parser[Expr, Type, A],
 	):Parser[Expr, Type, Unit] = {
 		new Parser[Expr, Type, Unit] {

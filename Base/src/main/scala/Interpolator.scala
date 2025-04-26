@@ -196,7 +196,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * successful result into an Expr
 	 * @group Map
 	 */
-	def mapToExpr[Z >: A, Expr2[_], ToExpr[_], Type[_]](
+	def mapToExpr[Z >: A, Expr2[+_], ToExpr[_], Type[_]](
 		implicit mapping:typeclass.ToExprMapping[Expr2, ToExpr, Type],
 		toExpr:ToExpr[Z],
 		tpe:Type[Z]
@@ -259,7 +259,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * The extractor parsing will probably fail if this parser expects to find holes.
 	 * @group Misc
 	 */
-	def extractorAtom[ExprZ[_], TypeZ[_], UnexprA](
+	def extractorAtom[ExprZ[+_], TypeZ[_], UnexprA](
 		implicit t:TypeZ[UnexprA],
 		ev:ExprZ[Any] <:< Expr,
 		ev2:A <:< ExprZ[UnexprA]

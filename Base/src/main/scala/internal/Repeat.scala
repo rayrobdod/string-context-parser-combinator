@@ -32,7 +32,7 @@ object Repeat {
 		}
 	}
 
-	def extractor[Expr[_], Type[_], A, Z](
+	def extractor[Expr[+_], Type[_], A, Z](
 		inner:Extractor[Expr, Type, A],
 		min:Int,
 		max:Int,
@@ -59,7 +59,7 @@ object Repeat {
 		}
 	}
 
-	def parser[Expr[_], Type[_], A, Z](
+	def parser[Expr[+_], Type[_], A, Z](
 		inner:Parser[Expr, Type, A],
 		min:Int,
 		max:Int,

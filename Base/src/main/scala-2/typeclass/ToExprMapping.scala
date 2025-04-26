@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
  * Associates an Expr type with the implicit types required to lift a value into an Expr.
  * Support for [[Interpolator.mapToExpr]].
  */
-trait ToExprMapping[Expr[_], ToExpr[_], Type[_]] {
+trait ToExprMapping[Expr[+_], ToExpr[_], Type[_]] {
 	def apply[A](value:A, fn:ToExpr[A], tpe: Type[A]):Expr[A]
 }
 

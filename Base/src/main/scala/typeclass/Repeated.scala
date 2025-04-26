@@ -68,7 +68,7 @@ trait Repeated[-A, +Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait ContraRepeated[+Expr[_], +A, Z] {
+trait ContraRepeated[+Expr[+_], +A, Z] {
 	def headTail:PartialExprFunction[Expr, Z, (A, Z)]
 	def isEmpty(it:Z):Expr[Boolean]
 }
@@ -81,7 +81,7 @@ trait ContraRepeated[+Expr[_], +A, Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait BiRepeated[Expr[_], A, Z]
+trait BiRepeated[Expr[+_], A, Z]
 	extends Repeated[A, Z]
 	with ContraRepeated[Expr, A, Z]
 
@@ -488,7 +488,7 @@ object ContraRepeated extends LowPrioContraRepeated {
 	implicit def idUnit:ContraRepeated[Id, Unit, Unit] = BiRepeated.idUnit
 
 	@ifdef("scalaEpochVersion:2")
-	trait ContraRepeateds[Expr[_], Type[_]] {
+	trait ContraRepeateds[Expr[+_], Type[_]] {
 		implicit def unit:ContraRepeated[Expr, Unit, Unit]
 		implicit def toExprList[A](implicit tt:Type[A]):ContraRepeated[Expr, Expr[A], Expr[List[A]]]
 	}
@@ -519,7 +519,7 @@ private[typeclass] trait LowPrioContraRepeated {
 
 /** Predefined implicit implementations of BiRepeated */
 object BiRepeated extends LowPrioBiRepeated {
-	private[typeclass] def apply[Expr[_], A, Acc, Z](
+	private[typeclass] def apply[Expr[+_], A, Acc, Z](
 		initFn: () => Acc,
 		appendFn: (Acc, A) => Acc,
 		resultFn: Acc => Z,
@@ -552,7 +552,7 @@ object BiRepeated extends LowPrioBiRepeated {
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait BiRepeateds[Expr[_], Type[_]] {
+	trait BiRepeateds[Expr[+_], Type[_]] {
 		implicit def unit:BiRepeated[Expr, Unit, Unit]
 		implicit def toExprList[A](implicit typA:Type[A]):BiRepeated[Expr, Expr[A], Expr[List[A]]]
 	}

@@ -34,7 +34,7 @@ import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
  * @groupname Convert convert
  * @groupprio Convert 2000
  */
-final class Parser[Expr[_], Type[_], A] private[stringContextParserCombinator] (
+final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] (
 		protected[stringContextParserCombinator] val impl: internal.Parser[Expr, Type, A]
 ) {
 
@@ -365,7 +365,7 @@ object Parser
 	 * A parser that acts like the Interpolator when interpolating, and like the Extractor when extracting
 	 * @group Misc
 	 */
-	def paired[Expr[_], Type[_], A](
+	def paired[Expr[+_], Type[_], A](
 		interpolator:SCPCInterpolator[Expr[Any], A],
 		extractor:SCPCExtractor[Expr, Type, A]
 	):SCPCParser[Expr, Type, A] =
@@ -375,7 +375,7 @@ object Parser
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
+	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
 		new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
@@ -570,7 +570,7 @@ trait VersionSpecificParserModule extends ExprIndependentParsers[scala.quoted.Ex
 /**
  * Parsers that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentParsers[Expr[_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentParsers[Expr[+_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar

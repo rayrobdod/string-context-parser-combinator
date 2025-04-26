@@ -49,7 +49,7 @@ trait Eithered[-A, -B, +Z] {
  * @tparam B the second choice
  * @tparam Z the result container
  */
-trait ContraEithered[+Expr[_], +A, +B, -Z] {
+trait ContraEithered[+Expr[+_], +A, +B, -Z] {
 	def contraLeft:PartialExprFunction[Expr, Z, A]
 	def contraRight:PartialExprFunction[Expr, Z, B]
 }
@@ -60,7 +60,7 @@ trait ContraEithered[+Expr[_], +A, +B, -Z] {
  * @tparam B the second choice
  * @tparam Z the result container
  */
-trait BiEithered[Expr[_], A, B, Z]
+trait BiEithered[Expr[+_], A, B, Z]
 		extends Eithered[A, B, Z]
 		with ContraEithered[Expr, A, B, Z]
 
@@ -164,7 +164,7 @@ object ContraEithered extends LowPrioContraEithered {
 	/**
 	 * Constructs an `ContraEithered` from a set of functions corresponding to each of ContraEithered's methods
 	 */
-	def apply[Expr[_], A, B, Z](
+	def apply[Expr[+_], A, B, Z](
 		contraLeftFn:PartialExprFunction[Expr, Z, A],
 		contraRightFn:PartialExprFunction[Expr, Z, B]
 	):ContraEithered[Expr, A, B, Z] = {
@@ -176,12 +176,12 @@ object ContraEithered extends LowPrioContraEithered {
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait ContraEithereds[Expr[_]] extends LowPrioContraEithereds[Expr] {
+	trait ContraEithereds[Expr[+_]] extends LowPrioContraEithereds[Expr] {
 		implicit def unitUnit:ContraEithered[Expr, Unit, Unit, Unit]
 	}
 	@ifdef("scalaEpochVersion:2")
 	private[typeclass]
-	trait LowPrioContraEithereds[Expr[_]] {
+	trait LowPrioContraEithereds[Expr[+_]] {
 		implicit def symmetric[A]:ContraEithered[Expr, A, A, A]
 	}
 
@@ -216,7 +216,7 @@ object BiEithered extends LowPrioBiEithered {
 	/**
 	 * Constructs an `BiEithered` from a set of functions corresponding to each of BiEithered's methods
 	 */
-	def apply[Expr[_], A, B, Z](
+	def apply[Expr[+_], A, B, Z](
 		leftFn:A => Z,
 		rightFn:B => Z,
 		contraLeftFn:PartialExprFunction[Expr, Z, A],
@@ -233,12 +233,12 @@ object BiEithered extends LowPrioBiEithered {
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait BiEithereds[Expr[_]] extends LowPrioBiEithereds[Expr] {
+	trait BiEithereds[Expr[+_]] extends LowPrioBiEithereds[Expr] {
 		implicit def unitUnit:BiEithered[Expr, Unit, Unit, Unit]
 	}
 	@ifdef("scalaEpochVersion:2")
 	private[typeclass]
-	trait LowPrioBiEithereds[Expr[_]] {
+	trait LowPrioBiEithereds[Expr[+_]] {
 		implicit def symmetric[A]:BiEithered[Expr, A, A, A]
 	}
 	@ifdef("scalaEpochVersion:2")
@@ -263,7 +263,7 @@ object BiEithered extends LowPrioBiEithered {
 	implicit def quotedUnitUnit(implicit quotes:scala.quoted.Quotes):BiEithered[scala.quoted.Expr, Unit, Unit, Unit] = quotedSymmetric[Unit]
 
 	@ifdef("scalaBinaryVersion:3")
-	implicit def eitherUnitAny[Expr[_], B, Z](implicit ev:BiOptionally[Expr, B, Z]):BiEithered[Expr, Unit, B, Z] = BiEithered(
+	implicit def eitherUnitAny[Expr[+_], B, Z](implicit ev:BiOptionally[Expr, B, Z]):BiEithered[Expr, Unit, B, Z] = BiEithered(
 		_ => ev.none,
 		ev.some _,
 		PartialExprFunction[Expr, Z, Unit](
@@ -273,7 +273,7 @@ object BiEithered extends LowPrioBiEithered {
 		ev.contraSome,
 	)
 	@ifdef("scalaBinaryVersion:3")
-	implicit def eitherAnyUnit[Expr[_], A, Z](implicit ev:BiOptionally[Expr, A, Z]):BiEithered[Expr, A, Unit, Z] = BiEithered(
+	implicit def eitherAnyUnit[Expr[+_], A, Z](implicit ev:BiOptionally[Expr, A, Z]):BiEithered[Expr, A, Unit, Z] = BiEithered(
 		ev.some _,
 		_ => ev.none,
 		ev.contraSome,

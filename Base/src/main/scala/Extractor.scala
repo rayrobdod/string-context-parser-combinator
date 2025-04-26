@@ -31,7 +31,7 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Extractor[Expr[_], Type[_], -A] private[stringContextParserCombinator] (
+final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinator] (
 		protected[stringContextParserCombinator] val impl: internal.Extractor[Expr, Type, A]
 ) {
 
@@ -372,7 +372,7 @@ object Extractor
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
 		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
 	/**
@@ -558,7 +558,7 @@ trait VersionSpecificExtractorModule extends ExprIndependentExtractors[scala.quo
 /**
  * Extractors that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[+_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar

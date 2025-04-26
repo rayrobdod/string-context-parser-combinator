@@ -7,7 +7,7 @@ package internal
  * As a parser, this will pass through the result of the backing parser.
  */
 private[stringContextParserCombinator]
-final class ExtractorAtom[Expr[_], Type[_], A](
+final class ExtractorAtom[Expr[+_], Type[_], A](
 	backing:Interpolator[Expr[Any], Expr[A]],
 	tpeA:Type[A]
 ) extends Parser[Expr, Type, Expr[A]] {

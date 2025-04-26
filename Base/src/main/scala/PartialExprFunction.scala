@@ -3,13 +3,13 @@ package name.rayrobdod.stringContextParserCombinator
 /**
  * A partial function which is valid according to an `Expr[Boolean]` instead of a plain `Boolean`
  */
-trait PartialExprFunction[+Expr[_], -A, +Z] {
+trait PartialExprFunction[+Expr[+_], -A, +Z] {
 	def isDefinedAt(a:A):Expr[Boolean]
 	def apply(a:A):Z
 }
 
 object PartialExprFunction {
-	def apply[Expr[_], A, Z](
+	def apply[Expr[+_], A, Z](
 		isDefinedAtFn:A => Expr[Boolean],
 		applyFn:A => Z
 	):PartialExprFunction[Expr, A, Z] = {
@@ -20,7 +20,7 @@ object PartialExprFunction {
 	}
 
 	private[stringContextParserCombinator]
-	def identity[Expr[_], A](
+	def identity[Expr[+_], A](
 		constTrue:Expr[Boolean]
 	):PartialExprFunction[Expr, A, A] = {
 		new PartialExprFunction[Expr, A, A] {

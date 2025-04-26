@@ -6,20 +6,20 @@ import scala.reflect.ClassTag
  * The data needed to create an Unapply
  */
 private[stringContextParserCombinator]
-final case class UnapplyExpr[+Expr[_], +Type[_], -A] (
+final case class UnapplyExpr[+Expr[+_], +Type[_], -A] (
 	condition: A => Expr[Boolean],
 	parts: List[UnapplyExpr.Part[Expr, Type, A, _]]
 )
 
 private[stringContextParserCombinator]
 object UnapplyExpr {
-	final case class Part[+Expr[_], +Type[_], -A, Z](typ: Type[Z], value: A => Expr[Z]) {
+	final case class Part[+Expr[+_], +Type[_], -A, Z](typ: Type[Z], value: A => Expr[Z]) {
 		def contramapValue[B](contrafn: B => A):Part[Expr, Type, B, Z] = new Part(typ, contrafn.andThen(value))
 	}
 }
 
 private[stringContextParserCombinator]
-trait UnapplyExprs[Expr[_], Type[_]] {
+trait UnapplyExprs[Expr[+_], Type[_]] {
 	def empty:UnapplyExpr[Expr, Type, Any]
 
 	def isChar(expecting:Char):UnapplyExpr[Expr, Type, Char]
@@ -74,7 +74,7 @@ trait UnapplyExprs[Expr[_], Type[_]] {
 private[stringContextParserCombinator]
 object UnapplyExprs extends VersionSpecificUnapplyExprs {
 	private[stringContextParserCombinator]
-	abstract class Common[Expr[_], Type[_]](
+	abstract class Common[Expr[+_], Type[_]](
 		`true`: Expr[Boolean],
 		`false`: Expr[Boolean],
 		andBooleans: (Expr[Boolean], () => Expr[Boolean]) => Expr[Boolean]
