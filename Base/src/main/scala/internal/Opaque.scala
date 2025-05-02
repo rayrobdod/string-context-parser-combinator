@@ -3,37 +3,37 @@ package internal
 
 private[stringContextParserCombinator]
 object Opaque {
-	def interpolator[Expr, A](
-		backing:Interpolator[Expr, A],
+	def interpolator[Ctx, Expr, A](
+		backing:Interpolator[Ctx, Expr, A],
 		description:ExpectingDescription
-	):Interpolator[Expr, A] = {
-		new Interpolator[Expr, A] {
-			def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
+	):Interpolator[Ctx, Expr, A] = {
+		new Interpolator[Ctx, Expr, A] {
+			override def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 				Opaque.parse({(x:Input[ExprZ, Pos]) => backing.interpolate(x)}, description, input)
 			}
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A](
-		backing:Extractor[Expr, Type, A],
+	def extractor[Ctx, Expr[+_], Type[_], A](
+		backing:Extractor[Ctx, Expr, Type, A],
 		description:ExpectingDescription
-	):Extractor[Expr, Type, A] = {
-		new Extractor[Expr, Type, A] {
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
+	):Extractor[Ctx, Expr, Type, A] = {
+		new Extractor[Ctx, Expr, Type, A] {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, A]] = {
 				Opaque.parse({(x:Input[Unit, Pos]) => backing.extractor(x)}, description, input)
 			}
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A](
-		backing:Parser[Expr, Type, A],
+	def parser[Ctx, Expr[+_], Type[_], A](
+		backing:Parser[Ctx, Expr, Type, A],
 		description:ExpectingDescription
-	):Parser[Expr, Type, A] = {
-		new Parser[Expr, Type, A] {
-			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
+	):Parser[Ctx, Expr, Type, A] = {
+		new Parser[Ctx, Expr, Type, A] {
+			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 				Opaque.parse({(x:Input[ExprZ, Pos]) => backing.interpolate(x)}, description, input)
 			}
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, A]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, A]] = {
 				Opaque.parse({(x:Input[Unit, Pos]) => backing.extractor(x)}, description, input)
 			}
 		}

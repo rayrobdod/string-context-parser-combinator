@@ -3,20 +3,20 @@ package internal
 
 private[stringContextParserCombinator]
 object Repeat {
-	def interpolator[Expr, A, Z](
-		inner:Interpolator[Expr, A],
+	def interpolator[Ctx, Expr, A, Z](
+		inner:Interpolator[Ctx, Expr, A],
 		min:Int,
 		max:Int,
-		delimiter:Interpolator[Expr, Unit],
+		delimiter:Interpolator[Ctx, Expr, Unit],
 		strategy:RepeatStrategy,
-		ev:typeclass.Repeated[A, Z]
-	):Interpolator[Expr, Z] = {
+		ev:typeclass.Repeated[Ctx, A, Z]
+	):Interpolator[Ctx, Expr, Z] = {
 		require(min >= 0)
 		require(max >= 1)
 		require(max >= min)
 
-		new Interpolator[Expr, Z] {
-			def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+		new Interpolator[Ctx, Expr, Z] {
+			override def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				Repeat.parse(
 					{(x:Input[ExprZ, Pos]) => inner.interpolate(x)},
 					min,
@@ -32,20 +32,20 @@ object Repeat {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A, Z](
-		inner:Extractor[Expr, Type, A],
+	def extractor[Ctx, Expr[+_], Type[_], A, Z](
+		inner:Extractor[Ctx, Expr, Type, A],
 		min:Int,
 		max:Int,
-		delimiter:Extractor[Expr, Type, Unit],
+		delimiter:Extractor[Ctx, Expr, Type, Unit],
 		strategy:RepeatStrategy,
-		ev:typeclass.ContraRepeated[Expr, A, Z]
-	):Extractor[Expr, Type, Z] = {
+		ev:typeclass.ContraRepeated[Ctx, Expr, A, Z]
+	):Extractor[Ctx, Expr, Type, Z] = {
 		require(min >= 0)
 		require(max >= 1)
 		require(max >= min)
 
-		new Extractor[Expr, Type, Z] {
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+		new Extractor[Ctx, Expr, Type, Z] {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 				Repeat.parse(
 					{(x:Input[Unit, Pos]) => inner.extractor(x)},
 					min,
@@ -59,20 +59,20 @@ object Repeat {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A, Z](
-		inner:Parser[Expr, Type, A],
+	def parser[Ctx, Expr[+_], Type[_], A, Z](
+		inner:Parser[Ctx, Expr, Type, A],
 		min:Int,
 		max:Int,
-		delimiter:Parser[Expr, Type, Unit],
+		delimiter:Parser[Ctx, Expr, Type, Unit],
 		strategy:RepeatStrategy,
-		ev:typeclass.BiRepeated[Expr, A, Z]
-	):Parser[Expr, Type, Z] = {
+		ev:typeclass.BiRepeated[Ctx, Expr, A, Z]
+	):Parser[Ctx, Expr, Type, Z] = {
 		require(min >= 0)
 		require(max >= 1)
 		require(max >= min)
 
-		new Parser[Expr, Type, Z] {
-			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+		new Parser[Ctx, Expr, Type, Z] {
+			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				Repeat.parse(
 					{(x:Input[ExprZ, Pos]) => inner.interpolate(x)},
 					min,
@@ -87,7 +87,7 @@ object Repeat {
 					ev.result(acc)
 				})
 			}
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 				Repeat.parse(
 					{(x:Input[Unit, Pos]) => inner.extractor(x)},
 					min,

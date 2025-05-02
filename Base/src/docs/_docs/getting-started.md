@@ -230,7 +230,7 @@ Together the scaffolding of the string context extension method becomes
 ```scala
 type Result
 import scala.quoted.{Expr, Quotes}
-import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.quotedInterpolators._
 
 extension (inline sc:StringContext)
   inline def prefix(inline args:Any*):Result =
@@ -256,7 +256,7 @@ This can be done with the map operator, such as `.map(Expr(_))`, or equivalently
 ```
 
 `ofType` changes from requiring an implicit `scala.reflect.ClassTag` and returning an unwrapped value,
-to requiring an implicit `scala.quoted.Type` and returning an `Expr` that builds a value.
+to requiring an implicit `TypeCreator` and returning an `Expr` that builds a value.
 Since the `ofType` result is in an `Expr`, the mapping applied to this value must be changed from a `Any => String` to a `Expr[Any] => Expr[String]`, essentially wrapping the mapping in a Quote.
 
 ```diff
@@ -285,7 +285,7 @@ Taken together, the macro-level reimplementation of the standard string interpol
 
 ```scala
 import scala.quoted.{Expr, Quotes}
-import name.rayrobdod.stringContextParserCombinator.Interpolator._
+import name.rayrobdod.stringContextParserCombinator.Interpolator.quotedInterpolators._
 
 extension (inline sc:StringContext)
   inline def s2(inline args:Any*):String =

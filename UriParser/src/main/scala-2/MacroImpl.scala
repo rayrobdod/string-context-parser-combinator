@@ -29,14 +29,14 @@ object MacroImpl {
 		val unreservedChar:Interpolator[CodePoint] = alphaNumChar <|> codePointIn("-_.!~*'()")
 
 		val escapedChar:Interpolator[CodePoint] = {
-			implicit val Utf8ContinuationAndThen:typeclass.Sequenced[Int, Int, Int] = {(a:Int, b:Int) => a << 6 | b}
-			val escapedContinuation:Interpolator[Int] = (isString("%") <~> charIn("89ABab") <~> hexChar).map({x => (parseByteHex(x) & 0x3F)})
+			implicit val Utf8ContinuationAndThen:typeclass.Sequenced[Any, Int, Int, Int] = typeclass.Sequenced({(a:Int, b:Int, _:Any) => a << 6 | b})
+			val escapedContinuation:Interpolator[Int] = (isString("%") <~> charIn("89ABab") <~> hexChar).map({(x, _:c.type) => (parseByteHex(x) & 0x3F)})
 
 			(isString("%") <~> (
-				(charIn("01234567") <~> hexChar).map({x => CodePoint.unsafe_apply(parseByteHex(x))}) <|>
-				(charIn("cdCD") <~> hexChar).map({x => (parseByteHex(x) & 0x1F)}).<~>(escapedContinuation).map(CodePoint.unsafe_apply _) <|>
-				(charIn("eE") <~> hexChar).map({x => (parseByteHex(x) & 0x0F)}).<~>(escapedContinuation).<~>(escapedContinuation).map(CodePoint.unsafe_apply _) <|>
-				(charIn("fF") <~> charIn("01234567")).map({x => (parseByteHex(x) & 0x07)}).<~>(escapedContinuation).<~>(escapedContinuation).<~>(escapedContinuation).map(CodePoint.unsafe_apply _)
+				(charIn("01234567") <~> hexChar).map({(x, _:c.type) => CodePoint.unsafe_apply(parseByteHex(x))}) <|>
+				(charIn("cdCD") <~> hexChar).map({(x, _:c.type) => (parseByteHex(x) & 0x1F)}).<~>(escapedContinuation).map((x, _:c.type) => CodePoint.unsafe_apply(x)) <|>
+				(charIn("eE") <~> hexChar).map({(x, _:c.type) => (parseByteHex(x) & 0x0F)}).<~>(escapedContinuation).<~>(escapedContinuation).map((x, _:c.type) => CodePoint.unsafe_apply(x)) <|>
+				(charIn("fF") <~> charIn("01234567")).map({(x, _:c.type) => (parseByteHex(x) & 0x07)}).<~>(escapedContinuation).<~>(escapedContinuation).<~>(escapedContinuation).map((x, _:c.type) => CodePoint.unsafe_apply(x))
 			))
 		}
 
@@ -59,12 +59,12 @@ object MacroImpl {
 			val literalName:Interpolator[c.Expr[String]] = ((label <~> codePointIn(".")).attempt.repeat() <~> topLabel).mapToExpr.opaque("HostName")
 			val literalIpv4:Interpolator[c.Expr[String]] = {
 				val segment:Interpolator[String] = (
-					isString("0").map(_ => "0") <|>
+					isString("0").map((_:Unit, _:c.type) => "0") <|>
 						(codePointIn("1") <~> digitChar.repeat(0,2)) <|>
 						(codePointIn("2") <~> (
 							(codePointIn("01234") <~> digitChar.optionally()) <|>
 							(codePointIn("5") <~> codePointIn("012345").optionally()) <|>
-							(codePointIn("6789").map(_.toString))
+							(codePointIn("6789").map((x, _:c.type) => x.toString))
 						).optionally()) <|>
 						(codePointIn("3456789") <~> digitChar.optionally())
 				)
@@ -76,7 +76,7 @@ object MacroImpl {
 				val segmentColon:Interpolator[String] = segment <~> codePointIn(":")
 
 				val value:Interpolator[String] = codePointIn("[") <~> (
-					(codePointIn(":") <~> (colonSegment.repeat(1, 7).attempt <|> codePointIn(":").map(_.toString))) <|>
+					(codePointIn(":") <~> (colonSegment.repeat(1, 7).attempt <|> codePointIn(":").map((x, _:c.type) => x.toString))) <|>
 					(segmentColon <~> (
 						(colonSegment <~> colonSegment.repeat(0, 6)) <|>
 						(segmentColon <~> (
@@ -101,32 +101,32 @@ object MacroImpl {
 			}
 			/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 			val variableInetAddress:Interpolator[c.Expr[String]] = ofType(c.typeTag[java.net.InetAddress])
-				.map(x => c.Expr(q"$x.getHostName()"))
+				.map((x, _:c.type) => c.Expr(q"$x.getHostName()"))
 			variableInetAddress <|> literalIpv4 <|> literalIpv6 <|> literalName
 		}
 
 		val port:Interpolator[c.Expr[Int]] = {
 			val literal:Interpolator[c.Expr[Int]] = digitChar.repeat(1)
-				.map({x => java.lang.Integer.parseInt(x)})
-				.map({x => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
+				.map({(x, _:c.type) => java.lang.Integer.parseInt(x)})
+				.map({(x, _:c.type) => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
 				.opaque("Port")
-			val literalEmpty:Interpolator[c.Expr[Int]] = isString("").map({_ => constNegOneExpr})
+			val literalEmpty:Interpolator[c.Expr[Int]] = isString("").map({(_:Unit, _:c.type) => constNegOneExpr})
 			val variable:Interpolator[c.Expr[Int]] = ofType[Int]
 			variable <|> literal <|> literalEmpty
 		}
 
 		val hostPort:Interpolator[(c.Expr[String], c.Expr[Int])] = {
 			val literal = host <~> (isString(":") <~> port)
-				.optionally().map(_.getOrElse(c.Expr(q"-1")))
+				.optionally().map((x, _:c.type) => x.getOrElse(c.Expr(q"-1")))
 			val SockAddr = ofType(c.typeTag[java.net.InetSocketAddress])
-				.map(x => (
+				.map((x, _:c.type) => (
 					c.Expr(q"$x.getHostString()"),
 					c.Expr(q"$x.getPort()")
 				))
 			SockAddr <|> literal
 		}
 		val server:Interpolator[(c.Expr[String], (c.Expr[String], c.Expr[Int]))] =
-			(userInfo <~> isString("@")).attempt.optionally().map(_.getOrElse(constNullExpr)) <~> hostPort
+			(userInfo <~> isString("@")).attempt.optionally().map((x, _:c.type) => x.getOrElse(constNullExpr)) <~> hostPort
 
 		val opaquePart:Interpolator[c.Expr[String]] = {
 			val variable:Interpolator[c.Expr[String]] = ofType[String]
@@ -187,32 +187,32 @@ object MacroImpl {
 					def multiple(accStats: List[c.Tree]): StringExpr = new StringExpr(false, None, accStats)
 				}
 
-				implicit def AndThenStringExpr: typeclass.Sequenced[StringExpr, StringExpr, StringExpr] = (a:StringExpr, b:StringExpr) => a ++ b
-				final class RepeatStringExpr extends typeclass.Repeated[StringExpr, c.Expr[String]] {
+				implicit def AndThenStringExpr: typeclass.Sequenced[Any, StringExpr, StringExpr, StringExpr] = typeclass.Sequenced{(a:StringExpr, b:StringExpr, _:Any) => a ++ b}
+				final class RepeatStringExpr extends typeclass.Repeated[c.type, StringExpr, c.Expr[String]] {
 					type Acc = StringExpr
-					def init():Acc = StringExpr.empty
-					def append(acc:Acc, elem:StringExpr):Acc = {
+					def init()(implicit ctx:c.type):Acc = StringExpr.empty
+					def append(acc:Acc, elem:StringExpr)(implicit ctx:c.type):Acc = {
 						if (acc.isEmpty) {
 							elem
 						} else {
 							acc ++ StringExpr.single(constExpr("&")) ++ elem
 						}
 					}
-					def result(acc:Acc):c.Expr[String] = acc.result
+					def result(acc:Acc)(implicit ctx:c.type):c.Expr[String] = acc.result
 				}
-				implicit def RepeatStringExpr: typeclass.Repeated[StringExpr, c.Expr[String]] = new RepeatStringExpr
+				implicit def RepeatStringExpr: typeclass.Repeated[c.type, StringExpr, c.Expr[String]] = new RepeatStringExpr
 
-				val EqualsChar = isString("=").map(_ => StringExpr.single(constExpr("=")))
+				val EqualsChar = isString("=").map((_:Unit, _:c.type) => StringExpr.single(constExpr("=")))
 				val AndChar = isString("&")
 
 				val tupleConcatFun = q""" {pair:(String, String) => pair._1 + "=" + pair._2} """
 
 				val literalString:Interpolator[c.Expr[String]] = (escapedChar <|> unreservedChar <|> codePointIn(";?:@+$,")).repeat(1).mapToExpr
 				val holeString:Interpolator[c.Expr[String]] = ofType[String]
-				val string:Interpolator[StringExpr] = (holeString <|> literalString).map(s => StringExpr.single(s))
+				val string:Interpolator[StringExpr] = (holeString <|> literalString).map((s, _:c.type) => StringExpr.single(s))
 
 				val holePair:Interpolator[StringExpr] = ofType(c.typeTag[scala.Tuple2[String, String]])
-					.map(x =>
+					.map((x, _:c.type) =>
 						StringExpr.multiple(
 							List(
 								q"$accumulatorIdent.append($x._1)",
@@ -225,7 +225,7 @@ object MacroImpl {
 				val pair:Interpolator[StringExpr] = holePair <|> literalPair
 
 				val map:Interpolator[StringExpr] = ofType(c.typeTag[scala.collection.Map[String, String]])
-					.map(m => StringExpr.single(
+					.map((m, _:c.type) => StringExpr.single(
 						c.Expr[String](q"""$m.map($tupleConcatFun).mkString("&")"""),
 						List(q"""$m.map($tupleConcatFun).addString($accumulatorIdent, "&")"""),
 					))
@@ -236,8 +236,8 @@ object MacroImpl {
 			}
 			Mapping.attempt <|> Arbitrary
 		}
-		val query:Interpolator[c.Expr[String]] = (isString("?") <~> fragmentOrQueryString).optionally().map(_.getOrElse(constNullExpr))
-		val fragment:Interpolator[c.Expr[String]] = (isString("#") <~> fragmentOrQueryString).optionally().map(_.getOrElse(constNullExpr))
+		val query:Interpolator[c.Expr[String]] = (isString("?") <~> fragmentOrQueryString).optionally().map((x, _:c.type) => x.getOrElse(constNullExpr))
+		val fragment:Interpolator[c.Expr[String]] = (isString("#") <~> fragmentOrQueryString).optionally().map((x, _:c.type) => x.getOrElse(constNullExpr))
 
 
 		val relativePath:Interpolator[String] =
@@ -248,61 +248,67 @@ object MacroImpl {
 		val absoluteUri:Interpolator[c.Expr[URI]] = {
 			scheme <~>
 			isString(":") flatMap
-			({scheme:c.Expr[String] =>
+			({(scheme:c.Expr[String], _:c.type) =>
 				(isString("//") <~>
 					server <~>
-					absolutePathExpr.optionally().map(_.getOrElse(constNullExpr)) <~>
+					absolutePathExpr.optionally().map((x, _:c.type) => x.getOrElse(constNullExpr)) <~>
 					query <~>
 					fragment
-				).map({case ((((user, (host, port)), path), query), fragment) =>
-					c.Expr(q"""
-						new java.net.URI(
-							$scheme,
-							$user,
-							$host,
-							$port,
-							$path,
-							$query,
-							$fragment
-						)
-					""")
+				).map({(x, _:c.type) =>
+					x match {case ((((user, (host, port)), path), query), fragment) =>
+						c.Expr(q"""
+							new java.net.URI(
+								$scheme,
+								$user,
+								$host,
+								$port,
+								$path,
+								$query,
+								$fragment
+							)
+						""")
+					}
 				}) <|>
-				(opaquePart <~> fragment).map({case (ssp, frag) =>
-					c.Expr(q"""
-						new java.net.URI(
-							$scheme,
-							$ssp,
-							$frag
-						)
-					""")
+				(opaquePart <~> fragment).map({(x, _:c.type) =>
+					x match {case (ssp, frag) =>
+						c.Expr(q"""
+							new java.net.URI(
+								$scheme,
+								$ssp,
+								$frag
+							)
+						""")
+					}
 				})
 			})
 		}
 
 		val relativeUri:Interpolator[c.Expr[URI]] = {
 			((netPath.attempt
-				<|> absolutePathExpr.map(x => (noServer, x)).attempt
-				<|> relativePath.map(x => (noServer, constExpr(x)))
+				<|> absolutePathExpr.map((x, _:c.type) => (noServer, x)).attempt
+				<|> relativePath.map((x, _:c.type) => (noServer, constExpr(x)))
 				<~> query
 				<~> fragment
-				).map({case ((((user, (host, port)), path), query), fragment) =>
-					c.Expr(q"""
-						new java.net.URI(
-							$constNullExpr,
-							$user,
-							$host,
-							$port,
-							$path,
-							$query,
-							$fragment
-						)
-					""")
+				).map({(x, _:c.type) =>
+					x match {case ((((user, (host, port)), path), query), fragment) =>
+						c.Expr(q"""
+							new java.net.URI(
+								$constNullExpr,
+								$user,
+								$host,
+								$port,
+								$path,
+								$query,
+								$fragment
+							)
+						""")
+					}
 				})
 			)
 		}
 
 		val resolvedUri:Interpolator[c.Expr[URI]] = {
-			(ofType[URI] <~> relativeUri).map({params =>
+			(ofType[URI] <~> relativeUri).map({(params, _:c.type) =>
 				val (base, resolvant) = params
 				c.Expr(q"$base.resolve($resolvant)")
 			})

@@ -1,6 +1,7 @@
 package name.rayrobdod.stringContextParserCombinator
 package internal
 
+import scala.annotation.nowarn
 import scala.language.higherKinds
 import scala.quoted.Expr
 import scala.quoted.Quotes
@@ -20,11 +21,11 @@ object Lifted {
 		lift:LiftFunction[Lifter, Z],
 		description:ExpectingDescription,
 		)(using
-		Type[Lifter],
-		Quotes,
-	):Interpolator[Expr[_], Z] = {
-		new Interpolator[Expr[_], Z] {
-			def interpolate[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+		TypeCreator[Lifter],
+	):Interpolator[Quotes, Expr[_], Z] = {
+		new Interpolator[Quotes, Expr[_], Z] {
+			def interpolate[ExprZ <: Expr[_], Pos](input:Input[ExprZ, Pos])(implicit quotes: Quotes, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+				@nowarn("id=E198") given Type[Lifter] = TypeCreator[Lifter].createType
 				input.consume(
 					_ => None,
 					arg => (Some(arg)

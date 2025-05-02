@@ -29,7 +29,7 @@ object AssembleUnapply {
 		value:c.Expr[UnexprA],
 		valueType:c.TypeTag[UnexprA],
 		conditionFn:c.Expr[UnexprA] => c.Expr[Boolean],
-		extracted:UnapplyExpr.Part[c.Expr, c.TypeTag, c.Expr[UnexprA], _],
+		extracted:UnapplyExpr.Part[c.type, c.Expr, c.TypeTag, c.Expr[UnexprA], _],
 	):c.Expr[Any] = {
 		import c.universe.Quasiquote
 
@@ -38,7 +38,7 @@ object AssembleUnapply {
 
 		val condition = conditionFn(valueIdent)
 		val extractedType = extracted.typ
-		val extractedValue = extracted.value(valueIdent)
+		val extractedValue = extracted.value(valueIdent, c)
 
 		c.Expr(
 			q"""
@@ -58,7 +58,7 @@ object AssembleUnapply {
 		value:c.Expr[UnexprA],
 		valueType:c.TypeTag[UnexprA],
 		conditionFn:c.Expr[UnexprA] => c.Expr[Boolean],
-		extracteds:List[UnapplyExpr.Part[c.Expr, c.TypeTag, c.Expr[UnexprA], _]],
+		extracteds:List[UnapplyExpr.Part[c.type, c.Expr, c.TypeTag, c.Expr[UnexprA], _]],
 	):c.Expr[Any] = {
 		import c.universe.Quasiquote
 
@@ -67,7 +67,7 @@ object AssembleUnapply {
 
 		val condition = conditionFn(valueIdent)
 		val extractedTypes = extracteds.map(_.typ.tpe)
-		val extractedValues = extracteds.map(_.value(valueIdent).tree)
+		val extractedValues = extracteds.map(_.value(valueIdent, c).tree)
 
 		val extractedTuple = {
 			c.universe.Apply(

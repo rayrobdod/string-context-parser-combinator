@@ -16,22 +16,23 @@ object InterpolatorImpl {
 		}
 	}
 
-	def unapplyExprToExpr[UnexprA](expr: UnapplyExpr[quoted.Expr, quoted.Type, quoted.Expr[UnexprA]])(using Type[UnexprA], Quotes): Expr[SCUnapply[UnexprA]] = {
-		val conditionFn:quoted.Expr[UnexprA] => quoted.Expr[Boolean] = expr.condition
+	def unapplyExprToExpr[UnexprA](expr: UnapplyExpr[Quotes, Expr, TypeCreator, Expr[UnexprA]])(using TypeCreator[UnexprA], Quotes): Expr[SCUnapply[UnexprA]] = {
+		val conditionFn: Expr[UnexprA] => Quotes ?=> Expr[Boolean] = (in: Expr[UnexprA]) => (quotes:Quotes) ?=> expr.condition(in, quotes)
+		given Type[UnexprA] = TypeCreator[UnexprA].createType
 
 		expr.parts match {
 			case Nil =>
 				'{((a:UnexprA) => ${conditionFn('a)}):Unapply.Zero[UnexprA]}
-			case (part: UnapplyExpr.Part[quoted.Expr, quoted.Type, quoted.Expr[UnexprA], z]) :: Nil =>
-				@nowarn("msg=unused local definition") given quoted.Type[z] = part.typ
-				'{((a:UnexprA) => Option.when[z](${conditionFn('a)})(${part.value('a)})):Unapply.Fixed[UnexprA, z]}
+			case (part: UnapplyExpr.Part[Quotes, Expr, TypeCreator, Expr[UnexprA], z]) :: Nil =>
+				@nowarn("msg=unused local definition") given Type[z] = part.typ.createType
+				'{((a:UnexprA) => Option.when[z](${conditionFn('a)})(${part.value('a, summon)})):Unapply.Fixed[UnexprA, z]}
 			case _ =>
 				import quotes.reflect._
 				val unexpraTypeTree = TypeTree.of[UnexprA]
 
 				val tupleTypeConstructorSymbol = defn.TupleClass(expr.parts.size)
 				val tupleTypeConstructorTree = TypeIdent(tupleTypeConstructorSymbol)
-				val tupleTypeTree = Applied(tupleTypeConstructorTree, expr.parts.map(part => TypeTree.of(using part.typ)))
+				val tupleTypeTree = Applied(tupleTypeConstructorTree, expr.parts.map(part => TypeTree.of(using part.typ.createType)))
 				val optionTupleTypeTree = Applied(TypeIdent(defn.OptionClass), List(tupleTypeTree))
 
 				val tupleModule = tupleTypeConstructorSymbol.companionModule
@@ -60,8 +61,8 @@ object InterpolatorImpl {
 								val optionModule = defn.OptionClass.companionModule
 
 								val partsTuple = {
-									val typeArgs = expr.parts.map(part => TypeTree.of(using part.typ))
-									val valueArgs = expr.parts.map(part => part.value(param).asTerm)
+									val typeArgs = expr.parts.map(part => TypeTree.of(using part.typ.createType))
+									val valueArgs = expr.parts.map(part => part.value(param, summon).asTerm)
 
 									tupleConstructorTree
 										.select(tupleModule.methodMember("apply")(0))

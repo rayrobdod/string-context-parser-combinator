@@ -7,16 +7,16 @@ package internal
  * As a parser, this will pass through the result of the backing parser.
  */
 private[stringContextParserCombinator]
-final class ExtractorAtom[Expr[+_], Type[_], A](
-	backing:Interpolator[Expr[Any], Expr[A]],
+final class ExtractorAtom[Ctx, Expr[+_], Type[_], A](
+	backing:Interpolator[Ctx, Expr[Any], Expr[A]],
 	tpeA:Type[A]
-) extends Parser[Expr, Type, Expr[A]] {
-	override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Expr[A]] = {
+) extends Parser[Ctx, Expr, Type, Expr[A]] {
+	override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Expr[A]] = {
 		backing.interpolate(input)
 	}
 
-	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Expr[A]]] = {
-		input.justCurrentPartConsume[Expr[Any], Expr[A]](backing)
+	override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Expr[A]]] = {
+		input.justCurrentPartConsume[Ctx, Expr[Any], Expr[A]](backing)
 			.mapValues(value => exprs.isEqualTo(value)(tpeA))
 	}
 }

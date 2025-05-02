@@ -12,8 +12,8 @@ build_script:
   - cmd: 'move C:\Users\appveyor\.ivy2\local C:\projects\string-context-parser-combinator\publish'
 test_script:
   - cmd: 'sbt test'
-  - cmd: 'sbt mimaReportBinaryIssues'
-  - cmd: 'sbt tastyMiMaReportIssues'
+#  - cmd: 'sbt mimaReportBinaryIssues'
+#  - cmd: 'sbt tastyMiMaReportIssues'
 artifacts:
   - path: publish
     name: sbt_publish_directory

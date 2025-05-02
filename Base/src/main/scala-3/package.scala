@@ -22,6 +22,8 @@ package object stringContextParserCombinator {
 			}
 		}
 	}
+
+	given IdCtx = new IdCtx()
 }
 
 package stringContextParserCombinator {
@@ -31,4 +33,6 @@ package stringContextParserCombinator {
 	type Id[+A] = A
 	/** An identity function for lifting into the identity context */
 	type IdToExpr[A] = =:=[A, A]
+	/** A context avaliable for the identity context. Essentially a `Unit`, but with a given value */
+	final class IdCtx()
 }

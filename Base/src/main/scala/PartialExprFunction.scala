@@ -1,31 +1,33 @@
 package name.rayrobdod.stringContextParserCombinator
 
+import name.rayrobdod.stringContextParserCombinator.typeclass.Exprs
+
 /**
  * A partial function which is valid according to an `Expr[Boolean]` instead of a plain `Boolean`
  */
-trait PartialExprFunction[+Expr[+_], -A, +Z] {
-	def isDefinedAt(a:A):Expr[Boolean]
-	def apply(a:A):Z
+trait PartialExprFunction[-Ctx, +Expr[+_], -A, +Z] {
+	def isDefinedAt(a:A)(implicit ctx: Ctx):Expr[Boolean]
+	def apply(a:A)(implicit ctx: Ctx):Z
 }
 
 object PartialExprFunction {
-	def apply[Expr[+_], A, Z](
-		isDefinedAtFn:A => Expr[Boolean],
-		applyFn:A => Z
-	):PartialExprFunction[Expr, A, Z] = {
-		new PartialExprFunction[Expr, A, Z] {
-			override def isDefinedAt(a:A):Expr[Boolean] = isDefinedAtFn(a)
-			override def apply(a:A):Z = applyFn(a)
+	def apply[Ctx, Expr[+_], A, Z](
+		isDefinedAtFn:(A, Ctx) => Expr[Boolean],
+		applyFn:(A, Ctx) => Z
+	):PartialExprFunction[Ctx, Expr, A, Z] = {
+		new PartialExprFunction[Ctx, Expr, A, Z] {
+			override def isDefinedAt(a:A)(implicit ctx: Ctx):Expr[Boolean] = isDefinedAtFn(a, ctx)
+			override def apply(a:A)(implicit ctx: Ctx):Z = applyFn(a, ctx)
 		}
 	}
 
 	private[stringContextParserCombinator]
-	def identity[Expr[+_], A](
-		constTrue:Expr[Boolean]
-	):PartialExprFunction[Expr, A, A] = {
-		new PartialExprFunction[Expr, A, A] {
-			override def isDefinedAt(a:A):Expr[Boolean] = constTrue
-			override def apply(a:A):A = a
+	def identity[Ctx, Expr[+_], A](
+		implicit backing: Exprs[Ctx, Expr]
+	):PartialExprFunction[Ctx, Expr, A, A] = {
+		new PartialExprFunction[Ctx, Expr, A, A] {
+			override def isDefinedAt(a:A)(implicit ctx: Ctx):Expr[Boolean] = backing.constTrue
+			override def apply(a:A)(implicit ctx: Ctx):A = a
 		}
 	}
 }

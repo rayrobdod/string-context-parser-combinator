@@ -37,48 +37,46 @@ object MacroImpl {
 		}
 	}
 
-	import name.rayrobdod.stringContextParserCombinator.Parser._
-	import name.rayrobdod.stringContextParserCombinator.Interpolator.Interpolator
-	import name.rayrobdod.stringContextParserCombinator.Extractor.Extractor
+	import name.rayrobdod.stringContextParserCombinator.Parser.quotedParsers._
 
 	private def charFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] =
-		charWhere(pf.isDefinedAt).flatMap(pf.apply)
+		charWhere((x) => pf.isDefinedAt(x)).flatMap((x) => pf(x))
 
-	private def whitespace(using Quotes):Parser[Unit] = {
+	private def whitespace:Parser[Unit] = {
 		charIn("\n\r\t ")
 			.void
 			.repeat(strategy = RepeatStrategy.Possessive)
 			.hide
 	}
 
-	private def jnull(using Quotes):Parser[Expr[JNull.type]] = {
+	private def jnull:Parser[Expr[JNull.type]] = {
 		isString("null")
 			.map(_ => '{ _root_.org.json4s.JsonAST.JNull })
 			.extractorAtom
 	}
 
-	private def jboolean(using Quotes):Parser[Expr[JBool]] = {
+	private def jboolean:Parser[Expr[JBool]] = {
 		val jTrue = isString("true")
 			.map(_ => '{ _root_.org.json4s.JsonAST.JBool.True })
-			.extractorAtom[Expr, Type, JBool]
+			.extractorAtom[Expr, TypeCreator, JBool]
 		val jFalse = isString("false")
 			.map(_ => '{ _root_.org.json4s.JsonAST.JBool.False })
-			.extractorAtom[Expr, Type, JBool]
+			.extractorAtom[Expr, TypeCreator, JBool]
 		jTrue <|> jFalse
 	}
 
-	private def jnumber(using Quotes):Parser[Expr[JValue with JNumber]] = {
+	private def jnumber:Parser[Expr[JValue with JNumber]] = {
 		import scala.Predef.charWrapper
 		import Interpolator.charIn
 
 		def repeatedDigits(min:Int):Interpolator[String] = charIn('0' to '9').repeat(min, strategy = RepeatStrategy.Possessive)
 
 		/* Concatenate every capture in the following parser and combine into one long string */
-		given typeclass.Sequenced[String, String, String] with {
-			def aggregate(a:String, b:String):String = a + b
+		given typeclass.Sequenced[Quotes, String, String, String] with {
+			def aggregate(a:String, b:String)(using Quotes):String = a + b
 		}
-		given typeclass.Optionally[Char, String] = typeclass.Optionally("", _.toString)
-		given typeclass.Optionally[String, String] = typeclass.Optionally.whereDefault[String]("")
+		given typeclass.Optionally[Quotes, Char, String] = typeclass.Optionally(_ => "", (value, _) => value.toString)
+		given typeclass.Optionally[Quotes, String, String] = typeclass.Optionally.whereDefault[Quotes, String](_ => "")
 
 		val stringRepr: Interpolator[String] = (
 			charIn("-").optionally()
@@ -93,7 +91,7 @@ object MacroImpl {
 		val extractor = stringRepr
 			.map:
 				s => Expr(BigDecimal(s))
-			.extractorAtom[Expr, Type, BigDecimal]
+			.extractorAtom[Expr, TypeCreator, BigDecimal]
 			.toExtractor
 			.contramap[Expr[JValue & JNumber]]:
 				n => '{jnumber2bigdecimal($n)}
@@ -110,7 +108,7 @@ object MacroImpl {
 		}
 	}
 
-	private def stringBase(using Quotes):Parser[Expr[String]] = {
+	private def stringBase:Parser[Expr[String]] = {
 		import Interpolator._
 		val delimiter:Parser[Unit] = Parser.isString("\"")
 		val jCharImmediate:Interpolator[Char] = charWhere(c => c >= ' ' && c != '"' && c != '\\').opaque("printable character other than '\"' or '\\'")
@@ -150,7 +148,7 @@ object MacroImpl {
 		(delimiter ~> content <~ delimiter)
 	}
 
-	private def jstring(using Quotes):Parser[Expr[JString]] = {
+	private def jstring:Parser[Expr[JString]] = {
 		stringBase.imap(x => '{ _root_.org.json4s.JsonAST.JString.apply($x)}, x => '{$x.values})
 	}
 
@@ -168,7 +166,7 @@ object MacroImpl {
 				.andThen(whitespace.toInterpolator)
 
 			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[Expr,JValue]] = {
-				given typeclass.Eithered[Expr[JValue], Expr[List[JValue]], typeclass.Repeated.SplicePiece[Expr,JValue]] = typeclass.Eithered.quotedSplicePiece
+				given typeclass.Eithered[Quotes, Expr[JValue], Expr[List[JValue]], typeclass.Repeated.SplicePiece[Expr,JValue]] = typeclass.Eithered.quotedSplicePiece
 
 				val value = jvalue.toInterpolator
 				val array = isString("..").toInterpolator ~> liftedArray <~ whitespace.toInterpolator
@@ -187,7 +185,7 @@ object MacroImpl {
 		val extractor:Extractor[Expr[JArray]] = {
 			jvalue.toExtractor
 				.repeat(delimiter = delimiter.toExtractor)
-				.contramap((x:Expr[JArray]) => '{ $x.arr })
+				.contramap({(x:Expr[JArray], ctx:Quotes) => given Quotes = ctx; '{ $x.arr }})
 		}
 
 		prefix ~> paired(interpolator, extractor) <~ suffix
@@ -221,7 +219,7 @@ object MacroImpl {
 			}
 
 			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[Expr,(String, JValue)]] = {
-				given typeclass.Eithered[Expr[(String, JValue)], Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[Expr,(String, JValue)]] = typeclass.Eithered.quotedSplicePiece
+				given typeclass.Eithered[Quotes, Expr[(String, JValue)], Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[Expr,(String, JValue)]] = typeclass.Eithered.quotedSplicePiece
 
 				val keyValue = (liftedKeyValue <~> whitespace.toInterpolator)
 				val keyThenValue = (key <~> separator.toInterpolator <~> jvalue.toInterpolator)
@@ -242,7 +240,7 @@ object MacroImpl {
 		val extractor:Extractor[Expr[JObject]] = {
 			ofType[(String, JValue)].toExtractor
 				.repeat(delimiter = delimiter.toExtractor)
-				.contramap((x:Expr[JObject]) => '{ $x.obj })
+				.contramap({(x:Expr[JObject], ctx:Quotes) => given Quotes = ctx; '{ $x.obj }})
 		}
 
 		prefix ~> paired(interpolator, extractor) <~ suffix
@@ -260,10 +258,10 @@ object MacroImpl {
 		extension [A <: JValue](parser:Parser[Expr[A]])
 			def widenToJValue(using Type[A]):Parser[Expr[JValue]] = {
 				parser.widenWith(
-					Predef.identity,
+					(value) => value,
 					PartialExprFunction(
-						(value) => '{$value.isInstanceOf[A]},
-						(value) => '{$value.asInstanceOf[A]},
+						{(value:Expr[JValue], ctx:Quotes) => given Quotes = ctx; '{$value.isInstanceOf[A]}},
+						{(value:Expr[JValue], ctx:Quotes) => given Quotes = ctx; '{$value.asInstanceOf[A]}},
 					),
 				)
 			}

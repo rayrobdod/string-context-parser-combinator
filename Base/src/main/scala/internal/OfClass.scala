@@ -7,10 +7,10 @@ import scala.reflect.ClassTag
 private[stringContextParserCombinator]
 final class OfClass[A](
 	clazz:ClassTag[A]
-) extends Parser[Id, ClassTag, A] {
+) extends Parser[IdCtx, Id, ClassTag, A] {
 	private val expecting = ExpectingDescription(s"OfType(${clazz.runtimeClass.getName})")
 
-	def interpolate[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
+	override def interpolate[ExprZ <: Any, Pos](input:Input[ExprZ, Pos])(implicit ctx:IdCtx, ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 		input.consume(
 			_ => None,
 			arg => clazz.unapply(arg),
@@ -18,7 +18,7 @@ final class OfClass[A](
 		)
 	}
 
-	override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Id, ClassTag]):Result[Unit, Pos, UnapplyExpr[Id, ClassTag, Id[A]]] = {
+	override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:IdCtx, ev1:Ordering[Pos], exprs:UnapplyExprs[IdCtx, Id, ClassTag]):Result[Unit, Pos, UnapplyExpr[IdCtx, Id, ClassTag, Id[A]]] = {
 		input.consume(
 			_ => None,
 			(_:Unit) => Some(exprs.ofType(clazz)),

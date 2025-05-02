@@ -1,6 +1,11 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
+import com.eed3si9n.ifdef.ifdef
+
+@ifdef("scalaEpochVersion:2")
+private class NoWarnAboutUnusedIfdef {}
+
 /**
  * Describes how to combine two adjacent values into one value
  *
@@ -14,8 +19,8 @@ package typeclass
  * import name.rayrobdod.stringContextParserCombinator.typeclass.Sequenced
  * //}
  *
- * given Sequenced[LocalDate, LocalTime, LocalDateTime] with {
- *   def aggregate(date:LocalDate, time:LocalTime):LocalDateTime = date.atTime(time)
+ * given Sequenced[Any, LocalDate, LocalTime, LocalDateTime] with {
+ *   def aggregate(date:LocalDate, time:LocalTime)(implicit ctx:Any):LocalDateTime = date.atTime(time)
  * }
  *
  * val dateParser:Interpolator[LocalDate] = ofType[LocalDate]
@@ -31,8 +36,8 @@ package typeclass
  * @tparam Z the result container
  */
 @FunctionalInterface
-trait Sequenced[-A, -B, +Z] {
-	def aggregate(left:A, right:B):Z
+trait Sequenced[-Ctx, -A, -B, +Z] {
+	def aggregate(left:A, right:B)(implicit ctx:Ctx):Z
 }
 
 /**
@@ -44,8 +49,8 @@ trait Sequenced[-A, -B, +Z] {
  * @tparam Z the input value
  */
 @FunctionalInterface
-trait ContraSequenced[+A, +B, -Z] {
-	def separate(value:Z):(A, B)
+trait ContraSequenced[-Ctx, +A, +B, -Z] {
+	def separate(value:Z)(implicit ctx:Ctx):(A, B)
 }
 
 /**
@@ -59,14 +64,29 @@ trait ContraSequenced[+A, +B, -Z] {
  * @tparam B the second value
  * @tparam Z the result container
  */
-trait BiSequenced[A, B, Z]
-		extends Sequenced[A, B, Z]
-		with ContraSequenced[A, B, Z]
+trait BiSequenced[-Ctx, A, B, Z]
+		extends Sequenced[Ctx, A, B, Z]
+		with ContraSequenced[Ctx, A, B, Z]
 
 /**
  * Predefined implicit implementations of Sequenced
  */
 object Sequenced extends LowPrioSequenced {
+	def apply[Ctx, A, B, Z](aggregateFn:(A, B, Ctx) => Z):Sequenced[Ctx, A, B, Z] = {
+		final class Apply extends Sequenced[Ctx, A, B, Z] {
+			def aggregate(left:A, right:B)(implicit ctx:Ctx):Z = aggregateFn(left, right, ctx)
+		}
+		new Apply()
+	}
+
+	@ifdef("scalaBinaryVersion:3")
+	def apply[Ctx, A, B, Z](aggregateFn:(A, B) => Ctx ?=> Z):Sequenced[Ctx, A, B, Z] = {
+		final class Apply extends Sequenced[Ctx, A, B, Z] {
+			def aggregate(left:A, right:B)(implicit ctx:Ctx):Z = aggregateFn(left, right)
+		}
+		new Apply()
+	}
+
 	/**
 	 * Returns a Unit when both inputs are a Unit
 	 * ```scala
@@ -79,15 +99,15 @@ object Sequenced extends LowPrioSequenced {
 	 * ((u1:Interpolator[Unit]) andThen (u2:Interpolator[Unit])):Interpolator[Unit]
 	 * ```
 	 */
-	implicit def unitUnit:Sequenced[Unit, Unit, Unit] = BiSequenced.unitUnit
+	implicit def unitUnit:Sequenced[Any, Unit, Unit, Unit] = BiSequenced.unitUnit
 	/**
 	 * Returns the non-unit input value
 	 */
-	implicit def unitGeneric[B]:Sequenced[Unit, B, B] = BiSequenced.unitGeneric
+	implicit def unitGeneric[B]:Sequenced[Any, Unit, B, B] = BiSequenced.unitGeneric
 	/**
 	 * Returns the non-unit input value
 	 */
-	implicit def genericUnit[A]:Sequenced[A, Unit, A] = BiSequenced.genericUnit
+	implicit def genericUnit[A]:Sequenced[Any, A, Unit, A] = BiSequenced.genericUnit
 }
 
 private[typeclass] trait LowPrioSequenced {
@@ -107,20 +127,20 @@ private[typeclass] trait LowPrioSequenced {
 	 * ((p1:Interpolator[A]) andThen (p2:Interpolator[B])):Interpolator[(A, B)]
 	 * ```
 	 */
-	implicit def toPair[A, B]:Sequenced[A, B, (A, B)] = BiSequenced.toPair
+	implicit def toPair[A, B]:Sequenced[Any, A, B, (A, B)] = BiSequenced.toPair
 }
 
 /**
  * Predefined implicit implementations of ContraSequenced
  */
 object ContraSequenced extends LowPrioContraSequenced {
-	implicit def unitUnit:ContraSequenced[Unit, Unit, Unit] = BiSequenced.unitUnit
-	implicit def unitGeneric[B]:ContraSequenced[Unit, B, B] = BiSequenced.unitGeneric
-	implicit def genericUnit[A]:ContraSequenced[A, Unit, A] = BiSequenced.genericUnit
+	implicit def unitUnit:ContraSequenced[Any, Unit, Unit, Unit] = BiSequenced.unitUnit
+	implicit def unitGeneric[B]:ContraSequenced[Any, Unit, B, B] = BiSequenced.unitGeneric
+	implicit def genericUnit[A]:ContraSequenced[Any, A, Unit, A] = BiSequenced.genericUnit
 }
 
 private[typeclass] trait LowPrioContraSequenced {
-	implicit def toPair[A, B]:ContraSequenced[A, B, (A, B)] = BiSequenced.toPair
+	implicit def toPair[A, B]:ContraSequenced[Any, A, B, (A, B)] = BiSequenced.toPair
 }
 
 /**
@@ -128,19 +148,19 @@ private[typeclass] trait LowPrioContraSequenced {
  * and methods to create new BiSequenceds
  */
 object BiSequenced extends LowPrioBiSequenced {
-	private[typeclass] def apply[A, B, Z](aggregateFn:(A, B) => Z, separateFn:Z => (A, B)):BiSequenced[A, B, Z] = {
-		final class Apply extends BiSequenced[A, B, Z] {
-			def aggregate(left:A, right:B):Z = aggregateFn(left, right)
-			def separate(value:Z):(A, B) = separateFn(value)
+	private[typeclass] def apply[Ctx, A, B, Z](aggregateFn:(A, B, Ctx) => Z, separateFn:(Z, Ctx) => (A, B)):BiSequenced[Ctx, A, B, Z] = {
+		final class Apply extends BiSequenced[Ctx, A, B, Z] {
+			def aggregate(left:A, right:B)(implicit ctx:Ctx):Z = aggregateFn(left, right, ctx)
+			def separate(value:Z)(implicit ctx:Ctx):(A, B) = separateFn(value, ctx)
 		}
 		new Apply()
 	}
 
-	implicit def unitUnit:BiSequenced[Unit, Unit, Unit] = apply((_:Unit, _:Unit) => (), (_:Unit) => ((), ()))
-	implicit def unitGeneric[B]:BiSequenced[Unit, B, B] = apply((_:Unit, b:B) => b, (b:B) => ((), b))
-	implicit def genericUnit[A]:BiSequenced[A, Unit, A] = apply((a:A, _:Unit) => a, (a:A) => (a, ()))
+	implicit def unitUnit:BiSequenced[Any, Unit, Unit, Unit] = apply((_:Unit, _:Unit, _:Any) => (), (_:Unit, _:Any) => ((), ()))
+	implicit def unitGeneric[B]:BiSequenced[Any, Unit, B, B] = apply((_:Unit, b:B, _:Any) => b, (b:B, _:Any) => ((), b))
+	implicit def genericUnit[A]:BiSequenced[Any, A, Unit, A] = apply((a:A, _:Unit, _:Any) => a, (a:A, _:Any) => (a, ()))
 }
 
 private[typeclass] trait LowPrioBiSequenced {
-	implicit def toPair[A, B]:BiSequenced[A, B, (A, B)] = BiSequenced.apply((a:A, b:B) => (a, b), Predef.identity _)
+	implicit def toPair[A, B]:BiSequenced[Any, A, B, (A, B)] = BiSequenced.apply((a:A, b:B, _:Any) => (a, b), (pair:(A, B), _:Any) => pair)
 }

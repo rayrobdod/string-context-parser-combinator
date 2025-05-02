@@ -52,19 +52,31 @@ object QuotedFromSplicesUsingBuilderTestImpls {
 			case '{ $xs: Seq[Int] } => SplicePiece.Many[Expr, Int](xs)
 
 		val ifZeroDefinedAt2 = ifZeroDefined.valueOrAbort
-		val ifZero = Option.when(ifZeroDefinedAt2)({() => '{${ifZeroApply}()}})
+		val ifZero = (_:Quotes) => Option.when(ifZeroDefinedAt2)({'{${ifZeroApply}()}})
 
-		val ifOneScalar = new PartialFunction[Expr[Int], Expr[Z]] {
-			def isDefinedAt(x:Expr[Int]):Boolean = ifOneScalarDefined.valueOrAbort
-			def apply(x:Expr[Int]):Expr[Z] = '{${ifOneScalarApply}($x)}
+		val ifOneScalar = new PartialFunction[(Expr[Int], Quotes), Expr[Z]] {
+			def isDefinedAt(x:(Expr[Int], Quotes)):Boolean = {
+				given Quotes = x._2
+				ifOneScalarDefined.valueOrAbort
+			}
+			def apply(x:(Expr[Int], Quotes)):Expr[Z] = {
+				given Quotes = x._2
+				'{${ifOneScalarApply}(${x._1})}
+			}
 		}
 
-		val ifOneSplice = new PartialFunction[Expr[IterableOnce[Int]], Expr[Z]] {
-			def isDefinedAt(x:Expr[IterableOnce[Int]]):Boolean = ifOneSpliceDefined.valueOrAbort
-			def apply(x:Expr[IterableOnce[Int]]):Expr[Z] = '{${ifOneSpliceApply}($x)}
+		val ifOneSplice = new PartialFunction[(Expr[IterableOnce[Int]], Quotes), Expr[Z]] {
+			def isDefinedAt(x:(Expr[IterableOnce[Int]], Quotes)):Boolean = {
+				given Quotes = x._2
+				ifOneSpliceDefined.valueOrAbort
+			}
+			def apply(x:(Expr[IterableOnce[Int]], Quotes)):Expr[Z] = {
+				given Quotes = x._2
+				'{${ifOneSpliceApply}(${x._1})}
+			}
 		}
 
-		val dut = Repeated.quotedFromSplicesUsingBuilder(newAcc, ifZero, ifOneScalar, ifOneSplice)
+		val dut = Repeated.quotedFromSplicesUsingBuilder(_ => newAcc, ifZero, ifOneScalar, ifOneSplice)
 
 		val actual = dut.result(elems3.foldLeft(dut.init())((acc, elem) => dut.append(acc, elem)))
 

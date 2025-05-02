@@ -3,17 +3,17 @@ package internal
 
 private[stringContextParserCombinator]
 object Filter {
-	def interpolator[Expr, A](
-		backing:Interpolator[Expr, A],
-		predicate:Function1[A, Boolean],
+	def interpolator[Ctx, Expr, A](
+		backing:Interpolator[Ctx, Expr, A],
+		predicate:(A, Ctx) => Boolean,
 		predicateDescription:ExpectingDescription
-	):Interpolator[Expr, A] = {
-		new Interpolator[Expr, A] {
-			def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
+	):Interpolator[Ctx, Expr, A] = {
+		new Interpolator[Ctx, Expr, A] {
+			override def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, A] = {
 				backing.interpolate(input) match {
 					case Success(choicesHead, choicesTail) => {
 						val choices = choicesHead :: choicesTail
-						val filteredChoices = choices.filter(x => predicate(x.value))
+						val filteredChoices = choices.filter(x => predicate(x.value, ctx))
 						filteredChoices match {
 							case head :: tail => Success(head, tail)
 							case Nil => {

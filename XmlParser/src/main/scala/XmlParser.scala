@@ -8,8 +8,8 @@ import name.rayrobdod.stringContextParserCombinator.Interpolator.*
 
 private[xml] object XmlParser {
 	extension [A] (p:Interpolator[A])
-		def collect[Z](pf: PartialFunction[A, Z], msg: String): Interpolator[Z] =
-			p.filter(pf.isDefinedAt _, msg).map(pf.apply _)
+		def collect[Z](pf: PartialFunction[(A, Quotes), Z], msg: String): Interpolator[Z] =
+			p.filter((a, ctx) => pf.isDefinedAt((a, ctx)), msg).map((a, ctx) => pf.apply((a, ctx)))
 
 
 	/** Represents a name with a specified short namespace, but an unknown namespace */
@@ -72,17 +72,17 @@ private[xml] object XmlParser {
 	 */
 	private val lineBreak:Interpolator[CodePoint] = ((isString("\r\n") <|> isString("\r")) <|> isString("\n")).map(_ => CodePoint('\n'))
 
-	private def charRef(using Quotes):Interpolator[CodePoint] = {
+	private def charRef:Interpolator[CodePoint] = {
 		def hexInteger = charIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')).repeat(1).map(Integer.parseInt(_, 16))
 		def decInteger = charIn('0' to '9').repeat(1).map(Integer.parseInt(_, 10))
 
 		isString("&#") ~> (((isString("x") ~> hexInteger) <|> decInteger) <~ isString(";"))
-			.filter(xmlAllowedChar, "")
-			.collect({(c:Int) => CodePoint(c)}.unlift, "")
+			.filter(c => xmlAllowedChar(c), "")
+			.collect({(c:(Int, Quotes)) => CodePoint(c._1)}.unlift, "")
 			.opaque("valid codepoint")
 	}
 
-	given typeclass.Sequenced[CodePoint, String, String] = {(head:CodePoint, tail:String) => s"${head}${tail}"}
+	given typeclass.Sequenced[Quotes, CodePoint, String, String] = typeclass.Sequenced({(head:CodePoint, tail:String, _:Quotes) => s"${head}${tail}"})
 
 	private val xmlNameNoColon:Interpolator[String] = {
 		val firstChar = codePointWhere(x => xmlNameFirstChar.contains(x.intValue))
@@ -126,27 +126,28 @@ private[xml] object XmlParser {
 		)
 	}
 
-	private def interpolation(factory: Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
-		import quotes.reflect._
+	private def interpolation(factory: Expr[XmlFactory[_]]):Interpolator[Expr[_]] = {
 		ofType[Any]
 			.map({(value) =>
+				import quotes.reflect._
 				Apply(
 					Select.unique(
 						factory.asTerm,
 						"interpolation",
 					),
 					List(value.asTerm)
-				)
+				).asExpr
 			})
 	}
 
-	private def attribute(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[Attribute] = {
+	private def attribute(factory:Expr[XmlFactory[_]]):Interpolator[Attribute] = {
 		def valueText(excluding:Char) = (charRef <|> xmlAllowedChar("<&" + excluding)).repeat(1)
 			.map({data =>
 				import quotes.reflect._
 				factory.asTerm
 					.selectFieldMember("values")
 					.selectFieldMemberMaybeDynamic(data)
+					.asExpr
 			})
 		def value(excluding:Char) = (entity(factory) <|> valueText(excluding)).repeat(1)
 
@@ -158,15 +159,15 @@ private[xml] object XmlParser {
 					(isString("\'") ~> value('\'') <~ isString("\'"))
 				)
 		)
-			.map((k,v) => Attribute(k, v.map(_.asExpr)))
+			.map({kv => Attribute(kv._1, kv._2)})
 	}
 
-	private def cdata(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
-		given typeclass.Eithered[CodePoint, String, String] with
-			def left(elem:CodePoint):String = elem.toString
-			def right(elem:String):String = elem
-		given typeclass.Sequenced[CodePoint, CodePoint, String] = {(head:CodePoint, tail:CodePoint) => s"${head}${tail}"}
-		given typeclass.Sequenced[String, CodePoint, String] = {(head:String, tail:CodePoint) => s"${head}${tail}"}
+	private def cdata(factory:Expr[XmlFactory[_]]):Interpolator[Expr[Any]] = {
+		given typeclass.Eithered[Quotes, CodePoint, String, String] with
+			def left(elem:CodePoint)(using Quotes):String = elem.toString
+			def right(elem:String)(using Quotes):String = elem
+		given typeclass.Sequenced[Quotes, CodePoint, CodePoint, String] = typeclass.Sequenced({(head:CodePoint, tail:CodePoint, _: Quotes) => s"${head}${tail}"})
+		given typeclass.Sequenced[Quotes, String, CodePoint, String] = typeclass.Sequenced({(head:String, tail:CodePoint, _: Quotes) => s"${head}${tail}"})
 
 		(
 			isString("<![CDATA[")
@@ -182,31 +183,34 @@ private[xml] object XmlParser {
 				factory.asTerm
 					.selectFieldMember("cdata")
 					.selectFieldMemberMaybeDynamic(name)
+					.asExpr
 			})
 	}
 
-	private def entity(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def entity(factory:Expr[XmlFactory[_]]):Interpolator[Expr[Any]] = {
 		(isString("&") ~> xmlName <~ isString(";"))
 			.map({name =>
 				import quotes.reflect._
 				factory.asTerm
 					.selectFieldMember("entities")
 					.selectFieldMemberMaybeDynamic(name)
+					.asExpr
 			})
 			.attempt
 	}
 
-	private def text(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def text(factory:Expr[XmlFactory[_]]):Interpolator[Expr[Any]] = {
 		(charRef <|> xmlAllowedChar("<&")).repeat(1)
 			.map({data =>
 				import quotes.reflect._
 				factory.asTerm
 					.selectFieldMember("texts")
 					.selectFieldMemberMaybeDynamic(data)
+					.asExpr
 			})
 	}
 
-	private def comment(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def comment(factory:Expr[XmlFactory[_]]):Interpolator[Expr[Any]] = {
 		(
 			isString("<!--")
 			~> (
@@ -220,10 +224,11 @@ private[xml] object XmlParser {
 				factory.asTerm
 					.selectFieldMember("comments")
 					.selectFieldMemberMaybeDynamic(name)
+					.asExpr
 			})
 	}
 
-	private def processingInstruction(factory:Expr[XmlFactory[_]])(using Quotes):Interpolator[quotes.reflect.Term] = {
+	private def processingInstruction(factory:Expr[XmlFactory[_]]):Interpolator[Expr[_]] = {
 		(
 			isString("<?")
 			~> xmlName.filter(_ != "xml", "not `xml`")
@@ -234,15 +239,17 @@ private[xml] object XmlParser {
 			).repeat().map(_.mkString)
 			<~ isString("?>")
 		)
-			.map({(target, value) =>
+			.map({(targetValue) =>
+				val (target, value) = targetValue
 				import quotes.reflect._
 				factory.asTerm
 					.selectFieldMember("processInstructions")
 					.selectAndApplyToArgsMaybeDynamicMaybeVarargs(target)(List(Literal(StringConstant(value))))
+					.asExpr
 			})
 	}
 
-	private def fragment(factory:Expr[XmlFactory[_]], nsb: NamespaceBinding)(using Quotes):Interpolator[List[quotes.reflect.Term]] = {
+	private def fragment(factory:Expr[XmlFactory[_]], nsb: NamespaceBinding):Interpolator[List[Expr[_]]] = {
 		(
 			interpolation(factory) <|>
 			entity(factory) <|>
@@ -254,19 +261,19 @@ private[xml] object XmlParser {
 		).repeat()
 	}
 
-	private def elem(factory:Expr[XmlFactory[_]], nsb:NamespaceBinding)(using Quotes):Interpolator[quotes.reflect.Term] = {
-		import quotes.reflect._
+	private def elem(factory:Expr[XmlFactory[_]], nsb:NamespaceBinding):Interpolator[Expr[Any]] = {
 		(
 			isString("<") ~>
 				boundName <~>
 				(whitespace.repeat(1) ~> (
-					interpolation(factory).map({x => InterpolatedAttribute(x.asExpr)}) <|>
+					interpolation(factory).map({x => InterpolatedAttribute(x)}) <|>
 					namespaceBinding <|>
 					attribute(factory)
 				)).attempt.repeat() <~
 				whitespace.repeat()
 			)
 			.map({parts =>
+				import quotes.reflect._
 				val (name, nsAndAttrs:List[ThingInAttributePosition]) = parts
 				val nsb2:NamespaceBinding = nsb ++ nsAndAttrs.collect({case NamespaceBindingOne(prefix, ns) => (prefix, ns)})
 				val attrs = nsAndAttrs.collect({
@@ -290,8 +297,9 @@ private[xml] object XmlParser {
 						_2
 								.selectFieldMember("attributes")
 								.selectAndApplyToArgsMaybeDynamicMaybeVarargs(localName)(value)
+								.asExpr
 					case InterpolatedAttribute(x) =>
-						x.asTerm
+						x
 				})
 
 				(name, attrs, nsb2)
@@ -310,6 +318,7 @@ private[xml] object XmlParser {
 					.map(children => ((elemName, attributes, nsb2, children)))
 			})
 			.map({parts =>
+				import quotes.reflect._
 				val (elemName, attributes, nsb2, children) = parts
 				val _1 = factory.asTerm
 				val _2 = elemName.prefix match {
@@ -336,7 +345,8 @@ private[xml] object XmlParser {
 				}
 				_2
 					.selectFieldMember("elements")
-					.selectAndApplyToArgsMaybeDynamicMaybeVarargs(elemName.local)(attributes ++ children)
+					.selectAndApplyToArgsMaybeDynamicMaybeVarargs(elemName.local)((attributes ++ children).map(_.asTerm))
+					.asExpr
 			})
 	}
 
@@ -354,7 +364,7 @@ private[xml] object XmlParser {
 		factoryExpr.asTerm
 			.selectAndApplyToArgsMaybeDynamicMaybeVarargs
 				("literal")
-				((fragment(factoryExpr, initialNsb) <~> end).interpolate(sc, args))
+				((fragment(factoryExpr, initialNsb) <~> end).interpolate(sc, args).map(_.asTerm))
 			.asExprOf[Z]
 	}
 

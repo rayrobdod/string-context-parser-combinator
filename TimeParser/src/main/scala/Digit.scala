@@ -13,10 +13,10 @@ object Digit {
 		new Digit(x - '0')
 	}
 
-	implicit def given_Repeated:Repeated[Digit, Digits] = new Repeated[Digit, Digits]{
+	implicit def given_Repeated:Repeated[Any, Digit, Digits] = new Repeated[Any, Digit, Digits]{
 		type Acc = Int
-		def init():Acc = 0
-		def append(acc:Acc, elem:Digit):Acc = (acc * 10) + elem.value
-		def result(acc:Acc):Digits = new Digits(acc)
+		def init()(implicit ctx:Any):Acc = 0
+		def append(acc:Acc, elem:Digit)(implicit ctx:Any):Acc = (acc * 10) + elem.value
+		def result(acc:Acc)(implicit ctx:Any):Digits = new Digits(acc)
 	}
 }

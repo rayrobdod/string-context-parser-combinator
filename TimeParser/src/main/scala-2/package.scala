@@ -1,6 +1,7 @@
 package name.rayrobdod.stringContextParserCombinatorExample
 
 import java.time._
+import scala.collection.immutable.Seq
 import scala.reflect.macros.whitebox.Context
 import name.rayrobdod.stringContextParserCombinator._
 
@@ -16,32 +17,32 @@ package datetime {
 		import timeLiftables._
 		private[this] val timeUnliftables = TimeUnliftables(c)
 		import timeUnliftables._
-		private[this] implicit val thisCToExpr:typeclass.ToExprMapping[c.Expr, c.universe.Liftable, c.TypeTag] = typeclass.ToExprMapping.forContext(c)
+		private[this] implicit val thisCToExpr:typeclass.ToExprMapping[c.type, c.Expr, c.universe.Liftable, c.TypeTag] = typeclass.ToExprMapping.forContext(c)
 
 		import TimeParsers.intTwoDigits
 
-		private[this] implicit object sequenced_YearMonth extends typeclass.BiSequenced[c.Expr[Year], c.Expr[Month], c.Expr[YearMonth]] {
-			def aggregate(left:c.Expr[Year], right:c.Expr[Month]):c.Expr[YearMonth] = {
+		private[this] implicit object sequenced_YearMonth extends typeclass.BiSequenced[c.type, c.Expr[Year], c.Expr[Month], c.Expr[YearMonth]] {
+			def aggregate(left:c.Expr[Year], right:c.Expr[Month])(implicit ctx:c.type):c.Expr[YearMonth] = {
 				import c.universe._
 				(left, right) match {
 					case (Expr(`unliftYear`(year)), Expr(`unliftMonth`(month))) => c.Expr[YearMonth](liftYearMonth(year.atMonth(month)))
 					case (year, month) => c.Expr[YearMonth](q"$year.atMonth($month)")
 				}
 			}
-			def separate(value:c.Expr[YearMonth]):(c.Expr[Year], c.Expr[Month]) = {
+			def separate(value:c.Expr[YearMonth])(implicit ctx:c.type):(c.Expr[Year], c.Expr[Month]) = {
 				import c.universe._
 				(c.Expr[Year](q"Year.of($value.getYear)"), c.Expr[Month](q"$value.getMonth"))
 			}
 		}
 
-		private[this] implicit object sequenced_LocalDate extends typeclass.ContraSequenced[Expr[YearMonth], Expr[Int], Expr[LocalDate]] {
-			def separate(value:Expr[LocalDate]):(Expr[YearMonth], Expr[Int]) = {
+		private[this] implicit object sequenced_LocalDate extends typeclass.ContraSequenced[c.type, Expr[YearMonth], Expr[Int], Expr[LocalDate]] {
+			def separate(value:Expr[LocalDate])(implicit ctx:c.type):(Expr[YearMonth], Expr[Int]) = {
 				(c.Expr[YearMonth](q"YearMonth.of($value.getYear, $value.getMonth)"), c.Expr[Int](q"$value.getDayOfMonth"))
 			}
 		}
 
-		private[this] implicit object sequenced_LocalDateTime extends typeclass.BiSequenced[c.Expr[LocalDate], c.Expr[LocalTime], c.Expr[LocalDateTime]]{
-			def aggregate(left:c.Expr[LocalDate], right:c.Expr[LocalTime]):c.Expr[LocalDateTime] = {
+		private[this] implicit object sequenced_LocalDateTime extends typeclass.BiSequenced[c.type, c.Expr[LocalDate], c.Expr[LocalTime], c.Expr[LocalDateTime]]{
+			def aggregate(left:c.Expr[LocalDate], right:c.Expr[LocalTime])(implicit ctx:c.type):c.Expr[LocalDateTime] = {
 				import c.universe._
 				(left, right) match {
 					case (Expr(`unliftLocalDate`(date)), Expr(`unliftLocalTime`(time))) => c.Expr[LocalDateTime](liftLocalDateTime(date.atTime(time)))
@@ -49,36 +50,38 @@ package datetime {
 					case (date, time) => c.Expr[LocalDateTime](q"$date.atTime($time)")
 				}
 			}
-			def separate(value:c.Expr[LocalDateTime]):(c.Expr[LocalDate], c.Expr[LocalTime]) = {
+			def separate(value:c.Expr[LocalDateTime])(implicit ctx:c.type):(c.Expr[LocalDate], c.Expr[LocalTime]) = {
 				import c.universe._
 				(c.Expr[LocalDate](q"$value.toLocalDate"), c.Expr[LocalTime](q"$value.toLocalTime"))
 			}
 		}
 
+		private val charIn:(Seq[Char]) => Interpolator[Char] = (chars: Seq[Char]) => Interpolator.contextInterpolators(c).charIn(chars)
+
 		private def dayOfMonth(max: Int): Interpolator[c.Expr[Int]] = {
-			ofType[DayOfMonth].map(d => c.Expr[Int](q"$d.getValue")) <|> intTwoDigits(1, max).mapToExpr
+			ofType[DayOfMonth].map((d, _:c.type) => c.Expr[Int](q"$d.getValue")) <|> intTwoDigits(charIn)(1, max).mapToExpr
 		}
 
 		private val timeParsers = TimeParsers(leafParsers)(
-			{(ymExpr) => ymExpr match {
+			{(ymExpr, _:c.type) => ymExpr match {
 				case c.Expr(`unliftYearMonth`(ym)) => {
-					ofType[DayOfMonth].map(d => c.Expr[LocalDate](q"LocalDate.of(${ym.getYear}, ${ym.getMonth}, ${d}.getValue)")) <|>
-						intTwoDigits(1, ym.lengthOfMonth).map(day => c.Expr[LocalDate](liftLocalDate(ym.atDay(day))))
+					ofType[DayOfMonth].map((d, _:c.type) => c.Expr[LocalDate](q"LocalDate.of(${ym.getYear}, ${ym.getMonth}, ${d}.getValue)")) <|>
+						intTwoDigits(charIn)(1, ym.lengthOfMonth).map((day, _:c.type) => c.Expr[LocalDate](liftLocalDate(ym.atDay(day))))
 				}
 				case c.Expr(Apply(Select(_, Name("atMonth")), List(`unliftMonth`(month)))) => {
-					dayOfMonth(month.maxLength).map({day =>
+					dayOfMonth(month.maxLength).map({(day, _:c.type) =>
 						c.Expr[LocalDate](q"$ymExpr.atDay($day)")
 					})
 				}
 				case ymExpr => {
-					dayOfMonth(31).map({day =>
+					dayOfMonth(31).map({(day, _:c.type) =>
 						c.Expr[LocalDate](q"$ymExpr.atDay($day)")
 					})
 				}
 			}},
-			(hour, minute, second, nano) =>
+			(hour, minute, second, nano, _:c.type) =>
 					c.Expr[LocalTime](q"java.time.LocalTime.of($hour, $minute, $second, $nano)"),
-			(value) => c.Expr[DayOfMonth](q"DayOfMonth.of($value)"),
+			(value, _:c.type) => c.Expr[DayOfMonth](q"DayOfMonth.of($value)"),
 		)
 
 		private[this] val extensionClassName = "name.rayrobdod.stringContextParserCombinatorExample.datetime.package.DateTimeStringContext"

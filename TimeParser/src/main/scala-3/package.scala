@@ -7,29 +7,32 @@ import name.rayrobdod.stringContextParserCombinator._
 object MacroImpl {
 	import ExprConversions.given
 
-	private given given_Sequenced_Expr_YearMonth(using Quotes):typeclass.BiSequenced[Expr[Year], Expr[Month], Expr[YearMonth]] with {
-		def aggregate(left:Expr[Year], right:Expr[Month]):Expr[YearMonth] = (left, right) match {
+	private given TypeCreator[DayOfMonth] = TypeCreator.derived
+	private given TypeCreator[Int] = TypeCreator.derived
+
+	private given given_Sequenced_Expr_YearMonth:typeclass.BiSequenced[Quotes, Expr[Year], Expr[Month], Expr[YearMonth]] with {
+		def aggregate(left:Expr[Year], right:Expr[Month])(using Quotes):Expr[YearMonth] = (left, right) match {
 			case (Expr(year), Expr(month)) => '{YearMonth.of(${Expr(year.getValue())}, ${Expr(month.getValue())})}
 			case (Expr(year), month) => '{YearMonth.of(${Expr(year.getValue())}, $month)}
 			case (year, Expr(month)) => '{$year.atMonth(${Expr(month.getValue())})}
 			case (year, month) => '{$year.atMonth($month)}
 		}
 
-		def separate(value:Expr[YearMonth]):(Expr[Year], Expr[Month]) = value match {
+		def separate(value:Expr[YearMonth])(using Quotes):(Expr[Year], Expr[Month]) = value match {
 			case '{YearMonth.of($year:Int, $month:Month)} => ('{Year.of($year)}, month)
 			case '{($year:Year).atMonth($month:Month)} => (year, month)
 			case _ => ('{Year.of($value.getYear)}, '{$value.getMonth})
 		}
 	}
 
-	private given given_Sequenced_Expr_Date(using Quotes):typeclass.ContraSequenced[Expr[YearMonth], Expr[Int], Expr[LocalDate]] with {
-		def separate(value:Expr[LocalDate]):(Expr[YearMonth], Expr[Int]) = value match {
+	private given given_Sequenced_Expr_Date:typeclass.ContraSequenced[Quotes, Expr[YearMonth], Expr[Int], Expr[LocalDate]] with {
+		def separate(value:Expr[LocalDate])(using Quotes):(Expr[YearMonth], Expr[Int]) = value match {
 			case _ => ('{YearMonth.of($value.getYear, $value.getMonth)}, '{$value.getDayOfMonth})
 		}
 	}
 
-	private given given_Sequenced_Expr_DateTime(using Quotes):typeclass.BiSequenced[Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
-		def aggregate(left:Expr[LocalDate], right:Expr[LocalTime]):Expr[LocalDateTime] = (left, right) match {
+	private given given_Sequenced_Expr_DateTime:typeclass.BiSequenced[Quotes, Expr[LocalDate], Expr[LocalTime], Expr[LocalDateTime]] with {
+		def aggregate(left:Expr[LocalDate], right:Expr[LocalTime])(using Quotes):Expr[LocalDateTime] = (left, right) match {
 			case (Expr(date), Expr(time)) => '{
 				LocalDateTime.of(
 					${Expr(date.getYear())}, ${Expr(date.getMonthValue())}, ${Expr(date.getDayOfMonth())},
@@ -50,40 +53,46 @@ object MacroImpl {
 			case (date, time) => '{ $date.atTime($time) }
 		}
 
-		def separate(value:Expr[LocalDateTime]):(Expr[LocalDate], Expr[LocalTime]) = {
+		def separate(value:Expr[LocalDateTime])(using Quotes):(Expr[LocalDate], Expr[LocalTime]) = {
 			('{$value.toLocalDate}, '{$value.toLocalTime})
 		}
 	}
 
 	import Parser.end
-	import Interpolator.ofType
-	import TimeParsers.intTwoDigits
+	import Interpolator.quotedInterpolators.ofType
 
-	private def dayOfMonth(max: Int)(using Quotes): Interpolator[quoted.Expr[Any], quoted.Expr[Int]] = {
+	private val intTwoDigits = TimeParsers.intTwoDigits({(chars: Seq[Char]) => Interpolator.quotedInterpolators.charIn(chars)})
+
+	private def dayOfMonth(max: Int): Interpolator[quoted.Quotes, quoted.Expr[Any], quoted.Expr[Int]] = {
 		ofType[DayOfMonth].map(d => '{$d.getValue}) <|> intTwoDigits(1, max).mapToExpr
 	}
 
-	private def timeParsers(using Quotes) = {
-		val leafParsers:Parser.Parsers[quoted.Expr, quoted.ToExpr, quoted.Type] =
+	private val timeParsers = {
+		val leafParsers:Parser.Parsers[Quotes, quoted.Expr, quoted.ToExpr, TypeCreator] =
 					Parser.quotedParsers
 
 		TimeParsers(leafParsers)(
-			_ match {
-				case Expr(ym) => {
-					ofType[DayOfMonth].map(day => '{LocalDate.of(${Expr(ym.getYear)}, ${Expr(ym.getMonth)}, ${day}.getValue)}) <|>
-						intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day)))
+			(value, ctx) => {
+				given Quotes = ctx
+				value match {
+					case Expr(ym) => {
+						ofType[DayOfMonth].map(day => '{LocalDate.of(${Expr(ym.getYear)}, ${Expr(ym.getMonth)}, ${day}.getValue)}) <|>
+							intTwoDigits(1, ym.lengthOfMonth).map(day => Expr(ym.atDay(day)))
+					}
+					case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
+					case '{YearMonth.of($y:Int, ${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
+					case '{($year:Year).atMonth(${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay($day)})
+					case '{($year:Year).atMonth(${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay($day)})
+					case '{YearMonth.of($y:Int, $m:Int)} => dayOfMonth(31).map(day => '{LocalDate.of($y, $m, $day)})
+					case '{YearMonth.of($y:Int, $m:Month)} => dayOfMonth(31).map(day => '{LocalDate.of($y, $m, $day)})
+					case ym => dayOfMonth(31).map(day => '{$ym.atDay($day)})
 				}
-				case '{YearMonth.of($y:Int, ${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
-				case '{YearMonth.of($y:Int, ${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{LocalDate.of($y, ${Expr(m)}, $day)})
-				case '{($year:Year).atMonth(${Expr(m)}:Int)} => dayOfMonth(Month.of(m).maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay($day)})
-				case '{($year:Year).atMonth(${Expr(m)}:Month)} => dayOfMonth(m.maxLength).map(day => '{$year.atMonth(${Expr(m)}).atDay($day)})
-				case '{YearMonth.of($y:Int, $m:Int)} => dayOfMonth(31).map(day => '{LocalDate.of($y, $m, $day)})
-				case '{YearMonth.of($y:Int, $m:Month)} => dayOfMonth(31).map(day => '{LocalDate.of($y, $m, $day)})
-				case ym => dayOfMonth(31).map(day => '{$ym.atDay($day)})
 			},
-			(hour, minute, second, nano) =>
+			(hour, minute, second, nano, ctx) =>
+				given Quotes = ctx
 				'{ LocalTime.of($hour, $minute, $second, $nano) },
-			(value) =>
+			(value, ctx) =>
+				given Quotes = ctx
 				'{ DayOfMonth.of($value) },
 		)
 	}

@@ -31,7 +31,7 @@ abstract class BaseInterpolatorSuite extends munit.FunSuite {
 	}
 
 	def assertParseSuccess[A](
-		dut:Interpolator[Any, A],
+		dut:Interpolator[IdCtx, Id[Any], A],
 		input:(List[String], Seq[Any]),
 		expecting:A)(
 		implicit loc: Location
@@ -41,7 +41,7 @@ abstract class BaseInterpolatorSuite extends munit.FunSuite {
 	}
 
 	def assertParseFailure[A](
-		dut:Interpolator[Any, A],
+		dut:Interpolator[IdCtx, Id[Any], A],
 		input:(List[String], Seq[Any]),
 		messageLines:List[String])(
 		implicit loc: Location
@@ -54,7 +54,7 @@ abstract class BaseInterpolatorSuite extends munit.FunSuite {
 	}
 
 	def assertParseFailureOnEmptyInput[A](
-		dut:Interpolator[Any, A],
+		dut:Interpolator[IdCtx, Id[Any], A],
 		expectingLine:String)(
 		implicit loc: Location
 	):Unit = {
@@ -64,7 +64,7 @@ abstract class BaseInterpolatorSuite extends munit.FunSuite {
 	}
 
 	def assertParseFailureOnExpr[A](
-		dut:Interpolator[Any, A],
+		dut:Interpolator[IdCtx, Id[Any], A],
 		expectingLine:String)(
 		implicit loc: Location
 	):Unit = {
@@ -224,7 +224,7 @@ package InterpolatorTest {
 		final case class Bar(x:Int)
 
 		final class BarToFoo extends BaseInterpolatorSuite {
-			val dut = Interpolator.idInterpolators.ofType[Bar].map[Foo](bar => new Foo(bar.x))
+			val dut = Interpolator.idInterpolators.ofType[Bar].map[Foo]((bar, _:IdCtx) => new Foo(bar.x))
 
 			test ("Returns the mapped Foo when the next input is an a Expr Bar") {
 				assertParseSuccess(dut, ("" :: "" :: Nil, Bar(42) :: Nil), Foo(42))
@@ -246,7 +246,7 @@ package InterpolatorTest {
 		final case class Foo(x:Int)
 
 		final class IsEven extends BaseInterpolatorSuite {
-			val dut = Interpolator.idInterpolators.ofType[Foo].filter(_.x % 2 == 0, "is even")
+			val dut = Interpolator.idInterpolators.ofType[Foo].filter((foo, _:IdCtx) => foo.x % 2 == 0, "is even")
 			val className = "name.rayrobdod.stringContextParserCombinator.InterpolatorTest.filter.Foo"
 
 			test ("if base parser fails, parser passes through the failure") {
@@ -262,7 +262,7 @@ package InterpolatorTest {
 		final class PoorMansMinMaxRepeats extends BaseInterpolatorSuite {
 			test ("if base parser succeeds and predicate fails for some branches, returns a success with the variants that passed the predicate") {
 				val base = Interpolator.idInterpolators.charIn("a").repeat(strategy = RepeatStrategy.Greedy)
-				val dut = base.filter(_.length == 3, "XXX")
+				val dut = base.filter((x, _:IdCtx) => x.length == 3, "XXX")
 
 				val input = ("aaaaa" :: Nil, Nil)
 
@@ -278,7 +278,7 @@ package InterpolatorTest {
 			val digitParser = Interpolator.idInterpolators.charWhere(c => '0' <= c && c <= '9')
 			val alphaParser = Interpolator.idInterpolators.charWhere(c => 'a' <= c && c <= 'z')
 
-			val dut:Interpolator[Any, (Char, Char)] = digitParser andThen alphaParser
+			val dut:Interpolator[IdCtx, Id[Any], (Char, Char)] = digitParser andThen alphaParser
 
 			assertParseFailureOnEmptyInput(dut, digitExpectingLine)
 			test ("throws when expression has only one char; points at EOF") {
@@ -334,7 +334,10 @@ package InterpolatorTest {
 
 		final class ZeroOrMoreGreedy extends BaseInterpolatorSuite {
 			val simple = charIn("a").repeat(strategy = Greedy)
-			val complex = (charIn("a").andThen(charIn("b")).andThen(charIn("c")).map(_ => "abc")).repeat(strategy = Greedy).orElse(charIn("a").map(_ => "a"))
+			val complex = (charIn("a").andThen(charIn("b"))
+				.andThen(charIn("c")).map((_, _:IdCtx) => "abc"))
+				.repeat(strategy = Greedy)
+				.orElse(charIn("a").map((_, _:IdCtx) => "a"))
 
 			test ("matches empty input") {
 				assertParseSuccess(simple, ("" :: Nil, Nil), "")
@@ -495,7 +498,7 @@ package InterpolatorTest {
 		}
 
 		final class WithDelimiter extends BaseInterpolatorSuite {
-			val simple = charIn("a").repeat(strategy = Greedy, delimiter = charIn("b").map(_ => ()))
+			val simple = charIn("a").repeat(strategy = Greedy, delimiter = charIn("b").map((_, _:IdCtx) => ()))
 
 			test ("matches empty input") {
 				assertParseSuccess(simple, ("" :: Nil, Nil), "")
@@ -508,7 +511,7 @@ package InterpolatorTest {
 			}
 
 			test ("`a{2,}` with delim `b` does not match `a` and report expecting 'b'") {
-				val simple = charIn("a").repeat(min = 2, strategy = Greedy, delimiter = charIn("b").map(_ => ()))
+				val simple = charIn("a").repeat(min = 2, strategy = Greedy, delimiter = charIn("b").map((_, _:IdCtx) => ()))
 				assertParseFailure(simple, ("a" :: Nil, Nil), List("Expected CharIn(\"b\")", "\ta", "\t ^"))
 			}
 		}
@@ -516,7 +519,7 @@ package InterpolatorTest {
 	package optionally {
 		final class GreedyTest extends BaseInterpolatorSuite {
 			val one = Interpolator.idInterpolators.ofType[String]
-			val dut:Interpolator[Any, Option[String]] = one.optionally(strategy = Greedy)
+			val dut:Interpolator[IdCtx, Id[Any], Option[String]] = one.optionally(strategy = Greedy)
 
 			test ("when input is empty, then returns None") {
 				assertParseSuccess(dut, ("" :: Nil, Nil), None)
@@ -530,7 +533,7 @@ package InterpolatorTest {
 		}
 		final class PossessiveTest extends BaseInterpolatorSuite {
 			val one = Interpolator.idInterpolators.ofType[String]
-			val dut:Interpolator[Any, Option[String]] = one.optionally(strategy = Possessive)
+			val dut:Interpolator[IdCtx, Id[Any], Option[String]] = one.optionally(strategy = Possessive)
 
 			test ("when input is empty, then returns None") {
 				assertParseSuccess(dut, ("" :: Nil, Nil), None)
@@ -544,7 +547,7 @@ package InterpolatorTest {
 		}
 		final class LazyTest extends BaseInterpolatorSuite {
 			val one = Interpolator.idInterpolators.ofType[String]
-			val dut:Interpolator[Any, Option[String]] = one.optionally(strategy = Lazy)
+			val dut:Interpolator[IdCtx, Id[Any], Option[String]] = one.optionally(strategy = Lazy)
 
 			test ("when input is empty, then returns None") {
 				assertParseSuccess(dut, ("" :: Nil, Nil), None)
@@ -556,7 +559,7 @@ package InterpolatorTest {
 				assertParseSuccess(dut, ("" :: "" :: "" :: "" :: Nil, "111" :: "222" :: "333" :: Nil), None)
 			}
 			test ("when input has length 1, will backtrack to return Some") {
-				val dut2 = dut andThen Interpolator.end
+				val dut2 = dut andThen Interpolator.idInterpolators.end
 				assertParseSuccess(dut2, ("" :: "" :: Nil, "111" :: Nil), Some("111"))
 			}
 		}

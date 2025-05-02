@@ -3,51 +3,51 @@ package internal
 
 private[stringContextParserCombinator]
 object OrElse {
-	def interpolator[Expr, A, B, Z](
-		left:Interpolator[Expr, A],
-		right:Interpolator[Expr, B],
-		combiner:typeclass.Eithered[A, B, Z]
-	):Interpolator[Expr, Z] = {
-		new Interpolator[Expr, Z] {
-			def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+	def interpolator[Ctx, Expr, A, B, Z](
+		left:Interpolator[Ctx, Expr, A],
+		right:Interpolator[Ctx, Expr, B],
+		combiner:typeclass.Eithered[Ctx, A, B, Z]
+	):Interpolator[Ctx, Expr, Z] = {
+		new Interpolator[Ctx, Expr, Z] {
+			override def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				OrElse.interpolate(left, right, combiner, input)
 			}
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A, B, Z](
-		left:Extractor[Expr, Type, A],
-		right:Extractor[Expr, Type, B],
-		combiner:typeclass.ContraEithered[Expr, A, B, Z]
-	):Extractor[Expr, Type, Z] = {
-		new Extractor[Expr, Type, Z] {
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+	def extractor[Ctx, Expr[+_], Type[_], A, B, Z](
+		left:Extractor[Ctx, Expr, Type, A],
+		right:Extractor[Ctx, Expr, Type, B],
+		combiner:typeclass.ContraEithered[Ctx, Expr, A, B, Z]
+	):Extractor[Ctx, Expr, Type, Z] = {
+		new Extractor[Ctx, Expr, Type, Z] {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 				OrElse.extractor(left, right, combiner, input)
 			}
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A, B, Z](
-		left:Parser[Expr, Type, A],
-		right:Parser[Expr, Type, B],
-		combiner:typeclass.BiEithered[Expr, A, B, Z]
-	):Parser[Expr, Type, Z] = {
-		new Parser[Expr, Type, Z] {
-			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+	def parser[Ctx, Expr[+_], Type[_], A, B, Z](
+		left:Parser[Ctx, Expr, Type, A],
+		right:Parser[Ctx, Expr, Type, B],
+		combiner:typeclass.BiEithered[Ctx, Expr, A, B, Z]
+	):Parser[Ctx, Expr, Type, Z] = {
+		new Parser[Ctx, Expr, Type, Z] {
+			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				OrElse.interpolate(left, right, combiner, input)
 			}
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 				OrElse.extractor(left, right, combiner, input)
 			}
 		}
 	}
 
-	private def interpolate[Expr, A, B, Z, Pos](
-		left:Interpolator[Expr, A],
-		right:Interpolator[Expr, B],
-		combiner:typeclass.Eithered[A, B, Z],
+	private def interpolate[Ctx, Expr, A, B, Z, Pos](
+		left:Interpolator[Ctx, Expr, A],
+		right:Interpolator[Ctx, Expr, B],
+		combiner:typeclass.Eithered[Ctx, A, B, Z],
 		input:Input[Expr, Pos])(
-		implicit ev1:Ordering[Pos]
+		implicit ctx:Ctx, ev1:Ordering[Pos]
 	):Result[Expr, Pos, Z] = {
 		left.interpolate(input) match {
 			case leftSuccess:Success[Expr, Pos, A] => leftSuccess.mapValues(combiner.left _)
@@ -66,21 +66,23 @@ object OrElse {
 		}
 	}
 
-	private def extractor[Expr[+_], Type[_], A, B, Z, Pos](
-		left:Extractor[Expr, Type, A],
-		right:Extractor[Expr, Type, B],
-		combiner:typeclass.ContraEithered[Expr, A, B, Z],
+	private def extractor[Ctx, Expr[+_], Type[_], A, B, Z, Pos](
+		left:Extractor[Ctx, Expr, Type, A],
+		right:Extractor[Ctx, Expr, Type, B],
+		combiner:typeclass.ContraEithered[Ctx, Expr, A, B, Z],
 		input:Input[Unit, Pos])(
-		implicit ev1:Ordering[Pos],
-		exprs:UnapplyExprs[Expr, Type]
-	):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+		implicit
+		ctx:Ctx,
+		ev1:Ordering[Pos],
+		exprs:UnapplyExprs[Ctx, Expr, Type]
+	):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 		val leftResult = left.extractor(input).mapValues(leftValue => exprs.eitheredLeft(leftValue, combiner))
 		val rightResult = right.extractor(input).mapValues(rightValue => exprs.eitheredRight(rightValue, combiner))
 
 		(leftResult, rightResult) match {
-			case (leftSuccess:Success[Unit, Pos, UnapplyExpr[Expr, Type, Z]], rightSuccess:Success[Unit, Pos, UnapplyExpr[Expr, Type, Z]]) => leftSuccess ++ rightSuccess
-			case (leftSuccess:Success[Unit, Pos, UnapplyExpr[Expr, Type, Z]], _:Failure[Pos]) => leftSuccess
-			case (_:Failure[Pos], rightSuccess:Success[Unit, Pos, UnapplyExpr[Expr, Type, Z]]) => rightSuccess
+			case (leftSuccess:Success[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]], rightSuccess:Success[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]]) => leftSuccess ++ rightSuccess
+			case (leftSuccess:Success[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]], _:Failure[Pos]) => leftSuccess
+			case (_:Failure[Pos], rightSuccess:Success[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]]) => rightSuccess
 			case (leftFailure:Failure[Pos], rightFailure:Failure[Pos]) => leftFailure or rightFailure
 		}
 	}

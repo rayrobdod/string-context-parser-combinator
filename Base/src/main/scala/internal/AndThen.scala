@@ -3,13 +3,13 @@ package internal
 
 private[stringContextParserCombinator]
 object AndThen {
-	def interpolator[Expr, A, B, Z](
-		left:Interpolator[Expr, A],
-		right:Interpolator[Expr, B],
-		combiner:typeclass.Sequenced[A, B, Z]
-	):Interpolator[Expr, Z] = {
-		new Interpolator[Expr, Z] {
-			override def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+	def interpolator[Ctx, Expr, A, B, Z](
+		left:Interpolator[Ctx, Expr, A],
+		right:Interpolator[Ctx, Expr, B],
+		combiner:typeclass.Sequenced[Ctx, A, B, Z]
+	):Interpolator[Ctx, Expr, Z] = {
+		new Interpolator[Ctx, Expr, Z] {
+			override def interpolate[ExprZ <: Expr, Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				AndThen.parse(
 					{(x:Input[ExprZ, Pos]) => left.interpolate(x)},
 					{(x:Input[ExprZ, Pos]) => right.interpolate(x)},
@@ -20,17 +20,17 @@ object AndThen {
 		}
 	}
 
-	def extractor[Expr[+_], Type[_], A, B, Z](
-		left:Extractor[Expr, Type, A],
-		right:Extractor[Expr, Type, B],
-		combiner:typeclass.ContraSequenced[A, B, Z]
-	):Extractor[Expr, Type, Z] = {
-		new Extractor[Expr, Type, Z] {
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+	def extractor[Ctx, Expr[+_], Type[_], A, B, Z](
+		left:Extractor[Ctx, Expr, Type, A],
+		right:Extractor[Ctx, Expr, Type, B],
+		combiner:typeclass.ContraSequenced[Ctx, A, B, Z]
+	):Extractor[Ctx, Expr, Type, Z] = {
+		new Extractor[Ctx, Expr, Type, Z] {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 				AndThen.parse(
 					{(x:Input[Unit, Pos]) => left.extractor(x)},
 					{(x:Input[Unit, Pos]) => right.extractor(x)},
-					{(leftVal:UnapplyExpr[Expr, Type, A], rightVal:UnapplyExpr[Expr, Type, B]) =>
+					{(leftVal:UnapplyExpr[Ctx, Expr, Type, A], rightVal:UnapplyExpr[Ctx, Expr, Type, B]) =>
 						exprs.sequenced(leftVal, rightVal, combiner)
 					},
 					input
@@ -39,13 +39,13 @@ object AndThen {
 		}
 	}
 
-	def parser[Expr[+_], Type[_], A, B, Z](
-		left:Parser[Expr, Type, A],
-		right:Parser[Expr, Type, B],
-		combiner:typeclass.BiSequenced[A, B, Z]
-	):Parser[Expr, Type, Z] = {
-		new Parser[Expr, Type, Z] {
-			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
+	def parser[Ctx, Expr[+_], Type[_], A, B, Z](
+		left:Parser[Ctx, Expr, Type, A],
+		right:Parser[Ctx, Expr, Type, B],
+		combiner:typeclass.BiSequenced[Ctx, A, B, Z]
+	):Parser[Ctx, Expr, Type, Z] = {
+		new Parser[Ctx, Expr, Type, Z] {
+			override def interpolate[ExprZ <: Expr[Any], Pos](input:Input[ExprZ, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos]):Result[ExprZ, Pos, Z] = {
 				AndThen.parse(
 					{(x:Input[ExprZ, Pos]) => left.interpolate(x)},
 					{(x:Input[ExprZ, Pos]) => right.interpolate(x)},
@@ -53,11 +53,11 @@ object AndThen {
 					input
 				)
 			}
-			override def extractor[Pos](input:Input[Unit, Pos])(implicit ev1:Ordering[Pos], exprs:UnapplyExprs[Expr, Type]):Result[Unit, Pos, UnapplyExpr[Expr, Type, Z]] = {
+			override def extractor[Pos](input:Input[Unit, Pos])(implicit ctx:Ctx, ev1:Ordering[Pos], exprs:UnapplyExprs[Ctx, Expr, Type]):Result[Unit, Pos, UnapplyExpr[Ctx, Expr, Type, Z]] = {
 				AndThen.parse(
 					{(x:Input[Unit, Pos]) => left.extractor(x)},
 					{(x:Input[Unit, Pos]) => right.extractor(x)},
-					{(leftVal:UnapplyExpr[Expr, Type, A], rightVal:UnapplyExpr[Expr, Type, B]) =>
+					{(leftVal:UnapplyExpr[Ctx, Expr, Type, A], rightVal:UnapplyExpr[Ctx, Expr, Type, B]) =>
 						exprs.sequenced(leftVal, rightVal, combiner)
 					},
 					input

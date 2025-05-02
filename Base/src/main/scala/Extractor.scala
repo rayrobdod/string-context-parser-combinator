@@ -31,8 +31,8 @@ import name.rayrobdod.stringContextParserCombinator.{Extractor => SCExtractor}
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] val impl: internal.Extractor[Expr, Type, A]
+final class Extractor[Ctx, Expr[+_], Type[_], -A] private[stringContextParserCombinator] (
+		protected[stringContextParserCombinator] val impl: internal.Extractor[Ctx, Expr, Type, A]
 ) {
 
 	/**
@@ -43,8 +43,9 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 		sc:StringContext,
 		scrutinee:A)(
 		implicit
-		@nowarn("msg=never used") ev:Id[Any] =:= Expr[Any],
-		@nowarn("msg=never used") ev2:ClassTag[Any] =:= Type[Any]
+		@nowarn("msg=never used") ev:IdCtx =:= Ctx,
+		@nowarn("msg=never used") ev2:Id[Any] =:= Expr[Any],
+		@nowarn("msg=never used") ev3:ClassTag[Any] =:= Type[Any]
 	):Option[Seq[Any]] = {
 		implicit val given_Int_Position:Position[Int] = PositionGivens.given_IdPosition_Position
 
@@ -56,13 +57,13 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 		val argWithPoss = strings.init.map(x => (((), x._2 + x._1.size)))
 
 		val input = new Input[Unit, Int](strings, argWithPoss)
-		implicit val exprs:UnapplyExprs[Id, ClassTag] = UnapplyExprs.forId
+		implicit val exprs:UnapplyExprs[IdCtx, Id, ClassTag] = UnapplyExprs.forId
 
-		impl.asInstanceOf[internal.Extractor[Id, ClassTag, A]].extractor(input)(implicitly, exprs) match {
+		impl.asInstanceOf[internal.Extractor[IdCtx, Id, ClassTag, A]].extractor(input)(implicitly, implicitly, exprs) match {
 			case s:Success[_, _, _] => {
-				val expr:UnapplyExpr[Id, ClassTag, A] = s.choicesHead.value
-				if (expr.condition(scrutinee)) {
-					Some(expr.parts.map(_.value(scrutinee)))
+				val expr:UnapplyExpr[IdCtx, Id, ClassTag, A] = s.choicesHead.value
+				if (expr.condition(scrutinee, implicitly)) {
+					Some(expr.parts.map(_.value(scrutinee, implicitly)))
 				} else {
 					None
 				}
@@ -126,13 +127,13 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 		val args = strings.init.map(x => (((), x._2 + x._1.size)))
 
 		val input = new Input[Unit, c.universe.Position](strings, args)
-		implicit val exprs:UnapplyExprs[c.Expr, c.TypeTag] = UnapplyExprs.forContext(c)
+		implicit val exprs:UnapplyExprs[c.type, c.Expr, c.TypeTag] = UnapplyExprs.forContext(c)
 
-		impl.asInstanceOf[internal.Extractor[c.Expr, c.TypeTag, A]].extractor(input)(implicitly, exprs) match {
+		impl.asInstanceOf[internal.Extractor[c.type, c.Expr, c.TypeTag, A]].extractor(input)(c, implicitly, exprs) match {
 			case s:Success[_, _, _] => {
-				val expr:UnapplyExpr[c.Expr, c.TypeTag, A] = s.choicesHead.value
-				val condition = ev.andThen(expr.condition)
-				val parts = expr.parts.map(_.contramapValue(ev))
+				val expr:UnapplyExpr[c.type, c.Expr, c.TypeTag, A] = s.choicesHead.value
+				val condition = ev.andThen(a => expr.condition(a, c))
+				val parts = expr.parts.map(_.contramapValue((x:c.Expr[UnexprA], _:c.type) => ev(x)))
 
 				parts.size match {
 					case 0 =>
@@ -155,7 +156,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @example
 	 * ```
 	 * def valueImpl(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[Result]] = {
-	 *   val myParser:Extractor[Expr[Result]] = ???
+	 *   val myParser:Extractor[Ctx, Expr[Result]] = ???
 	 *   myParser.extractor(sc)
 	 * }
 	 *
@@ -173,7 +174,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 		typA: scala.quoted.Type[UnexprA],
 		subtupExprA: scala.quoted.Expr[UnexprA] <:< A,
 		equalExprBool: scala.quoted.Expr[Boolean] =:= Expr[Boolean],
-		equalTypBool: scala.quoted.Type[Boolean] =:= Type[Boolean],
+		equalTypBool: TypeCreator[Boolean] =:= Type[Boolean],
 	): scala.quoted.Expr[Unapply[UnexprA]] = {
 		import scala.quoted.{Expr => _, quotes => _, _}
 		import quotes.reflect.asTerm
@@ -184,13 +185,13 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 		val args2 = strings2.init.map(x => (((), x._2 + x._1.size)))
 
 		val input = new Input[Unit, quotes.reflect.Position](strings2, args2)
-		implicit val exprs:UnapplyExprs[quoted.Expr, quoted.Type] = UnapplyExprs.forQuoted
+		implicit val exprs:UnapplyExprs[quoted.Quotes, quoted.Expr, TypeCreator] = UnapplyExprs.forQuoted
 
-		impl.asInstanceOf[internal.Extractor[quoted.Expr, quoted.Type, A]].extractor(input) match {
+		impl.asInstanceOf[internal.Extractor[quoted.Quotes, quoted.Expr, TypeCreator, A]].extractor(input) match {
 			case s:Success[_, _, _] => {
 				val unexpr = summon[quoted.Expr[UnexprA] <:< A]
 
-				val expr:UnapplyExpr[quoted.Expr, quoted.Type, quoted.Expr[UnexprA]] = unexpr.substituteContra(s.choicesHead.value)
+				val expr:UnapplyExpr[quoted.Quotes, quoted.Expr, TypeCreator, quoted.Expr[UnexprA]] = unexpr.substituteContra(s.choicesHead.value)
 
 				InterpolatorImpl.unapplyExprToExpr(expr)
 			}
@@ -204,8 +205,16 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * Returns an extractor which invokes this extractor after mapping the input value using `contrafn`
 	 * @group Map
 	 */
-	def contramap[Z](contrafn:Function1[Z, A]):Extractor[Expr, Type, Z] =
+	def contramap[Z](contrafn:(Z, Ctx) => A):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(internal.Map.extractor(this.impl, contrafn))
+
+	/**
+	 * Returns an extractor which invokes this extractor after mapping the input value using `contrafn`
+	 * @group Map
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def contramap[Z](contrafn:Z => Ctx ?=> A):Extractor[Ctx, Expr, Type, Z] =
+		new Extractor(internal.Map.extractor(this.impl, (value, ctx) => contrafn(value)(using ctx)))
 
 	/**
 	 * Returns an extractor which invokes the contrafn, then
@@ -213,7 +222,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 *  - If the Expr is false, fails the match
 	 * @group Map
 	 */
-	def widenWith[Z](contrafn: PartialExprFunction[Expr, Z, A]):Extractor[Expr, Type, Z] =
+	def widenWith[Z](contrafn: PartialExprFunction[Ctx, Expr, Z, A]):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(new internal.WidenWith(this.impl, contrafn))
 
 	/**
@@ -224,14 +233,14 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * except this discards all match groups
 	 * @group Map
 	 */
-	def void:Extractor[Expr, Type, Unit] =
+	def void:Extractor[Ctx, Expr, Type, Unit] =
 		new Extractor(internal.Void.extractor(this.impl))
 
 	/**
 	 * Returns a extractor which invokes this parser, but has the given description upon failure
 	 * @group ErrorPlus
 	 */
-	def opaque(description:String):Extractor[Expr, Type, A] =
+	def opaque(description:String):Extractor[Ctx, Expr, Type, A] =
 		new Extractor(internal.Opaque.extractor(this.impl, ExpectingDescription(description)))
 
 	/**
@@ -239,7 +248,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * but treats the result of a failed parse as if it does not consume input
 	 * @group Misc
 	 */
-	def attempt:Extractor[Expr, Type, A] =
+	def attempt:Extractor[Ctx, Expr, Type, A] =
 		new Extractor(internal.Attempt.extractor(this.impl))
 
 	/**
@@ -247,7 +256,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * but does not show the expected value in failure messages
 	 * @group Misc
 	 */
-	def hide:Extractor[Expr, Type, A] =
+	def hide:Extractor[Ctx, Expr, Type, A] =
 		new Extractor(internal.Hide.extractor(this.impl))
 
 	/**
@@ -258,7 +267,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Sequence
 	 */
-	def andThen[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraSequenced[A,B,Z]):Extractor[Expr, Type, Z] =
+	def andThen[B, Z](rhs:Extractor[Ctx, Expr, Type, B])(implicit ev:typeclass.ContraSequenced[Ctx, A,B,Z]):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(internal.AndThen.extractor(this.impl, rhs.impl, ev))
 
 	/**
@@ -266,7 +275,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def <~>[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraSequenced[A,B,Z]):Extractor[Expr, Type, Z] =
+	def <~>[B, Z](rhs:Extractor[Ctx, Expr, Type, B])(implicit ev:typeclass.ContraSequenced[Ctx, A,B,Z]):Extractor[Ctx, Expr, Type, Z] =
 		this.andThen(rhs)(ev)
 
 	/**
@@ -275,7 +284,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def <~(rhs:Extractor[Expr, Type, Unit]):Extractor[Expr, Type, A] =
+	def <~(rhs:Extractor[Ctx, Expr, Type, Unit]):Extractor[Ctx, Expr, Type, A] =
 		this.andThen(rhs)(typeclass.ContraSequenced.genericUnit)
 
 	/**
@@ -284,8 +293,8 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def ~>[B](rhs:Extractor[Expr, Type, B])(implicit ev: Unit <:< A):Extractor[Expr, Type, B] =
-		this.contramap(ev).andThen(rhs)(typeclass.ContraSequenced.unitGeneric)
+	def ~>[B](rhs:Extractor[Ctx, Expr, Type, B])(implicit ev: Unit <:< A):Extractor[Ctx, Expr, Type, B] =
+		this.contramap[Unit]((value: Unit, _) => ev(value)).andThen(rhs)(typeclass.ContraSequenced.unitGeneric)
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
@@ -298,7 +307,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @param ev A descriptor of how to treat either value as one value
 	 * @group Branch
 	 */
-	def orElse[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraEithered[Expr, A,B,Z]):Extractor[Expr, Type, Z] =
+	def orElse[B, Z](rhs:Extractor[Ctx, Expr, Type, B])(implicit ev:typeclass.ContraEithered[Ctx, Expr, A,B,Z]):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(internal.OrElse.extractor(this.impl, rhs.impl, ev))
 
 	/**
@@ -306,7 +315,7 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 * @group Branch
 	 * @since 0.1.1
 	 */
-	def <|>[B, Z](rhs:Extractor[Expr, Type, B])(implicit ev:typeclass.ContraEithered[Expr, A,B,Z]):Extractor[Expr, Type, Z] =
+	def <|>[B, Z](rhs:Extractor[Ctx, Expr, Type, B])(implicit ev:typeclass.ContraEithered[Ctx, Expr, A,B,Z]):Extractor[Ctx, Expr, Type, Z] =
 		this.orElse(rhs)(ev)
 
 	/**
@@ -323,10 +332,10 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	def repeat[Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Extractor[Expr, Type, Unit] = new Extractor[Expr, Type, Unit](new internal.Pass),
+		delimiter:Extractor[Ctx, Expr, Type, Unit] = new Extractor[Ctx, Expr, Type, Unit](new internal.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.ContraRepeated[Expr, A, Z]
-	):Extractor[Expr, Type, Z] =
+		implicit ev:typeclass.ContraRepeated[Ctx, Expr, A, Z]
+	):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(internal.Repeat.extractor(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
@@ -339,8 +348,8 @@ final class Extractor[Expr[+_], Type[_], -A] private[stringContextParserCombinat
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.ContraOptionally[Expr, A, Z]
-	):Extractor[Expr, Type, Z] =
+		implicit ev:typeclass.ContraOptionally[Ctx, Expr, A, Z]
+	):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(internal.Optionally.extractor(this.impl, strategy, ev))
 }
 
@@ -366,13 +375,13 @@ object Extractor
 		extends VersionSpecificExtractorModule
 {
 	@ifdef("scalaBinaryVersion:3")
-	type Extractor[A] = SCExtractor[scala.quoted.Expr, scala.quoted.Type, A]
+	type Extractor[A] = SCExtractor[quoted.Quotes, quoted.Expr, TypeCreator, A]
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+	def `lazy`[Ctx, Expr[+_], Type[_], A](fn:Function0[SCExtractor[Ctx, Expr, Type, A]]):SCExtractor[Ctx, Expr, Type, A] =
 		new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
 	/**
@@ -380,7 +389,7 @@ object Extractor
 	 * @group Arg
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def ofType[A](implicit typA: scala.quoted.Type[A], quotes: scala.quoted.Quotes): SCExtractor[scala.quoted.Expr, scala.quoted.Type, scala.quoted.Expr[A]] =
+	def ofType[A](implicit typA: TypeCreator[A]): SCExtractor[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator, scala.quoted.Expr[A]] =
 		new SCExtractor(new internal.OfType[A])
 
 	/**
@@ -409,8 +418,8 @@ object Extractor
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Extractors[Expr[+_], Type[_]] {
-		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
+	trait Extractors[Ctx, Expr[+_], Type[_]] {
+		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Ctx, Expr, Type, A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character
@@ -501,8 +510,8 @@ object Extractor
 	 * Returns an Extractors that can parse raw values
 	 * @group ExtractorGroup
 	 */
-	val idExtractors: Extractors[Id, ClassTag] = {
-		new Extractors[Id, ClassTag] with ExprIndependentExtractors[Id, ClassTag] {
+	val idExtractors: Extractors[IdCtx, Id, ClassTag] = {
+		new Extractors[IdCtx, Id, ClassTag] with ExprIndependentExtractors[IdCtx, Id, ClassTag] {
 			override def `lazy`[A](fn:Function0[this.Extractor[A]]):this.Extractor[A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
@@ -516,13 +525,13 @@ object Extractor
 	 * @group ExtractorGroup
 	 */
 	@ifdef("scalaEpochVersion:2")
-	def contextExtractors(c:scala.reflect.macros.blackbox.Context):Extractor.Extractors[c.Expr, c.TypeTag] = {
-		new Extractor.Extractors[c.Expr, c.TypeTag]
-				with ExprIndependentExtractors[c.Expr, c.TypeTag] {
-			override def `lazy`[A](fn:Function0[SCExtractor[c.Expr, c.TypeTag, A]]):SCExtractor[c.Expr, c.TypeTag, A] =
+	def contextExtractors(c:scala.reflect.macros.blackbox.Context):Extractor.Extractors[c.type, c.Expr, c.TypeTag] = {
+		new Extractor.Extractors[c.type, c.Expr, c.TypeTag]
+				with ExprIndependentExtractors[c.type, c.Expr, c.TypeTag] {
+			override def `lazy`[A](fn:Function0[SCExtractor[c.type, c.Expr, c.TypeTag, A]]):SCExtractor[c.type, c.Expr, c.TypeTag, A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def ofType[A](implicit tpe: c.TypeTag[A]): SCExtractor[c.Expr, c.TypeTag, c.Expr[A]] =
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCExtractor[c.type, c.Expr, c.TypeTag, c.Expr[A]] =
 				new SCExtractor(new internal.OfType[c.type, A](tpe))
 		}
 	}
@@ -532,14 +541,14 @@ object Extractor
 	 * @group ExtractorGroup
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def quotedExtractors(implicit quotes: scala.quoted.Quotes):Extractor.Extractors[scala.quoted.Expr, scala.quoted.Type] = {
+	def quotedExtractors:Extractor.Extractors[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator] = {
 		import scala.quoted.*
-		new Extractor.Extractors[Expr, Type]
-				with ExprIndependentExtractors[Expr, Type] {
-			override def `lazy`[A](fn:Function0[SCExtractor[Expr, Type, A]]):SCExtractor[Expr, Type, A] =
+		new Extractor.Extractors[Quotes, Expr, TypeCreator]
+				with ExprIndependentExtractors[Quotes, Expr, TypeCreator] {
+			override def `lazy`[A](fn:Function0[SCExtractor[Quotes, Expr, TypeCreator, A]]):SCExtractor[Quotes, Expr, TypeCreator, A] =
 				new SCExtractor(internal.DelayedConstruction.extractor(() => fn().impl))
 
-			override def ofType[A](implicit tpe: Type[A]): SCExtractor[Expr, Type, Expr[A]] =
+			override def ofType[A](implicit tpe: TypeCreator[A]): SCExtractor[Quotes, Expr, TypeCreator, Expr[A]] =
 				new SCExtractor(new internal.OfType[A])
 		}
 	}
@@ -552,94 +561,94 @@ trait VersionSpecificExtractorModule {
 
 @ifdef("scalaBinaryVersion:3")
 private[stringContextParserCombinator]
-trait VersionSpecificExtractorModule extends ExprIndependentExtractors[scala.quoted.Expr, scala.quoted.Type] {
+trait VersionSpecificExtractorModule extends ExprIndependentExtractors[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator] {
 }
 
 /**
  * Extractors that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentExtractors[Expr[+_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentExtractors[Ctx, Expr[+_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:Set[Char]):SCExtractor[Expr, Type, Char] =
-		new SCExtractor[Expr, Type, Char](internal.CharIn(str))
+	def charIn(str:Set[Char]):SCExtractor[Ctx, Expr, Type, Char] =
+		new SCExtractor[Ctx, Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:Seq[Char]):SCExtractor[Expr, Type, Char] =
-		new SCExtractor[Expr, Type, Char](internal.CharIn(str))
+	def charIn(str:Seq[Char]):SCExtractor[Ctx, Expr, Type, Char] =
+		new SCExtractor[Ctx, Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:String):SCExtractor[Expr, Type, Char] =
-		new SCExtractor[Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
+	def charIn(str:String):SCExtractor[Ctx, Expr, Type, Char] =
+		new SCExtractor[Ctx, Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def charWhere(fn:Function1[Char, Boolean]):SCExtractor[Expr, Type, Char] =
-		new SCExtractor[Expr, Type, Char](internal.CharWhere(fn))
+	def charWhere(fn:Function1[Char, Boolean]):SCExtractor[Ctx, Expr, Type, Char] =
+		new SCExtractor[Ctx, Expr, Type, Char](internal.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:Set[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
-		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
+	def codePointIn(str:Set[CodePoint]):SCExtractor[Ctx, Expr, Type, CodePoint] =
+		new SCExtractor[Ctx, Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:Seq[CodePoint]):SCExtractor[Expr, Type, CodePoint] =
-		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
+	def codePointIn(str:Seq[CodePoint]):SCExtractor[Ctx, Expr, Type, CodePoint] =
+		new SCExtractor[Ctx, Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:String):SCExtractor[Expr, Type, CodePoint] =
-		new SCExtractor[Expr, Type, CodePoint](internal.CodePointIn(str))
+	def codePointIn(str:String):SCExtractor[Ctx, Expr, Type, CodePoint] =
+		new SCExtractor[Ctx, Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCExtractor[Expr, Type, CodePoint] =
-		new SCExtractor[Expr, Type, CodePoint](internal.CodePointWhere(fn))
+	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCExtractor[Ctx, Expr, Type, CodePoint] =
+		new SCExtractor[Ctx, Expr, Type, CodePoint](internal.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def isString(str:String):SCExtractor[Expr, Type, Unit] =
-		new SCExtractor[Expr, Type, Unit](internal.IsString(str))
+	def isString(str:String):SCExtractor[Ctx, Expr, Type, Unit] =
+		new SCExtractor[Ctx, Expr, Type, Unit](internal.IsString(str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def pass:SCExtractor[Expr, Type, Unit] =
-		new SCExtractor[Expr, Type, Unit](new internal.Pass)
+	def pass:SCExtractor[Ctx, Expr, Type, Unit] =
+		new SCExtractor[Ctx, Expr, Type, Unit](new internal.Pass)
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def fail(message:String):SCExtractor[Expr, Type, Nothing] =
-		new SCExtractor[Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
+	def fail(message:String):SCExtractor[Ctx, Expr, Type, Nothing] =
+		new SCExtractor[Ctx, Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def end:SCExtractor[Expr, Type, Unit] =
-		new SCExtractor[Expr, Type, Unit](new internal.End())
+	def end:SCExtractor[Ctx, Expr, Type, Unit] =
+		new SCExtractor[Ctx, Expr, Type, Unit](new internal.End())
 }

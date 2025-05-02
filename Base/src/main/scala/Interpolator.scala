@@ -29,8 +29,8 @@ import name.rayrobdod.stringContextParserCombinator.{Interpolator => SCPCInterpo
  * @groupname Misc Other Combinators
  * @groupprio Misc 1999
  */
-final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] val impl: internal.Interpolator[Expr, A]
+final class Interpolator[Ctx, -Expr, +A] private[stringContextParserCombinator] (
+		protected[stringContextParserCombinator] val impl: internal.Interpolator[Ctx, Expr, A]
 ) {
 
 	/**
@@ -44,8 +44,9 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * ```
 	 * @group Parse
 	 */
-	def interpolate(sc:StringContext, args:Seq[Any])(implicit ev: Any <:< Expr):A = {
+	def interpolate(sc:StringContext, args:Seq[Any])(implicit ev1: IdCtx <:< Ctx, ev2: Any <:< Expr):A = {
 		implicit val given_Int_Position:Position[Int] = PositionGivens.given_IdPosition_Position
+		implicit val ctx: Ctx = ev1(implicitly[IdCtx])
 
 		val argString = "${}"
 		val strings = sc.parts.foldLeft((List.empty[(String, Int)], 0)){(folding, part) =>
@@ -54,7 +55,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		}._1.reverse
 		val argWithPoss = args.zip(strings).map({(argStrPos) =>
 			val (arg, (str, pos)) = argStrPos
-			(ev(arg), pos + str.size)
+			(ev2(arg), pos + str.size)
 		}).toList
 
 		val input = new Input[Expr, Int](strings, argWithPoss)
@@ -103,9 +104,10 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Parse
 	 */
 	@ifdef("scalaEpochVersion:2")
-	final def interpolate(c:scala.reflect.macros.blackbox.Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[_] <:< Expr):A = {
+	final def interpolate(c:scala.reflect.macros.blackbox.Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev1: c.type <:< Ctx, ev2:c.Expr[_] <:< Expr):A = {
 		implicit val given_Position:Position[c.universe.Position] = PositionGivens.given_ExprPosition_Position(c)
 		implicit val given_Ordering:Ordering[c.universe.Position] = PositionGivens.given_ExprPosition_Ordering(c)
+		implicit val ctx: Ctx = ev1(c)
 
 		val ExtensionClassSelectChain = selectChain(c, extensionClassName)
 		val StringContextApply = stringContextApply(c)
@@ -133,7 +135,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 			case _ => c.abort(c.enclosingPosition, s"Do not know how to process this tree: " + c.universe.showRaw(c.prefix))
 		}
 
-		val input = new Input[Expr, c.universe.Position](strings, args.toList.map(arg => (ev(arg), arg.tree.pos)))
+		val input = new Input[Expr, c.universe.Position](strings, args.toList.map(arg => (ev2(arg), arg.tree.pos)))
 
 		impl.interpolate(input) match {
 			case s:Success[_, _, _] => {
@@ -161,14 +163,15 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Parse
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	final def interpolate(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(implicit quotes: quoted.Quotes, ev:quoted.Expr[_] <:< Expr):A = {
+	final def interpolate(sc:quoted.Expr[scala.StringContext], args:quoted.Expr[Seq[Any]])(implicit quotes: quoted.Quotes, ev1: quoted.Quotes <:< Ctx, ev2:quoted.Expr[_] <:< Expr):A = {
 		import quotes.reflect.asTerm
 		import quotes.reflect.Position
 		import PositionGivens.given
+		implicit val ctx: Ctx = ev1(quotes)
 
 		val strings = InterpolatorImpl.stringContextFromExpr(sc)
 		val strings2 = strings.map(x => ((x.valueOrAbort, x.asTerm.pos))).toList
-		val args2 = scala.quoted.Varargs.unapply(args).get.toList.map(arg => (ev(arg), arg.asTerm.pos))
+		val args2 = scala.quoted.Varargs.unapply(args).get.toList.map(arg => (ev2(arg), arg.asTerm.pos))
 
 		val input = new Input[Expr, Position](strings2, args2)
 
@@ -188,8 +191,16 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
 	 * @group Map
 	 */
-	def map[Z](fn:Function1[A, Z]):Interpolator[Expr, Z] =
+	def map[Z](fn: (A, Ctx) => Z):Interpolator[Ctx, Expr, Z] =
 		new Interpolator(internal.Map.interpolator(this.impl, fn))
+
+	/**
+	 * Returns a parser which invokes this parser, then modifies a successful result according to fn
+	 * @group Map
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def map[Z](fn: A => Ctx ?=> Z):Interpolator[Ctx, Expr, Z] =
+		new Interpolator(internal.Map.interpolator(this.impl, (value, ctx) => fn(value)(using ctx)))
 
 	/**
 	 * Returns a parser which invokes this parser, then maps a successful result by lifting the
@@ -197,11 +208,11 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Map
 	 */
 	def mapToExpr[Z >: A, Expr2[+_], ToExpr[_], Type[_]](
-		implicit mapping:typeclass.ToExprMapping[Expr2, ToExpr, Type],
+		implicit mapping:typeclass.ToExprMapping[Ctx, Expr2, ToExpr, Type],
 		toExpr:ToExpr[Z],
 		tpe:Type[Z]
-	):Interpolator[Expr, Expr2[Z]] = {
-		this.map(value => mapping(value, toExpr, tpe))
+	):Interpolator[Ctx, Expr, Expr2[Z]] = {
+		new Interpolator(internal.Map.interpolator(this.impl, (value: A, ctx: Ctx) => mapping(ctx, value, toExpr, tpe)))
 	}
 
 	/**
@@ -210,29 +221,44 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * Approximately equivalent to `this.map({_ => ()})`
 	 * @group Map
 	 */
-	def void:Interpolator[Expr, Unit] =
+	def void:Interpolator[Ctx, Expr, Unit] =
 		new Interpolator(internal.Void.interpolator(this.impl))
 
 	/**
 	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
 	 * @group Sequence
 	 */
-	def flatMap[ExprZ <: Expr, Z](fn:Function1[A, Interpolator[ExprZ, Z]]):Interpolator[ExprZ, Z] =
+	def flatMap[ExprZ <: Expr, Z](fn: (A, Ctx) => Interpolator[Ctx, ExprZ, Z]):Interpolator[Ctx, ExprZ, Z] =
 		new Interpolator(internal.FlatMap.interpolator(this.impl, fn))
+
+	/**
+	 * Returns a parser which invokes this parser, then modifies a successful result according to the parser returned by fn
+	 * @group Sequence
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def flatMap[ExprZ <: Expr, Z](fn: A => Ctx ?=> Interpolator[Ctx, ExprZ, Z]):Interpolator[Ctx, ExprZ, Z] =
+		new Interpolator(internal.FlatMap.interpolator(this.impl, (value: A, ctx: Ctx) => fn(value)(using ctx)))
 
 	/**
 	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
 	 * @group Filter
 	 */
-	def filter(predicate:Function1[A, Boolean], description:String):Interpolator[Expr, A] =
+	def filter(predicate: (A, Ctx) => Boolean, description:String):Interpolator[Ctx, Expr, A] =
 		new Interpolator(internal.Filter.interpolator(this.impl, predicate, ExpectingDescription(description)))
 
+	/**
+	 * Returns a parser which invokes this parser, then fails a successful result if it does not pass the predicate
+	 * @group Filter
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def filter(predicate: A => Ctx ?=> Boolean, description:String):Interpolator[Ctx, Expr, A] =
+		new Interpolator(internal.Filter.interpolator(this.impl, (value: A, ctx: Ctx) => predicate(value)(using ctx), ExpectingDescription(description)))
 
 	/**
 	 * Returns a parser which invokes this parser, but has the given description upon failure
 	 * @group ErrorPlus
 	 */
-	def opaque(description:String):Interpolator[Expr, A] =
+	def opaque(description:String):Interpolator[Ctx, Expr, A] =
 		new Interpolator(internal.Opaque.interpolator(this.impl, ExpectingDescription(description)))
 
 	/**
@@ -240,7 +266,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * but treats the result of a failed parse as if it does not consume input
 	 * @group Misc
 	 */
-	def attempt:Interpolator[Expr, A] =
+	def attempt:Interpolator[Ctx, Expr, A] =
 		new Interpolator(internal.Attempt.interpolator(this.impl))
 
 	/**
@@ -248,7 +274,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * but does not show the expected value in failure messages
 	 * @group Misc
 	 */
-	def hide:Interpolator[Expr, A] =
+	def hide:Interpolator[Ctx, Expr, A] =
 		new Interpolator(internal.Hide.interpolator(this.impl))
 
 	/**
@@ -263,13 +289,13 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 		implicit t:TypeZ[UnexprA],
 		ev:ExprZ[Any] <:< Expr,
 		ev2:A <:< ExprZ[UnexprA]
-	):Parser[ExprZ, TypeZ, ExprZ[UnexprA]] = {
-		type T2[-X] = internal.Interpolator[X, A]
-		type T3[+X] = internal.Interpolator[ExprZ[Any], X]
+	):Parser[Ctx, ExprZ, TypeZ, ExprZ[UnexprA]] = {
+		type T2[-X] = internal.Interpolator[Ctx, X, A]
+		type T3[+X] = internal.Interpolator[Ctx, ExprZ[Any], X]
 
 		val impl2 = TypeConformanceCompat.contraSubstituteContra[T2, ExprZ[Any], Expr](ev, this.impl)
 		val impl3 = TypeConformanceCompat.contraSubstituteCo[T3, A, ExprZ[UnexprA]](ev2, impl2)
-		new Parser(new internal.ExtractorAtom[ExprZ, TypeZ, UnexprA](impl3, t))
+		new Parser(new internal.ExtractorAtom[Ctx, ExprZ, TypeZ, UnexprA](impl3, t))
 	}
 
 	/**
@@ -280,7 +306,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Sequence
 	 */
-	def andThen[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
+	def andThen[ExprZ <: Expr, B, Z](rhs:Interpolator[Ctx, ExprZ, B])(implicit ev:typeclass.Sequenced[Ctx, A,B,Z]):Interpolator[Ctx, ExprZ, Z] =
 		new Interpolator(internal.AndThen.interpolator(this.impl, rhs.impl, ev))
 
 	/**
@@ -288,7 +314,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def <~>[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Sequenced[A,B,Z]):Interpolator[ExprZ, Z] =
+	def <~>[ExprZ <: Expr, B, Z](rhs:Interpolator[Ctx, ExprZ, B])(implicit ev:typeclass.Sequenced[Ctx, A,B,Z]):Interpolator[Ctx, ExprZ, Z] =
 		this.andThen(rhs)(ev)
 
 	/**
@@ -297,7 +323,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def <~[ExprZ <: Expr](rhs:Interpolator[ExprZ, Unit]):Interpolator[ExprZ, A] =
+	def <~[ExprZ <: Expr](rhs:Interpolator[Ctx, ExprZ, Unit]):Interpolator[Ctx, ExprZ, A] =
 		this.andThen(rhs)(typeclass.Sequenced.genericUnit)
 
 	/**
@@ -306,8 +332,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def ~>[ExprZ <: Expr, B](rhs:Interpolator[ExprZ, B])(implicit ev: A <:< Unit):Interpolator[ExprZ, B] =
-		this.map(ev).andThen(rhs)(typeclass.Sequenced.unitGeneric)
+	def ~>[ExprZ <: Expr, B](rhs:Interpolator[Ctx, ExprZ, B])(implicit ev: A <:< Unit):Interpolator[Ctx, ExprZ, B] =
+		this.map((value, _: Ctx) => ev(value)).andThen(rhs)(typeclass.Sequenced.unitGeneric)
 
 	/**
 	 * Returns a parser which invokes this parser, and upon success invokes the other parser,
@@ -315,8 +341,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def `<::>`[ExprZ <: Expr, B >: A](rhs:Interpolator[ExprZ, List[B]]):Interpolator[ExprZ, List[B]] =
-		this.andThen(rhs)({(h, t) => h :: t})
+	def `<::>`[ExprZ <: Expr, B >: A](rhs:Interpolator[Ctx, ExprZ, List[B]]):Interpolator[Ctx, ExprZ, List[B]] =
+		this.andThen(rhs)(typeclass.Sequenced({(h, t, _:Ctx) => h :: t}))
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
@@ -329,7 +355,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @param ev A descriptor of how to treat either value as one value
 	 * @group Branch
 	 */
-	def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
+	def orElse[ExprZ <: Expr, B, Z](rhs:Interpolator[Ctx, ExprZ, B])(implicit ev:typeclass.Eithered[Ctx, A,B,Z]):Interpolator[Ctx, ExprZ, Z] =
 		new Interpolator(internal.OrElse.interpolator(this.impl, rhs.impl, ev))
 
 	/**
@@ -337,7 +363,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Branch
 	 * @since 0.1.1
 	 */
-	def <|>[ExprZ <: Expr, B, Z](rhs:Interpolator[ExprZ, B])(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[ExprZ, Z] =
+	def <|>[ExprZ <: Expr, B, Z](rhs:Interpolator[Ctx, ExprZ, B])(implicit ev:typeclass.Eithered[Ctx, A,B,Z]):Interpolator[Ctx, ExprZ, Z] =
 		this.orElse(rhs)(ev)
 
 	/**
@@ -345,7 +371,7 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Branch
 	 * @since 0.1.1
 	 */
-	def <+>[ExprZ <: Expr, B](rhs:Interpolator[ExprZ, B]):Interpolator[ExprZ, Either[A, B]] =
+	def <+>[ExprZ <: Expr, B](rhs:Interpolator[Ctx, ExprZ, B]):Interpolator[Ctx, ExprZ, Either[A, B]] =
 		this.orElse(rhs)(typeclass.Eithered.discriminatedUnion)
 
 	/**
@@ -353,8 +379,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 * @group Branch
 	 * @since 0.1.1
 	 */
-	def </>[B, Z](onFailValue:B)(implicit ev:typeclass.Eithered[A,B,Z]):Interpolator[Expr, Z] =
-		this.orElse(Interpolator.idInterpolators.pass.map(_ => onFailValue))(ev)
+	def </>[B, Z](onFailValue:Ctx => B)(implicit ev:typeclass.Eithered[Ctx, A,B,Z]):Interpolator[Ctx, Expr, Z] =
+		this.orElse(Interpolator.pass2.map((_, ctx:Ctx) => onFailValue(ctx)))(ev)
 
 	/**
 	 * Returns a parser which invokes this parser repeatedly and returns the aggregated result
@@ -370,10 +396,10 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	def repeat[ExprZ <: Expr, Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Interpolator[ExprZ, Unit] = new Interpolator[ExprZ, Unit](new internal.Pass[Id, Id]),
+		delimiter:Interpolator[Ctx, ExprZ, Unit] = new Interpolator[Ctx, ExprZ, Unit](new internal.Pass[Ctx, Id, Id]),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.Repeated[A, Z]
-	):Interpolator[ExprZ, Z] =
+		implicit ev:typeclass.Repeated[Ctx, A, Z]
+	):Interpolator[Ctx, ExprZ, Z] =
 		new Interpolator(internal.Repeat.interpolator(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
@@ -386,8 +412,8 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.Optionally[A, Z]
-	):Interpolator[Expr, Z] =
+		implicit ev:typeclass.Optionally[Ctx, A, Z]
+	):Interpolator[Ctx, Expr, Z] =
 		new Interpolator(internal.Optionally.interpolator(this.impl, strategy, ev))
 }
 
@@ -410,25 +436,28 @@ final class Interpolator[-Expr, +A] private[stringContextParserCombinator] (
  * @groupprio Misc 999
  */
 object Interpolator
-		extends ExprIndependentInterpolators[Any]
+		extends VersionSpecificInterpolatorModule
 {
 	@ifdef("scalaBinaryVersion:3")
-	type Interpolator[A] = SCPCInterpolator[scala.quoted.Expr[Any], A]
-
+	type Interpolator[A] = SCPCInterpolator[quoted.Quotes, scala.quoted.Expr[Any], A]
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr, A](fn:Function0[SCPCInterpolator[Expr, A]]):SCPCInterpolator[Expr, A] =
+	def `lazy`[Ctx, Expr, A](fn:Function0[SCPCInterpolator[Ctx, Expr, A]]):SCPCInterpolator[Ctx, Expr, A] =
 		new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
+
+	private
+	def pass2[Ctx, Expr]:SCPCInterpolator[Ctx, Expr, Unit] =
+		new SCPCInterpolator[Ctx, Expr, Unit](new internal.Pass[Ctx, Id, Id])
 
 	/**
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 	 * @group Arg
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def ofType[A](implicit typ: scala.quoted.Type[A], quotes: scala.quoted.Quotes): SCPCInterpolator[scala.quoted.Expr[Any], scala.quoted.Expr[A]] =
+	def ofType[A](implicit typ: TypeCreator[A]): SCPCInterpolator[scala.quoted.Quotes, scala.quoted.Expr[Any], scala.quoted.Expr[A]] =
 		new SCPCInterpolator(new internal.OfType[A])
 
 	/**
@@ -438,7 +467,7 @@ object Interpolator
 	 * @group Arg
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit quotes: scala.quoted.Quotes, typ: scala.quoted.Type[Lifter]):SCPCInterpolator[scala.quoted.Expr[Any], Z] =
+	def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: TypeCreator[Lifter]):SCPCInterpolator[scala.quoted.Quotes, scala.quoted.Expr[Any], Z] =
 		new SCPCInterpolator(internal.Lifted(lift, ExpectingDescription(description)))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
@@ -468,8 +497,8 @@ object Interpolator
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Interpolators[Expr[+_], ToExpr[_], Type[_]] {
-		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
+	trait Interpolators[Ctx, Expr[+_], ToExpr[_], Type[_]] {
+		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Ctx, Expr[Any], A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character
@@ -568,7 +597,7 @@ object Interpolator
 		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 		 * @group Arg
 		 */
-		def lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCPCInterpolator[C#Expr[Any], Z]
+		def lifted[Lifter[_], Z](lift:LiftFunction[C, Lifter, Z], description:String)(implicit lifterTypeTag:C#TypeTag[Lifter[_]]):SCPCInterpolator[C, C#Expr[Any], Z]
 	}
 
 	/**
@@ -583,16 +612,16 @@ object Interpolator
 		 * The implicitly summoned value and the `arg` value are passed to `lift`; the returned value is returned by this parser
 		 * @group Arg
 		 */
-		def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: scala.quoted.Type[Lifter]):SCPCInterpolator[scala.quoted.Expr[Any], Z]
+		def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: TypeCreator[Lifter]):SCPCInterpolator[quoted.Quotes, scala.quoted.Expr[Any], Z]
 	}
 
 	/**
 	 * Returns an Interpolators that can parse raw values
 	 * @group InterpolatorGroup
 	 */
-	val idInterpolators: Interpolators[Id, IdToExpr, ClassTag] = {
-		new Interpolators[Id, IdToExpr, ClassTag] with ExprIndependentInterpolators[Any] {
-			override def `lazy`[A](fn:Function0[SCPCInterpolator[Any, A]]):SCPCInterpolator[Any, A] =
+	val idInterpolators: Interpolators[IdCtx, Id, IdToExpr, ClassTag] = {
+		new Interpolators[IdCtx, Id, IdToExpr, ClassTag] with ExprIndependentInterpolators[IdCtx, Id[Any]] {
+			override def `lazy`[A](fn:Function0[SCPCInterpolator[IdCtx, Id[Any], A]]):SCPCInterpolator[IdCtx, Id[Any], A] =
 				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
 			override def ofType[A](implicit tpe: ClassTag[A]): this.Interpolator[A] =
@@ -605,18 +634,18 @@ object Interpolator
 	 * @group InterpolatorGroup
 	 */
 	@ifdef("scalaEpochVersion:2")
-	def contextInterpolators(c: scala.reflect.macros.blackbox.Context): Interpolators[c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
-		new Interpolators[c.Expr, c.universe.Liftable, c.TypeTag]
-				with ExprIndependentInterpolators[c.Expr[Any]]
+	def contextInterpolators(c: scala.reflect.macros.blackbox.Context): Interpolators[c.type, c.Expr, c.universe.Liftable, c.TypeTag] with LiftedInterpolator[c.type] = {
+		new Interpolators[c.type, c.Expr, c.universe.Liftable, c.TypeTag]
+				with ExprIndependentInterpolators[c.type, c.Expr[Any]]
 				with LiftedInterpolator[c.type] {
-			override def `lazy`[A](fn:Function0[SCPCInterpolator[c.Expr[Any], A]]): SCPCInterpolator[c.Expr[Any], A] =
-				new SCPCInterpolator[c.Expr[Any], A](internal.DelayedConstruction.interpolator(fn))
+			override def `lazy`[A](fn:Function0[SCPCInterpolator[c.type, c.Expr[Any], A]]): SCPCInterpolator[c.type, c.Expr[Any], A] =
+				new SCPCInterpolator[c.type, c.Expr[Any], A](internal.DelayedConstruction.interpolator(fn))
 
-			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCInterpolator[c.Expr[Any], c.Expr[A]] =
-				new SCPCInterpolator[c.Expr[Any], c.Expr[A]](new internal.OfType[c.type, A](tpe))
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCInterpolator[c.type, c.Expr[Any], c.Expr[A]] =
+				new SCPCInterpolator[c.type, c.Expr[Any], c.Expr[A]](new internal.OfType[c.type, A](tpe))
 
-			override def lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]): SCPCInterpolator[c.Expr[Any], Z] =
-				new SCPCInterpolator[c.Expr[Any], Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
+			override def lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]): SCPCInterpolator[c.type, c.Expr[Any], Z] =
+				new SCPCInterpolator[c.type, c.Expr[Any], Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
 		}
 	}
 
@@ -625,109 +654,119 @@ object Interpolator
 	 * @group InterpolatorGroup
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def quotedInterpolators(implicit quotes: scala.quoted.Quotes): Interpolators[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type] with LiftedInterpolator = {
-		new Interpolators[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type]
-				with ExprIndependentInterpolators[scala.quoted.Expr[Any]]
+	val quotedInterpolators: Interpolators[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.ToExpr, TypeCreator] with LiftedInterpolator = {
+		new Interpolators[quoted.Quotes, scala.quoted.Expr, scala.quoted.ToExpr, TypeCreator]
+				with ExprIndependentInterpolators[quoted.Quotes, scala.quoted.Expr[Any]]
 				with LiftedInterpolator {
 			import scala.quoted.*
 
-			override def `lazy`[A](fn:Function0[SCPCInterpolator[quoted.Expr[Any], A]]):SCPCInterpolator[quoted.Expr[Any], A] =
+			override def `lazy`[A](fn:Function0[SCPCInterpolator[Quotes, Expr[Any], A]]):SCPCInterpolator[Quotes, Expr[Any], A] =
 				new SCPCInterpolator(internal.DelayedConstruction.interpolator(fn))
 
-			override def ofType[A](implicit tpe: Type[A]): SCPCInterpolator[Expr[Any], Expr[A]] =
+			override def ofType[A](implicit tpe: TypeCreator[A]): SCPCInterpolator[Quotes, Expr[Any], Expr[A]] =
 				new SCPCInterpolator(new internal.OfType[A])
 
-			override def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: quoted.Type[Lifter]):SCPCInterpolator[Expr[Any], Z] =
+			override def lifted[Lifter[_], Z](lift:LiftFunction[Lifter, Z], description:String)(implicit typ: TypeCreator[Lifter]):SCPCInterpolator[Quotes, Expr[Any], Z] =
 				new SCPCInterpolator(internal.Lifted(lift, ExpectingDescription(description)))
 		}
 	}
 }
 
+@ifdef("scalaEpochVersion:2")
+private[stringContextParserCombinator]
+trait VersionSpecificInterpolatorModule {
+}
+
+@ifdef("scalaBinaryVersion:3")
+private[stringContextParserCombinator]
+trait VersionSpecificInterpolatorModule extends ExprIndependentInterpolators[scala.quoted.Quotes, scala.quoted.Expr[Any]] {
+}
+
 /**
  * Interpolators that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentInterpolators[Expr] {
+private[stringContextParserCombinator] trait ExprIndependentInterpolators[Ctx, Expr] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:Set[Char]):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
+	def charIn(str:Set[Char]):SCPCInterpolator[Ctx, Expr, Char] =
+		new SCPCInterpolator[Ctx, Expr, Char](internal.CharIn[Ctx, Id, Id](str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:Seq[Char]):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](str))
+	def charIn(str:Seq[Char]):SCPCInterpolator[Ctx, Expr, Char] =
+		new SCPCInterpolator[Ctx, Expr, Char](internal.CharIn[Ctx, Id, Id](str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:String):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharIn[Id, Id](scala.Predef.wrapString(str)))
+	def charIn(str:String):SCPCInterpolator[Ctx, Expr, Char] =
+		new SCPCInterpolator[Ctx, Expr, Char](internal.CharIn[Ctx, Id, Id](scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def charWhere(fn:Function1[Char, Boolean]):SCPCInterpolator[Expr, Char] =
-		new SCPCInterpolator[Expr, Char](internal.CharWhere[Id, Id](fn))
+	def charWhere(fn:Function1[Char, Boolean]):SCPCInterpolator[Ctx, Expr, Char] =
+		new SCPCInterpolator[Ctx, Expr, Char](internal.CharWhere[Ctx, Id, Id](fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:Set[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
+	def codePointIn(str:Set[CodePoint]):SCPCInterpolator[Ctx, Expr, CodePoint] =
+		new SCPCInterpolator[Ctx, Expr, CodePoint](internal.CodePointIn[Ctx, Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:Seq[CodePoint]):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
+	def codePointIn(str:Seq[CodePoint]):SCPCInterpolator[Ctx, Expr, CodePoint] =
+		new SCPCInterpolator[Ctx, Expr, CodePoint](internal.CodePointIn[Ctx, Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:String):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointIn[Id, Id](str))
+	def codePointIn(str:String):SCPCInterpolator[Ctx, Expr, CodePoint] =
+		new SCPCInterpolator[Ctx, Expr, CodePoint](internal.CodePointIn[Ctx, Id, Id](str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCPCInterpolator[Expr, CodePoint] =
-		new SCPCInterpolator[Expr, CodePoint](internal.CodePointWhere[Id, Id](fn))
+	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCPCInterpolator[Ctx, Expr, CodePoint] =
+		new SCPCInterpolator[Ctx, Expr, CodePoint](internal.CodePointWhere[Ctx, Id, Id](fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def isString(str:String):SCPCInterpolator[Expr, Unit] =
-		new SCPCInterpolator[Expr, Unit](internal.IsString[Id, Id](str))
+	def isString(str:String):SCPCInterpolator[Ctx, Expr, Unit] =
+		new SCPCInterpolator[Ctx, Expr, Unit](internal.IsString[Ctx, Id, Id](str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def pass:SCPCInterpolator[Expr, Unit] =
-		new SCPCInterpolator[Expr, Unit](new internal.Pass[Id, Id])
+	def pass:SCPCInterpolator[Ctx, Expr, Unit] =
+		new SCPCInterpolator[Ctx, Expr, Unit](new internal.Pass[Ctx, Id, Id])
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def fail(message:String):SCPCInterpolator[Expr, Nothing] =
-		new SCPCInterpolator[Expr, Nothing](new internal.Fail[Id, Id](ExpectingDescription(message)))
+	def fail(message:String):SCPCInterpolator[Ctx, Expr, Nothing] =
+		new SCPCInterpolator[Ctx, Expr, Nothing](new internal.Fail[Ctx, Id, Id](ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def end:SCPCInterpolator[Expr, Unit] =
-		new SCPCInterpolator[Expr, Unit](new internal.End[Id, Id]())
+	def end:SCPCInterpolator[Ctx, Expr, Unit] =
+		new SCPCInterpolator[Ctx, Expr, Unit](new internal.End[Ctx, Id, Id]())
 }

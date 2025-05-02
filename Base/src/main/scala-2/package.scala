@@ -12,6 +12,7 @@ package object stringContextParserCombinator {
 	type Id[+A] = A
 	/** An identity function for lifting into the identity context */
 	type IdToExpr[A] = =:=[A, A]
+	implicit val given_IdCtx: IdCtx = new IdCtx()
 
 	private[stringContextParserCombinator]
 	val Name = new Unapply.Fixed[Universe#Name, String] {
@@ -82,4 +83,6 @@ package object stringContextParserCombinator {
 package stringContextParserCombinator {
 	/** Support for Interpolator.contextInterpolators.lifted; represents a macro-level function that combines a CC[A] and an A. */
 	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
+	/** A context avaliable for the identity context. Essentially a `Unit`, but with an implicit value */
+	final class IdCtx()
 }

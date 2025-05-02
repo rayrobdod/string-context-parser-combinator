@@ -18,7 +18,7 @@ import scala.collection.mutable.Builder
  *
  * Below is an example of implementing and using a custom `Repeated`:
  * ```scala
- * import name.rayrobdod.stringContextParserCombinator.Interpolator.charIn
+ * import name.rayrobdod.stringContextParserCombinator.IdCtx
  * import name.rayrobdod.stringContextParserCombinator.Interpolator.idInterpolators
  * import name.rayrobdod.stringContextParserCombinator.typeclass.Repeated
  *
@@ -27,16 +27,16 @@ import scala.collection.mutable.Builder
  * case class Digits(value:Int)
  *
  * // define the given instance
- * given Repeated[Digit, Digits] with {
+ * given Repeated[IdCtx, Digit, Digits] with {
  *  type Acc = Int
- *  def init():Acc = 0
- *  def append(acc:Acc, elem:Digit):Acc = (acc * 10) + elem.value
- *  def result(acc:Acc):Digits = new Digits(acc)
+ *  def init()(implicit ctx:IdCtx):Acc = 0
+ *  def append(acc:Acc, elem:Digit)(implicit ctx:IdCtx):Acc = (acc * 10) + elem.value
+ *  def result(acc:Acc)(implicit ctx:IdCtx):Digits = new Digits(acc)
  * }
  *
  * // create the parsers
- * val digit:idInterpolators.Interpolator[Digit] = charIn('0' to '9').map(x => Digit(x - '0'))
- * val digits:idInterpolators.Interpolator[Digits] = digit.repeat(1)// using Repeated[Digit, Digits]
+ * val digit:idInterpolators.Interpolator[Digit] = idInterpolators.charIn('0' to '9').map(x => Digit(x - '0'))
+ * val digits:idInterpolators.Interpolator[Digits] = digit.repeat(1)// using Repeated[IdCtx, Digit, Digits]
  *
  * // use the parser
  * digits.interpolate(StringContext("1234"), Nil) // Digits(1234): Digits
@@ -46,15 +46,15 @@ import scala.collection.mutable.Builder
  * @tparam A the repeated input elements
  * @tparam Z the result container
  */
-trait Repeated[-A, +Z] {
+trait Repeated[-Ctx, -A, +Z] {
 	/** The accumulator */
 	type Acc
 	/** Returns a new empty accumulator */
-	def init():Acc
+	def init()(implicit ctx:Ctx):Acc
 	/** Inserts `elem` into `acc` */
-	def append(acc:Acc, elem:A):Acc
+	def append(acc:Acc, elem:A)(implicit ctx:Ctx):Acc
 	/** Transforms `acc` into a Z */
-	def result(acc:Acc):Z
+	def result(acc:Acc)(implicit ctx:Ctx):Z
 }
 
 /**
@@ -68,9 +68,9 @@ trait Repeated[-A, +Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait ContraRepeated[+Expr[+_], +A, Z] {
-	def headTail:PartialExprFunction[Expr, Z, (A, Z)]
-	def isEmpty(it:Z):Expr[Boolean]
+trait ContraRepeated[-Ctx, +Expr[+_], +A, Z] {
+	def headTail:PartialExprFunction[Ctx, Expr, Z, (A, Z)]
+	def isEmpty(it:Z)(implicit ctx:Ctx):Expr[Boolean]
 }
 
 /**
@@ -81,56 +81,56 @@ trait ContraRepeated[+Expr[+_], +A, Z] {
  * @tparam Z the result container
  * @tparam Expr the macro-level expression type
  */
-trait BiRepeated[Expr[+_], A, Z]
-	extends Repeated[A, Z]
-	with ContraRepeated[Expr, A, Z]
+trait BiRepeated[-Ctx, Expr[+_], A, Z]
+	extends Repeated[Ctx, A, Z]
+	with ContraRepeated[Ctx, Expr, A, Z]
 
 /** Predefined implicit implementations of Repeated */
 object Repeated extends LowPrioRepeated {
-	private[typeclass] def apply[A, Acc, Z](
-		initFn: () => Acc,
-		appendFn: (Acc, A) => Acc,
-		resultFn: Acc => Z,
-	): Repeated[A, Z] = {
+	private[typeclass] def apply[Ctx, A, Acc, Z](
+		initFn: (Ctx) => Acc,
+		appendFn: (Acc, A, Ctx) => Acc,
+		resultFn: (Acc, Ctx) => Z,
+	): Repeated[Ctx, A, Z] = {
 		type Acc2 = Acc
-		new Repeated[A, Z] {
+		new Repeated[Ctx, A, Z] {
 			type Acc = Acc2
-			def init():Acc = initFn()
-			def append(acc:Acc, elem:A):Acc = appendFn(acc, elem)
-			def result(acc:Acc):Z = resultFn(acc)
+			def init()(implicit ctx:Ctx):Acc = initFn(ctx)
+			def append(acc:Acc, elem:A)(implicit ctx:Ctx):Acc = appendFn(acc, elem, ctx)
+			def result(acc:Acc)(implicit ctx:Ctx):Z = resultFn(acc, ctx)
 		}
 	}
 
 	/**
 	 * Repeated units results in a unit
 	 */
-	implicit def unit:Repeated[Unit, Unit] = {
-		Repeated.apply[Unit, Unit, Unit](
-			() => (),
+	implicit def unit:Repeated[Any, Unit, Unit] = {
+		Repeated.apply[Any, Unit, Unit, Unit](
+			(_) => (),
+			(acc, _, _) => acc,
 			(acc, _) => acc,
-			(acc) => acc,
 		)
 	}
 
 	/**
 	 * Creates a String consisting of each of the input Char values in order
 	 */
-	implicit def charToString:Repeated[Char, String] = {
-		Repeated.apply[Char, StringBuilder, String](
-			() => new StringBuilder,
-			(acc, elem) => acc += elem,
-			(acc) => acc.toString,
+	implicit def charToString:Repeated[Any, Char, String] = {
+		Repeated.apply[Any, Char, StringBuilder, String](
+			(_: Any) => new StringBuilder,
+			(acc, elem, _: Any) => acc += elem,
+			(acc, _: Any) => acc.toString,
 		)
 	}
 
 	/**
 	 * Creates a String consisting of each of the input CodePoint values in order
 	 */
-	implicit def codepointToString:Repeated[CodePoint, String] = {
-		Repeated.apply[CodePoint, java.lang.StringBuilder, String](
-			() => new java.lang.StringBuilder,
-			(acc, elem) => acc.appendCodePoint(elem.intValue),
-			(acc) => acc.toString,
+	implicit def codepointToString:Repeated[Any, CodePoint, String] = {
+		Repeated.apply[Any, CodePoint, java.lang.StringBuilder, String](
+			(_: Any) => new java.lang.StringBuilder,
+			(acc, elem, _: Any) => acc.appendCodePoint(elem.intValue),
+			(acc, _: Any) => acc.toString,
 		)
 	}
 
@@ -138,11 +138,11 @@ object Repeated extends LowPrioRepeated {
 	 * Creates a String consisting of the concatenation of the component strings
 	 * @since 0.1.1
 	 */
-	def idConcatenateString:Repeated[String, String] = {
+	def idConcatenateString:Repeated[IdCtx, String, String] = {
 		Repeated.apply(
-			() => new StringBuilder,
-			(acc:StringBuilder, elem:String) => acc ++= elem,
-			(acc:StringBuilder) => acc.toString,
+			(_: IdCtx) => new StringBuilder,
+			(acc:StringBuilder, elem:String, _: IdCtx) => acc ++= elem,
+			(acc:StringBuilder, _: IdCtx) => acc.toString,
 		)
 	}
 
@@ -152,11 +152,11 @@ object Repeated extends LowPrioRepeated {
 	 */
 	def idFromSplicesUsingBuilder[A, Z](
 		newAccumulator: () => Builder[A, Z],
-	): Repeated[SplicePiece[Id, A], Z] = {
-		final class FromSplicesUsingBuilder extends Repeated[SplicePiece[Id, A], Z] {
+	): Repeated[IdCtx, SplicePiece[Id, A], Z] = {
+		final class FromSplicesUsingBuilder extends Repeated[IdCtx, SplicePiece[Id, A], Z] {
 			type Acc = Builder[A, Z]
-			def init(): Acc = newAccumulator()
-			def append(acc: Acc, piece: SplicePiece[Id, A]): Acc = {
+			def init()(implicit ctx: IdCtx): Acc = newAccumulator()
+			def append(acc: Acc, piece: SplicePiece[Id, A])(implicit ctx: IdCtx): Acc = {
 				piece match {
 					case SplicePiece.Zero() =>
 						acc
@@ -166,7 +166,7 @@ object Repeated extends LowPrioRepeated {
 						acc.++=(iter)
 				}
 			}
-			def result(acc: Acc): Z = acc.result()
+			def result(acc: Acc)(implicit ctx: IdCtx): Z = acc.result()
 		}
 		new FromSplicesUsingBuilder()
 	}
@@ -174,19 +174,19 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * @version 0.1.1
 	 */
-	implicit def idFromSplicesToList[A]: Repeated[SplicePiece[Id, A], List[A]] =
+	implicit def idFromSplicesToList[A]: Repeated[IdCtx, SplicePiece[Id, A], List[A]] =
 		idFromSplicesUsingBuilder(() => List.newBuilder)
 
 	/**
 	 * @since 0.1.1
 	 */
 	@ifdef("scalaEpochVersion:2")
-	trait Repeateds[Expr[+_], Type[_]] {
+	trait Repeateds[Ctx, Expr[+_], Type[_]] {
 		/**
 		 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
 		 * @since 0.1.1
 		 */
-		def concatenateString: Repeated[Expr[String], Expr[String]]
+		def concatenateString: Repeated[Ctx, Expr[String], Expr[String]]
 
 		/**
 		 * Splice a sequence of `SplicePiece`s together using a Builder
@@ -210,7 +210,7 @@ object Repeated extends LowPrioRepeated {
 				)(implicit
 				accumulatorType: Type[Builder[A, Z]],
 				zType: Type[Z],
-		): Repeated[SplicePiece[Expr, A], Expr[Z]]
+		): Repeated[Ctx, SplicePiece[Expr, A], Expr[Z]]
 
 		/**
 		 * Splice a sequence of `SplicePiece`s together into a `List`
@@ -219,20 +219,20 @@ object Repeated extends LowPrioRepeated {
 		implicit def fromSplicesToExprList[A](implicit
 				accumulatorType: Type[Builder[A, List[A]]],
 				zType: Type[List[A]],
-		): Repeated[SplicePiece[Expr, A], Expr[List[A]]]
+		): Repeated[Ctx, SplicePiece[Expr, A], Expr[List[A]]]
 	}
 
 	/**
 	 * @since 0.1.1
 	 */
 	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):Repeateds[c.Expr, c.TypeTag] = {
-		new Repeateds[c.Expr, c.TypeTag] {
-			def concatenateString:Repeated[c.Expr[String], c.Expr[String]] = {
+	def forContext(c:scala.reflect.macros.blackbox.Context):Repeateds[c.type, c.Expr, c.TypeTag] = {
+		new Repeateds[c.type, c.Expr, c.TypeTag] {
+			def concatenateString:Repeated[c.type, c.Expr[String], c.Expr[String]] = {
 				import c.universe.Tree
 				import c.universe.Quasiquote
 				val ttString0 = c.universe.typeTag[String]
-				final class ConcatenateString extends Repeated[c.Expr[String], c.Expr[String]] {
+				final class ConcatenateString extends Repeated[c.type, c.Expr[String], c.Expr[String]] {
 					val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
 					val accumulatorTypeTree = c.universe.TypeTree(
 						c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
@@ -261,8 +261,8 @@ object Repeated extends LowPrioRepeated {
 						)
 					}
 
-					def init():Acc = AccZero
-					def append(acc:Acc, elem:c.Expr[String]):Acc = acc match {
+					def init()(implicit ctx:c.type):Acc = AccZero
+					def append(acc:Acc, elem:c.Expr[String])(implicit ctx:c.type):Acc = acc match {
 						case AccZero => new AccOne(elem)
 						case accOne: AccOne => {
 							val retval = new AccMany()
@@ -276,7 +276,7 @@ object Repeated extends LowPrioRepeated {
 							accMany
 						}
 					}
-					def result(acc:Acc):c.Expr[String] = {
+					def result(acc:Acc)(implicit ctx:c.type):c.Expr[String] = {
 						acc match {
 							case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
 							case accOne: AccOne => accOne.elem
@@ -295,13 +295,13 @@ object Repeated extends LowPrioRepeated {
 					)(implicit
 					accumulatorType: c.universe.TypeTag[Builder[A, Z]],
 					zType: c.universe.TypeTag[Z],
-			): Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] = {
+			): Repeated[c.type, SplicePiece[c.Expr, A], c.Expr[Z]] = {
 				// using default arguments confuses the typechecker (found `c.Expr` required `x$1.Expr`), so don't provide default arguments
 
 				import c.universe.Tree
 				import c.universe.Quasiquote
 
-				final class FromSplicesUsingBuilder extends Repeated[SplicePiece[c.Expr, A], c.Expr[Z]] {
+				final class FromSplicesUsingBuilder extends Repeated[c.type, SplicePiece[c.Expr, A], c.Expr[Z]] {
 					val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
 					val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
 					val accumulatorIdent = c.universe.Ident(accumulatorName)
@@ -329,8 +329,8 @@ object Repeated extends LowPrioRepeated {
 						)
 					}
 
-					def init():Acc = AccZero
-					def append(acc:Acc, elem:SplicePiece[c.Expr, A]):Acc = acc match {
+					def init()(implicit ctx:c.type):Acc = AccZero
+					def append(acc:Acc, elem:SplicePiece[c.Expr, A])(implicit ctx:c.type):Acc = acc match {
 						case AccZero =>
 							elem match {
 								case _: SplicePiece.Zero[c.Expr] => AccZero
@@ -384,7 +384,7 @@ object Repeated extends LowPrioRepeated {
 						}
 					}
 
-					def result(acc:Acc):c.Expr[Z] = {
+					def result(acc:Acc)(implicit ctx:c.type):c.Expr[Z] = {
 						acc match {
 							case AccZero => ifZero.map(_.apply()).getOrElse(c.Expr[Z](q"$newAccumulator.result()"))
 							case accOne: AccOneScalar => ifOneScalar.applyOrElse(accOne.elem, (e: c.Expr[A]) => c.Expr[Z](q"$newAccumulator.+=(${e}).result()"))
@@ -400,7 +400,7 @@ object Repeated extends LowPrioRepeated {
 			def fromSplicesToExprList[A](implicit
 					accumulatorType: c.universe.TypeTag[Builder[A, List[A]]],
 					zType: c.universe.TypeTag[List[A]],
-			): Repeated[SplicePiece[c.Expr, A], c.Expr[List[A]]] = {
+			): Repeated[c.type, SplicePiece[c.Expr, A], c.Expr[List[A]]] = {
 				this.fromSplicesUsingBuilder[A, List[A]](
 					c.universe.reify(List.newBuilder),
 					Option(() => c.universe.reify(List.empty)),
@@ -416,7 +416,7 @@ object Repeated extends LowPrioRepeated {
 	 * @since 0.1.1
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def quotedConcatenateString(implicit quotes: scala.quoted.Quotes):Repeated[scala.quoted.Expr[String], scala.quoted.Expr[String]] = {
+	def quotedConcatenateString:Repeated[scala.quoted.Quotes, scala.quoted.Expr[String], scala.quoted.Expr[String]] = {
 		new RepeatedImpl.ConcatenateString
 	}
 
@@ -436,12 +436,12 @@ object Repeated extends LowPrioRepeated {
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	def quotedFromSplicesUsingBuilder[A, Z](
-			newAccumulator: scala.quoted.Expr[Builder[A, Z]],
-			ifZero: Option[() => scala.quoted.Expr[Z]] = None,
-			ifOneScalar: PartialFunction[scala.quoted.Expr[A], scala.quoted.Expr[Z]] = PartialFunction.empty,
-			ifOneSplice: PartialFunction[scala.quoted.Expr[Iterable[A]], scala.quoted.Expr[Z]] = PartialFunction.empty
-			)(implicit quotes: scala.quoted.Quotes, typA: scala.quoted.Type[A], typZ: scala.quoted.Type[Z], typBuilder: scala.quoted.Type[Builder[A, Z]],
-	): Repeated[SplicePiece[scala.quoted.Expr, A], scala.quoted.Expr[Z]] = {
+			newAccumulator: (scala.quoted.Quotes) => scala.quoted.Expr[Builder[A, Z]],
+			ifZero: (scala.quoted.Quotes) => Option[scala.quoted.Expr[Z]] = _ => None,
+			ifOneScalar: PartialFunction[(scala.quoted.Expr[A], scala.quoted.Quotes), scala.quoted.Expr[Z]] = PartialFunction.empty,
+			ifOneSplice: PartialFunction[(scala.quoted.Expr[Iterable[A]], scala.quoted.Quotes), scala.quoted.Expr[Z]] = PartialFunction.empty
+			)(implicit typA: TypeCreator[A], typZ: TypeCreator[Z],
+	): Repeated[scala.quoted.Quotes, SplicePiece[scala.quoted.Expr, A], scala.quoted.Expr[Z]] = {
 		new RepeatedImpl.FromSplicesUsingBuilder(newAccumulator, ifZero, ifOneScalar, ifOneSplice)
 	}
 
@@ -450,7 +450,7 @@ object Repeated extends LowPrioRepeated {
 	 * @since 0.1.1
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	implicit def quotedFromSplicesToExprList[A](implicit quotes: scala.quoted.Quotes, typA: scala.quoted.Type[A]): Repeated[SplicePiece[scala.quoted.Expr, A], scala.quoted.Expr[List[A]]] =
+	implicit def quotedFromSplicesToExprList[A](implicit typA: TypeCreator[A]): Repeated[scala.quoted.Quotes, SplicePiece[scala.quoted.Expr, A], scala.quoted.Expr[List[A]]] =
 		RepeatedImpl.quotedFromSplicesToExprList
 
 	/**
@@ -474,92 +474,92 @@ private[typeclass] trait LowPrioRepeated {
 	 * The fallback Repeated;
 	 * creates a List containing each of the input values
 	 */
-	implicit def toList[A]:Repeated[A, List[A]] = {
-		Repeated.apply[A, Builder[A, List[A]], List[A]](
-			() => List.newBuilder[A],
-			(acc, elem) => acc += elem,
-			(acc) => acc.result()
+	implicit def toList[A]:Repeated[Any, A, List[A]] = {
+		Repeated.apply[Any, A, Builder[A, List[A]], List[A]](
+			(_:Any) => List.newBuilder[A],
+			(acc, elem, _:Any) => acc += elem,
+			(acc, _:Any) => acc.result()
 		)
 	}
 }
 
 /** Predefined implicit implementations of ContraRepeated */
 object ContraRepeated extends LowPrioContraRepeated {
-	implicit def idUnit:ContraRepeated[Id, Unit, Unit] = BiRepeated.idUnit
+	implicit def idUnit:ContraRepeated[IdCtx, Id, Unit, Unit] = BiRepeated.idUnit
 
 	@ifdef("scalaEpochVersion:2")
-	trait ContraRepeateds[Expr[+_], Type[_]] {
-		implicit def unit:ContraRepeated[Expr, Unit, Unit]
-		implicit def toExprList[A](implicit tt:Type[A]):ContraRepeated[Expr, Expr[A], Expr[List[A]]]
+	trait ContraRepeateds[Ctx, Expr[+_], Type[_]] {
+		implicit def unit:ContraRepeated[Ctx, Expr, Unit, Unit]
+		implicit def toExprList[A](implicit tt:Type[A]):ContraRepeated[Ctx, Expr, Expr[A], Expr[List[A]]]
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):ContraRepeateds[c.Expr, c.TypeTag] = {
-		new ContraRepeateds[c.Expr, c.TypeTag] {
-			implicit override def unit:ContraRepeated[c.Expr, Unit, Unit] =
+	def forContext(c:scala.reflect.macros.blackbox.Context):ContraRepeateds[c.type, c.Expr, c.TypeTag] = {
+		new ContraRepeateds[c.type, c.Expr, c.TypeTag] {
+			implicit override def unit:ContraRepeated[c.type, c.Expr, Unit, Unit] =
 				BiRepeated.forContext(c).unit
 
-			implicit override def toExprList[A](implicit tt:c.TypeTag[A]):ContraRepeated[c.Expr, c.Expr[A], c.Expr[List[A]]] =
+			implicit override def toExprList[A](implicit tt:c.TypeTag[A]):ContraRepeated[c.type, c.Expr, c.Expr[A], c.Expr[List[A]]] =
 				BiRepeated.forContext(c).toExprList[A]
 		}
 	}
 
 	@ifdef("scalaBinaryVersion:3")
-	implicit def quotedUnit(implicit quotes: scala.quoted.Quotes):ContraRepeated[scala.quoted.Expr, Unit, Unit] =
+	implicit def quotedUnit:ContraRepeated[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] =
 		BiRepeated.quotedUnit
 
 	@ifdef("scalaBinaryVersion:3")
-	implicit def quotedToExprList[A](implicit quotes: scala.quoted.Quotes, typA: scala.quoted.Type[A]):ContraRepeated[scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[List[A]]] =
+	implicit def quotedToExprList[A](implicit typA: TypeCreator[A]):ContraRepeated[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[List[A]]] =
 		BiRepeated.quotedToExprList
 }
 
 private[typeclass] trait LowPrioContraRepeated {
-	implicit def idToList[A]:ContraRepeated[Id, A, List[A]] = BiRepeated.idToList
+	implicit def idToList[A]:ContraRepeated[IdCtx, Id, A, List[A]] = BiRepeated.idToList
 }
 
 /** Predefined implicit implementations of BiRepeated */
 object BiRepeated extends LowPrioBiRepeated {
-	private[typeclass] def apply[Expr[+_], A, Acc, Z](
-		initFn: () => Acc,
-		appendFn: (Acc, A) => Acc,
-		resultFn: Acc => Z,
-		headtailFn: PartialExprFunction[Expr, Z, (A, Z)],
-		isEmptyFn: Z => Expr[Boolean],
-	): BiRepeated[Expr, A, Z] = {
+	private[typeclass] def apply[Ctx, Expr[+_], A, Acc, Z](
+		initFn: (Ctx) => Acc,
+		appendFn: (Acc, A, Ctx) => Acc,
+		resultFn: (Acc, Ctx) => Z,
+		headtailFn: PartialExprFunction[Ctx, Expr, Z, (A, Z)],
+		isEmptyFn: (Z, Ctx) => Expr[Boolean],
+	): BiRepeated[Ctx, Expr, A, Z] = {
 		type Acc2 = Acc
-		new BiRepeated[Expr, A, Z] {
+		new BiRepeated[Ctx, Expr, A, Z] {
 			type Acc = Acc2
-			def init():Acc = initFn()
-			def append(acc:Acc, elem:A):Acc = appendFn(acc, elem)
-			def result(acc:Acc):Z = resultFn(acc)
+			def init()(implicit ctx:Ctx):Acc = initFn(ctx)
+			def append(acc:Acc, elem:A)(implicit ctx:Ctx):Acc = appendFn(acc, elem, ctx)
+			def result(acc:Acc)(implicit ctx:Ctx):Z = resultFn(acc, ctx)
 
-			def headTail:PartialExprFunction[Expr, Z, (A, Z)] = headtailFn
-			def isEmpty(it:Z):Expr[Boolean] = isEmptyFn(it)
+			def headTail:PartialExprFunction[Ctx, Expr, Z, (A, Z)] = headtailFn
+			def isEmpty(it:Z)(implicit ctx:Ctx):Expr[Boolean] = isEmptyFn(it, ctx)
 		}
 	}
 
-	implicit def idUnit:BiRepeated[Id, Unit, Unit] = {
-		BiRepeated.apply[Id, Unit, Unit, Unit](
-			() => (),
+	implicit def idUnit:BiRepeated[IdCtx, Id, Unit, Unit] = {
+		BiRepeated.apply[IdCtx, Id, Unit, Unit, Unit](
+			(_) => (),
+			(acc, _, _) => acc,
 			(acc, _) => acc,
-			(acc) => acc,
-			PartialExprFunction[Id, Unit, (Unit, Unit)](
-				_ => true,
-				value => (value, value),
+			PartialExprFunction[IdCtx, Id, Unit, (Unit, Unit)](
+				(_, _) => true,
+				(value, _) => (value, value),
 			),
-			_ => true,
+			(_, _) => true,
 		)
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait BiRepeateds[Expr[+_], Type[_]] {
-		implicit def unit:BiRepeated[Expr, Unit, Unit]
-		implicit def toExprList[A](implicit typA:Type[A]):BiRepeated[Expr, Expr[A], Expr[List[A]]]
+	trait BiRepeateds[Ctx, Expr[+_], Type[_]] {
+		implicit def unit:BiRepeated[Ctx, Expr, Unit, Unit]
+		implicit def toExprList[A](implicit typA:Type[A]):BiRepeated[Ctx, Expr, Expr[A], Expr[List[A]]]
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):BiRepeateds[c.Expr, c.TypeTag] = {
-		new BiRepeateds[c.Expr, c.TypeTag] {
+	def forContext(c:scala.reflect.macros.blackbox.Context):BiRepeateds[c.type, c.Expr, c.TypeTag] = {
+		new BiRepeateds[c.type, c.Expr, c.TypeTag] {
 			private[this] val exprTrue = c.Expr[Boolean](c.universe.Literal(c.universe.Constant(true)))
 			private[this] def select[A, Z](qualifier:c.Expr[A], name:String)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
 				c.Expr[Z](c.universe.Select(qualifier.tree, c.universe.TermName(name)))
@@ -570,24 +570,24 @@ object BiRepeated extends LowPrioBiRepeated {
 				c.Expr[Z](namesTree)
 			}
 
-			implicit override def unit:BiRepeated[c.Expr, Unit, Unit] = {
-				BiRepeated.apply[c.Expr, Unit, Unit, Unit](
-					() => (),
+			implicit override def unit:BiRepeated[c.type, c.Expr, Unit, Unit] = {
+				BiRepeated.apply[c.type, c.Expr, Unit, Unit, Unit](
+					(_) => (),
+					(acc, _, _) => acc,
 					(acc, _) => acc,
-					(acc) => acc,
-					PartialExprFunction[c.Expr, Unit, (Unit, Unit)](
-						_ => exprTrue,
-						value => (value, value)
+					PartialExprFunction[c.type, c.Expr, Unit, (Unit, Unit)](
+						(_, _) => exprTrue,
+						(value, _) => (value, value)
 					),
-					_ => exprTrue,
+					(_, _) => exprTrue,
 				)
 			}
 
-			implicit override def toExprList[A](implicit typA:c.TypeTag[A]):BiRepeated[c.Expr, c.Expr[A], c.Expr[List[A]]] = {
-				BiRepeated.apply[c.Expr, c.Expr[A], Builder[c.Tree, List[c.Tree]], c.Expr[List[A]]](
-					() => List.newBuilder[c.Tree],
-					(acc, elem) => {acc += elem.tree},
-					(acc) => {
+			implicit override def toExprList[A](implicit typA:c.TypeTag[A]):BiRepeated[c.type, c.Expr, c.Expr[A], c.Expr[List[A]]] = {
+				BiRepeated.apply[c.type, c.Expr, c.Expr[A], Builder[c.Tree, List[c.Tree]], c.Expr[List[A]]](
+					(_) => List.newBuilder[c.Tree],
+					(acc, elem, _) => {acc += elem.tree},
+					(acc, _) => {
 						c.Expr[List[A]](
 							c.universe.Apply(
 								selectTermNames[Nothing]("_root_", "scala", "collection", "immutable", "List", "apply").tree,
@@ -596,48 +596,54 @@ object BiRepeated extends LowPrioBiRepeated {
 						)
 					},
 					PartialExprFunction(
-						it => select[List[A], Boolean](it, "nonEmpty"),
-						it => (
+						(it, _) => select[List[A], Boolean](it, "nonEmpty"),
+						(it, _) => (
 							select[List[A], A](it, "head"),
 							select[List[A], List[A]](it, "tail")
 						)
 					),
-					it => select[List[A], Boolean](it, "isEmpty"),
+					(it, _) => select[List[A], Boolean](it, "isEmpty"),
 				)
 			}
 		}
 	}
 
 	@ifdef("scalaBinaryVersion:3")
-	implicit def quotedUnit(implicit quotes: scala.quoted.Quotes):BiRepeated[scala.quoted.Expr, Unit, Unit] = {
-		BiRepeated.apply[scala.quoted.Expr, Unit, Unit, Unit](
-			() => (),
+	implicit def quotedUnit:BiRepeated[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] = {
+		BiRepeated.apply[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit, Unit](
+			(_) => (),
+			(acc, _, _) => acc,
 			(acc, _) => acc,
-			(acc) => acc,
-			PartialExprFunction[scala.quoted.Expr, Unit, (Unit, Unit)](
-				_ => scala.quoted.Expr(true),
-				value => (value, value),
+			PartialExprFunction[scala.quoted.Quotes, scala.quoted.Expr, Unit, (Unit, Unit)](
+				(_, ctx) => {
+					implicit val ctx2: scala.quoted.Quotes = ctx
+					scala.quoted.Expr(true)
+				},
+				(value, _) => (value, value),
 			),
-			_ => scala.quoted.Expr(true),
+			(_, ctx) => {
+				implicit val ctx2: scala.quoted.Quotes = ctx
+				scala.quoted.Expr(true)
+			},
 		)
 	}
 
 	@ifdef("scalaBinaryVersion:3")
-	implicit def quotedToExprList[A](implicit quotes: scala.quoted.Quotes, typ: scala.quoted.Type[A]):BiRepeated[scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[List[A]]] =
+	implicit def quotedToExprList[A](implicit typ: TypeCreator[A]):BiRepeated[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[List[A]]] =
 		RepeatedImpl.quotedToExprList
 }
 
 private[typeclass] trait LowPrioBiRepeated {
-	implicit def idToList[A]:BiRepeated[Id, A, List[A]] = {
-		BiRepeated.apply[Id, A, Builder[A, List[A]], List[A]](
-			() => List.newBuilder[A],
-			(acc, elem) => {acc += elem},
-			(acc) => acc.result(),
-			PartialExprFunction[Id, List[A], (A, List[A])](
-				it => it.nonEmpty,
-				it => ((it.head, it.tail)),
+	implicit def idToList[A]:BiRepeated[IdCtx, Id, A, List[A]] = {
+		BiRepeated.apply[IdCtx, Id, A, Builder[A, List[A]], List[A]](
+			(_: IdCtx) => List.newBuilder[A],
+			(acc, elem, _: IdCtx) => {acc += elem},
+			(acc, _: IdCtx) => acc.result(),
+			PartialExprFunction[IdCtx, Id, List[A], (A, List[A])](
+				(it, _: IdCtx) => it.nonEmpty,
+				(it, _: IdCtx) => ((it.head, it.tail)),
 			),
-			it => it.isEmpty,
+			(it, _: IdCtx) => it.isEmpty,
 		)
 	}
 }

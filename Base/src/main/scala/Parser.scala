@@ -34,29 +34,29 @@ import name.rayrobdod.stringContextParserCombinator.{Parser => SCPCParser}
  * @groupname Convert convert
  * @groupprio Convert 2000
  */
-final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] (
-		protected[stringContextParserCombinator] val impl: internal.Parser[Expr, Type, A]
+final class Parser[Ctx, Expr[+_], Type[_], A] private[stringContextParserCombinator] (
+		protected[stringContextParserCombinator] val impl: internal.Parser[Ctx, Expr, Type, A]
 ) {
 
 	/**
 	 * Returns an Interpolator that interpolates like this parser would
 	 * @group Convert
 	 */
-	def toInterpolator:SCPCInterpolator[Expr[Any], A] =
+	def toInterpolator:SCPCInterpolator[Ctx, Expr[Any], A] =
 		new SCPCInterpolator(this.impl)
 
 	/**
 	 * Returns an Extractor that builds an extractor like this parser would
 	 * @group Convert
 	 */
-	def toExtractor:SCPCExtractor[Expr, Type, A] =
+	def toExtractor:SCPCExtractor[Ctx, Expr, Type, A] =
 		new SCPCExtractor(this.impl)
 
 	/**
 	 * Processes an immediate string context and its arguments into a value
 	 * @group Parse
 	 */
-	def interpolate(sc:StringContext, args:List[Any])(implicit ev: Any <:< Expr[Any]):A = {
+	def interpolate(sc:StringContext, args:Seq[Any])(implicit ev1: IdCtx <:< Ctx, ev2: Any <:< Expr[Any]):A = {
 		this.toInterpolator.interpolate(sc, args)
 	}
 
@@ -66,7 +66,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @example
 	 * {{{
 	 * def valueImpl(c:Context)(args:c.Expr[Any]*):c.Expr[Result] = {
-	 *   val myParser:Interpolator[Expr[Result]] = ???
+	 *   val myParser:Interpolator[Ctx, Expr[Result]] = ???
 	 *   myParser.interpolate(c)("package.ValueStringContext")(args)
 	 * }
 	 *
@@ -84,7 +84,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @group Parse
 	 */
 	@ifdef("scalaEpochVersion:2")
-	final def interpolate(c: scala.reflect.macros.blackbox.Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev:c.Expr[Any] <:< Expr[Any]):A = {
+	final def interpolate(c:scala.reflect.macros.blackbox.Context)(extensionClassName:String)(args:Seq[c.Expr[Any]])(implicit ev1: c.type <:< Ctx, ev2:c.Expr[Any] <:< Expr[Any]):A = {
 		new Interpolator(this.impl).interpolate(c)(extensionClassName)(args)
 	}
 
@@ -95,7 +95,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * ```
 	 * def valueImpl(sc:Expr[scala.StringContext],
 	 *         args:Expr[Seq[Any]])(using Quotes):Expr[Result] = {
-	 *   val myParser:Interpolator[Expr[Result]] = ???
+	 *   val myParser:Interpolator[Ctx, Expr[Result]] = ???
 	 *   myParser.interpolate(sc, args)
 	 * }
 	 *
@@ -106,7 +106,8 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @group Parse
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	final def interpolate(sc:scala.quoted.Expr[scala.StringContext], args:scala.quoted.Expr[Seq[Any]])(implicit q:scala.quoted.Quotes, ev:scala.quoted.Expr[Any] <:< Expr[Any]):A = {
+	final def interpolate(sc:scala.quoted.Expr[scala.StringContext], args:scala.quoted.Expr[Seq[Any]])
+			(implicit q:scala.quoted.Quotes, ev1: scala.quoted.Quotes <:< Ctx, ev2:scala.quoted.Expr[Any] <:< Expr[Any]):A = {
 		new Interpolator(this.impl).interpolate(sc, args)
 	}
 
@@ -114,7 +115,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * Extract subexpressions from the given value according to the given StringContext
 	 * @group Parse
 	 */
-	def extract(sc:StringContext, value:A)(implicit ev:Id[Any] =:= Expr[Any], ev2:ClassTag[Any] =:= Type[Any]):Option[Seq[Any]] =
+	def extract(sc:StringContext, value:A)(implicit ev1: IdCtx =:= Ctx, ev2:Id[Any] =:= Expr[Any], ev3:ClassTag[Any] =:= Type[Any]):Option[Seq[Any]] =
 		this.toExtractor.extract(sc, value)
 
 	/**
@@ -140,7 +141,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @example
 	 * ```
 	 * def valueImpl(sc:Expr[scala.StringContext])(using Quotes):Expr[Unapply[Result]] = {
-	 *   val myParser:Extractor[Expr[Result]] = ???
+	 *   val myParser:Extractor[Ctx, Expr[Result]] = ???
 	 *   myParser.extractor(sc)
 	 * }
 	 *
@@ -158,7 +159,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 		typeA: scala.quoted.Type[UnexprA],
 		exprA: scala.quoted.Expr[UnexprA] <:< A,
 		exprBool: scala.quoted.Expr[Boolean] =:= Expr[Boolean],
-		typeBool: scala.quoted.Type[Boolean] =:= Type[Boolean],
+		typeBool: TypeCreator[Boolean] =:= Type[Boolean],
 	):scala.quoted.Expr[Unapply[UnexprA]] = {
 		new Extractor(this.impl).extractor(sc)
 	}
@@ -167,30 +168,64 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * Returns an interpolator which invokes this parser, then modifies a successful result according to fn
 	 * @group Map
 	 */
-	def map[Z](cofn:A => Z):Interpolator[Expr[Any], Z] =
+	def map[Z](cofn:(A, Ctx) => Z):Interpolator[Ctx, Expr[Any], Z] =
 		new Interpolator(internal.Map.interpolator(this.impl, cofn))
+
+	/**
+	 * Returns an interpolator which invokes this parser, then modifies a successful result according to fn
+	 * @group Map
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def map[Z](fn: A => Ctx ?=> Z):Interpolator[Ctx, Expr[Any], Z] =
+		new Interpolator(internal.Map.interpolator(this.impl, (value, ctx) => fn(value)(using ctx)))
 
 	/**
 	 * Returns an extractor which invokes this extractor after mapping the input value using `contrafn`
 	 * @group Map
 	 */
-	def contramap[Z](contrafn: Z => A):Extractor[Expr, Type, Z] =
+	def contramap[Z](contrafn: (Z, Ctx) => A):Extractor[Ctx, Expr, Type, Z] =
 		new Extractor(internal.Map.extractor(this.impl, contrafn))
+
+	/**
+	 * Returns an extractor which invokes this extractor after mapping the input value using `contrafn`
+	 * @group Map
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def contramap[Z](contrafn: Z => Ctx ?=> A):Extractor[Ctx, Expr, Type, Z] =
+		new Extractor(internal.Map.extractor(this.impl, (value, ctx) => contrafn(value)(using ctx)))
 
 	/**
 	 * @group Map
 	 */
-	def imap[Z](cofn:A => Z, contrafn: Z => A):Parser[Expr, Type, Z] =
+	def imap[Z](cofn:(A, Ctx) => Z, contrafn: (Z, Ctx) => A):Parser[Ctx, Expr, Type, Z] =
 		new Parser(internal.Map.parser(this.impl, cofn, contrafn))
+
+	/**
+	 * @group Map
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def imap[Z](cofn: A => Ctx ?=> Z, contrafn: Z => Ctx ?=> A):Parser[Ctx, Expr, Type, Z] =
+		new Parser(internal.Map.parser(this.impl, (value, ctx) => cofn(value)(using ctx), (value, ctx) => contrafn(value)(using ctx)))
 
 	/**
 	 * Returns an parser which is the pair of an Interpolator#map and an Extractor#widenWith
 	 * @group Map
 	 */
-	def widenWith[Z](cofn:A => Z, contrafn: PartialExprFunction[Expr, Z, A]):Parser[Expr, Type, Z] =
-		new Parser[Expr, Type, Z](new internal.Paired[Expr, Type, Z](
+	def widenWith[Z](cofn:(A, Ctx) => Z, contrafn: PartialExprFunction[Ctx, Expr, Z, A]):Parser[Ctx, Expr, Type, Z] =
+		new Parser[Ctx, Expr, Type, Z](new internal.Paired[Ctx, Expr, Type, Z](
 			internal.Map.interpolator(this.impl, cofn),
-			new internal.WidenWith[Expr, Type, A, Z](this.impl, contrafn)
+			new internal.WidenWith[Ctx, Expr, Type, A, Z](this.impl, contrafn)
+		))
+
+	/**
+	 * Returns an parser which is the pair of an Interpolator#map and an Extractor#widenWith
+	 * @group Map
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def widenWith[Z](cofn: A => Ctx ?=> Z, contrafn: PartialExprFunction[Ctx, Expr, Z, A]):Parser[Ctx, Expr, Type, Z] =
+		new Parser[Ctx, Expr, Type, Z](new internal.Paired[Ctx, Expr, Type, Z](
+			internal.Map.interpolator(this.impl, (value, ctx) => cofn(value)(using ctx)),
+			new internal.WidenWith[Ctx, Expr, Type, A, Z](this.impl, contrafn)
 		))
 
 	/**
@@ -199,20 +234,27 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * and ignores its input value while extracting
 	 * @group Map
 	 */
-	def void:Parser[Expr, Type, Unit] =
+	def void:Parser[Ctx, Expr, Type, Unit] =
 		new Parser(internal.Void.parser(this.impl))
 
 	/**
 	 * @group Sequence
 	 */
-	def flatMap[ExprZ <: Expr[Any], Z](cofn:A => Interpolator[ExprZ, Z]):Interpolator[ExprZ, Z] =
+	def flatMap[ExprZ <: Expr[Any], Z](cofn:(A, Ctx) => Interpolator[Ctx, ExprZ, Z]):Interpolator[Ctx, ExprZ, Z] =
 		new Interpolator(internal.FlatMap.interpolator(this.impl, cofn))
+
+	/**
+	 * @group Sequence
+	 */
+	@ifdef("scalaBinaryVersion:3")
+	def flatMap[ExprZ <: Expr[Any], Z](cofn:A => Ctx ?=> Interpolator[Ctx, ExprZ, Z]):Interpolator[Ctx, ExprZ, Z] =
+		new Interpolator(internal.FlatMap.interpolator(this.impl, (value: A, ctx: Ctx) => cofn(value)(using ctx)))
 
 	/**
 	 * Returns a parser which invokes this parser, but has the given description upon failure
 	 * @group ErrorPlus
 	 */
-	def opaque(description:String):Parser[Expr, Type, A] =
+	def opaque(description:String):Parser[Ctx, Expr, Type, A] =
 		new Parser(internal.Opaque.parser(this.impl, ExpectingDescription(description)))
 
 	/**
@@ -220,7 +262,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * but treats the result of a failed parse as if it does not consume input
 	 * @group Misc
 	 */
-	def attempt:Parser[Expr, Type, A] =
+	def attempt:Parser[Ctx, Expr, Type, A] =
 		new Parser(internal.Attempt.parser(this.impl))
 
 	/**
@@ -228,7 +270,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * but does not show the expected value in failure messages
 	 * @group Misc
 	 */
-	def hide:Parser[Expr, Type, A] =
+	def hide:Parser[Ctx, Expr, Type, A] =
 		new Parser(internal.Hide.parser(this.impl))
 
 	/**
@@ -239,7 +281,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @param ev A descriptor of how to combine two values into one value
 	 * @group Sequence
 	 */
-	def andThen[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiSequenced[A,B,Z]):Parser[Expr, Type, Z] =
+	def andThen[B, Z](rhs:Parser[Ctx, Expr, Type, B])(implicit ev:typeclass.BiSequenced[Ctx, A,B,Z]):Parser[Ctx, Expr, Type, Z] =
 		new Parser(internal.AndThen.parser(this.impl, rhs.impl, ev))
 
 	/**
@@ -247,7 +289,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def <~>[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiSequenced[A,B,Z]):Parser[Expr, Type, Z] =
+	def <~>[B, Z](rhs:Parser[Ctx, Expr, Type, B])(implicit ev:typeclass.BiSequenced[Ctx, A,B,Z]):Parser[Ctx, Expr, Type, Z] =
 		this.andThen(rhs)(ev)
 
 	/**
@@ -256,7 +298,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def <~(rhs:Parser[Expr, Type, Unit]):Parser[Expr, Type, A] =
+	def <~(rhs:Parser[Ctx, Expr, Type, Unit]):Parser[Ctx, Expr, Type, A] =
 		this.andThen(rhs)(typeclass.BiSequenced.genericUnit)
 
 	/**
@@ -265,8 +307,9 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @group Sequence
 	 * @since 0.1.1
 	 */
-	def ~>[B](rhs:Parser[Expr, Type, B])(implicit ev: A =:= Unit):Parser[Expr, Type, B] =
-		this.imap(ev, TypeConformanceCompat.equivFlip(ev)).andThen(rhs)(typeclass.BiSequenced.unitGeneric)
+	def ~>[B](rhs:Parser[Ctx, Expr, Type, B])(implicit ev: A =:= Unit):Parser[Ctx, Expr, Type, B] =
+		this.imap((value, _) => ev(value), (value, _) => TypeConformanceCompat.equivFlip(ev)(value))
+				.andThen(rhs)(typeclass.BiSequenced.unitGeneric)
 
 	/**
 	 * Returns a parser which invokes this parser, and then:
@@ -279,7 +322,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @param ev A descriptor of how to treat either value as one value
 	 * @group Branch
 	 */
-	def orElse[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiEithered[Expr, A,B,Z]):Parser[Expr, Type, Z] =
+	def orElse[B, Z](rhs:Parser[Ctx, Expr, Type, B])(implicit ev:typeclass.BiEithered[Ctx, Expr, A,B,Z]):Parser[Ctx, Expr, Type, Z] =
 		new Parser(internal.OrElse.parser(this.impl, rhs.impl, ev))
 
 	/**
@@ -287,7 +330,7 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 * @group Branch
 	 * @since 0.1.1
 	 */
-	def <|>[B, Z](rhs:Parser[Expr, Type, B])(implicit ev:typeclass.BiEithered[Expr, A,B,Z]):Parser[Expr, Type, Z] =
+	def <|>[B, Z](rhs:Parser[Ctx, Expr, Type, B])(implicit ev:typeclass.BiEithered[Ctx, Expr, A,B,Z]):Parser[Ctx, Expr, Type, Z] =
 		this.orElse(rhs)(ev)
 
 	/**
@@ -304,10 +347,10 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	def repeat[Z](
 		min:Int = 0,
 		max:Int = Integer.MAX_VALUE,
-		delimiter:Parser[Expr, Type, Unit] = new Parser[Expr, Type, Unit](new internal.Pass),
+		delimiter:Parser[Ctx, Expr, Type, Unit] = new Parser[Ctx, Expr, Type, Unit](new internal.Pass),
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.BiRepeated[Expr, A, Z]
-	):Parser[Expr, Type, Z] =
+		implicit ev:typeclass.BiRepeated[Ctx, Expr, A, Z]
+	):Parser[Ctx, Expr, Type, Z] =
 		new Parser(internal.Repeat.parser(this.impl, min, max, delimiter.impl, strategy, ev))
 
 	/**
@@ -320,8 +363,8 @@ final class Parser[Expr[+_], Type[_], A] private[stringContextParserCombinator] 
 	 */
 	def optionally[Z](
 		strategy:RepeatStrategy = RepeatStrategy.Possessive)(
-		implicit ev:typeclass.BiOptionally[Expr, A, Z]
-	):Parser[Expr, Type, Z] =
+		implicit ev:typeclass.BiOptionally[Ctx, Expr, A, Z]
+	):Parser[Ctx, Expr, Type, Z] =
 		new Parser(internal.Optionally.parser(this.impl, strategy, ev))
 }
 
@@ -347,35 +390,35 @@ object Parser
 		extends VersionSpecificParserModule
 {
 	@ifdef("scalaBinaryVersion:3")
-	type Parser[A] = SCPCParser[quoted.Expr, quoted.Type, A]
+	type Parser[A] = SCPCParser[quoted.Quotes, quoted.Expr, TypeCreator, A]
 	@ifdef("scalaBinaryVersion:3")
-	type Extractor[A] = SCPCExtractor[quoted.Expr, quoted.Type, A]
+	type Extractor[A] = SCPCExtractor[quoted.Quotes, quoted.Expr, TypeCreator, A]
 	@ifdef("scalaBinaryVersion:3")
-	type Interpolator[A] = SCPCInterpolator[quoted.Expr[Any], A]
+	type Interpolator[A] = SCPCInterpolator[quoted.Quotes, quoted.Expr[Any], A]
 
 	/**
 	 * A parser that succeeds iff the next part of the input is an `arg` with the given type, and captures the arg's tree
 	 * @group Arg
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def ofType[A](implicit typA: scala.quoted.Type[A], quoted: scala.quoted.Quotes): SCPCParser[scala.quoted.Expr, scala.quoted.Type, scala.quoted.Expr[A]] =
+	def ofType[A](implicit typA: TypeCreator[A]): SCPCParser[quoted.Quotes, scala.quoted.Expr, TypeCreator, scala.quoted.Expr[A]] =
 		new SCPCParser(new internal.OfType[A])
 
 	/**
 	 * A parser that acts like the Interpolator when interpolating, and like the Extractor when extracting
 	 * @group Misc
 	 */
-	def paired[Expr[+_], Type[_], A](
-		interpolator:SCPCInterpolator[Expr[Any], A],
-		extractor:SCPCExtractor[Expr, Type, A]
-	):SCPCParser[Expr, Type, A] =
-		new SCPCParser[Expr, Type, A](new internal.Paired(interpolator.impl, extractor.impl))
+	def paired[Ctx, Expr[+_], Type[_], A](
+		interpolator:SCPCInterpolator[Ctx, Expr[Any], A],
+		extractor:SCPCExtractor[Ctx, Expr, Type, A]
+	):SCPCParser[Ctx, Expr, Type, A] =
+		new SCPCParser[Ctx, Expr, Type, A](new internal.Paired(interpolator.impl, extractor.impl))
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def `lazy`[Expr[+_], Type[_], A](fn:Function0[SCPCParser[Expr, Type, A]]):SCPCParser[Expr, Type, A] =
+	def `lazy`[Ctx, Expr[+_], Type[_], A](fn:Function0[SCPCParser[Ctx, Expr, Type, A]]):SCPCParser[Ctx, Expr, Type, A] =
 		new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
 	// The `ToExpr` tparam isn't used directly, but it does help type inference at use sites
@@ -405,10 +448,10 @@ object Parser
 	 * @groupname Misc Miscellaneous
 	 * @groupprio Misc 999
 	 */
-	trait Parsers[Expr[+_], ToExpr[_], Type[_]] {
-		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Expr[Any], A]
-		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Expr, Type, A]
-		type Parser[A] = name.rayrobdod.stringContextParserCombinator.Parser[Expr, Type, A]
+	trait Parsers[Ctx, Expr[+_], ToExpr[_], Type[_]] {
+		type Interpolator[A] = name.rayrobdod.stringContextParserCombinator.Interpolator[Ctx, Expr[Any], A]
+		type Extractor[A] = name.rayrobdod.stringContextParserCombinator.Extractor[Ctx, Expr, Type, A]
+		type Parser[A] = name.rayrobdod.stringContextParserCombinator.Parser[Ctx, Expr, Type, A]
 
 		/**
 		 * Succeeds if the next character is a member of the given Set; captures that character
@@ -505,8 +548,8 @@ object Parser
 	 * Returns an Parsers that can parse raw values
 	 * @group ParserGroup
 	 */
-	val idParsers: Parsers[Id, IdToExpr, ClassTag] = {
-		new Parsers[Id, IdToExpr, ClassTag] with ExprIndependentParsers[Id, ClassTag] {
+	val idParsers: Parsers[IdCtx, Id, IdToExpr, ClassTag] = {
+		new Parsers[IdCtx, Id, IdToExpr, ClassTag] with ExprIndependentParsers[IdCtx, Id, ClassTag] {
 			override def `lazy`[A](fn:Function0[this.Parser[A]]):this.Parser[A] =
 				new this.Parser(internal.DelayedConstruction.parser(() => fn().impl))
 
@@ -523,16 +566,16 @@ object Parser
 	 * @group ParserGroup
 	 */
 	@ifdef("scalaEpochVersion:2")
-	def contextParsers(c:scala.reflect.macros.blackbox.Context):Parser.Parsers[c.Expr, c.universe.Liftable, c.TypeTag] = {
-		new Parser.Parsers[c.Expr, c.universe.Liftable, c.TypeTag]
-				with ExprIndependentParsers[c.Expr, c.TypeTag] {
-			override def `lazy`[A](fn:Function0[SCPCParser[c.Expr, c.TypeTag, A]]):SCPCParser[c.Expr, c.TypeTag, A] =
+	def contextParsers(c:scala.reflect.macros.blackbox.Context):Parser.Parsers[c.type, c.Expr, c.universe.Liftable, c.TypeTag] = {
+		new Parser.Parsers[c.type, c.Expr, c.universe.Liftable, c.TypeTag]
+				with ExprIndependentParsers[c.type, c.Expr, c.TypeTag] {
+			override def `lazy`[A](fn:Function0[SCPCParser[c.type, c.Expr, c.TypeTag, A]]):SCPCParser[c.type, c.Expr, c.TypeTag, A] =
 				new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
-			override def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):SCPCParser[c.Expr, c.TypeTag, A] =
+			override def paired[A](interpolator:Interpolator[A], extractor:Extractor[A]):SCPCParser[c.type, c.Expr, c.TypeTag, A] =
 				new SCPCParser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCParser[c.Expr, c.TypeTag, c.Expr[A]] =
+			override def ofType[A](implicit tpe: c.TypeTag[A]): SCPCParser[c.type, c.Expr, c.TypeTag, c.Expr[A]] =
 				new SCPCParser(new internal.OfType[c.type, A](tpe))
 		}
 	}
@@ -542,16 +585,16 @@ object Parser
 	 * @group ParserGroup
 	 */
 	@ifdef("scalaBinaryVersion:3")
-	def quotedParsers(implicit quotes: scala.quoted.Quotes):Parser.Parsers[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type] = {
-		new Parser.Parsers[scala.quoted.Expr, scala.quoted.ToExpr, scala.quoted.Type]
-				with ExprIndependentParsers[scala.quoted.Expr, scala.quoted.Type] {
-			override def `lazy`[A](fn:Function0[SCPCParser[scala.quoted.Expr, scala.quoted.Type, A]]):SCPCParser[scala.quoted.Expr, scala.quoted.Type, A] =
+	val quotedParsers:Parser.Parsers[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.ToExpr, TypeCreator] = {
+		new Parser.Parsers[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.ToExpr, TypeCreator]
+				with ExprIndependentParsers[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator] {
+			override def `lazy`[A](fn:Function0[SCPCParser[quoted.Quotes, scala.quoted.Expr, TypeCreator, A]]):SCPCParser[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator, A] =
 				new SCPCParser(internal.DelayedConstruction.parser(() => fn().impl))
 
-			override def paired[A](interpolator:SCPCInterpolator[scala.quoted.Expr[Any], A], extractor:SCPCExtractor[scala.quoted.Expr, scala.quoted.Type, A]):SCPCParser[scala.quoted.Expr, scala.quoted.Type, A] =
+			override def paired[A](interpolator:SCPCInterpolator[quoted.Quotes, scala.quoted.Expr[Any], A], extractor:SCPCExtractor[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator, A]):SCPCParser[quoted.Quotes, scala.quoted.Expr, TypeCreator, A] =
 				new SCPCParser(new internal.Paired(interpolator.impl, extractor.impl))
 
-			override def ofType[A](implicit tpe: scala.quoted.Type[A]): SCPCParser[scala.quoted.Expr, scala.quoted.Type, scala.quoted.Expr[A]] =
+			override def ofType[A](implicit tpe: TypeCreator[A]): SCPCParser[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator, scala.quoted.Expr[A]] =
 				new SCPCParser(new internal.OfType[A])
 		}
 	}
@@ -564,94 +607,94 @@ trait VersionSpecificParserModule {
 
 @ifdef("scalaBinaryVersion:3")
 private[stringContextParserCombinator]
-trait VersionSpecificParserModule extends ExprIndependentParsers[scala.quoted.Expr, scala.quoted.Type] {
+trait VersionSpecificParserModule extends ExprIndependentParsers[scala.quoted.Quotes, scala.quoted.Expr, TypeCreator] {
 }
 
 /**
  * Parsers that do not introduce an input dependency on Expr
  */
-private[stringContextParserCombinator] trait ExprIndependentParsers[Expr[+_], Type[_]] {
+private[stringContextParserCombinator] trait ExprIndependentParsers[Ctx, Expr[+_], Type[_]] {
 	/**
 	 * Succeeds if the next character is a member of the given Set; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:Set[Char]):SCPCParser[Expr, Type, Char] =
-		new SCPCParser[Expr, Type, Char](internal.CharIn(str))
+	def charIn(str:Set[Char]):SCPCParser[Ctx, Expr, Type, Char] =
+		new SCPCParser[Ctx, Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given Seq; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:Seq[Char]):SCPCParser[Expr, Type, Char] =
-		new SCPCParser[Expr, Type, Char](internal.CharIn(str))
+	def charIn(str:Seq[Char]):SCPCParser[Ctx, Expr, Type, Char] =
+		new SCPCParser[Ctx, Expr, Type, Char](internal.CharIn(str))
 
 	/**
 	 * Succeeds if the next character is a member of the given String; captures that character
 	 * @group PartAsChar
 	 */
-	def charIn(str:String):SCPCParser[Expr, Type, Char] =
-		new SCPCParser[Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
+	def charIn(str:String):SCPCParser[Ctx, Expr, Type, Char] =
+		new SCPCParser[Ctx, Expr, Type, Char](internal.CharIn(scala.Predef.wrapString(str)))
 
 	/**
 	 * Succeeds if the next character matches the given predicate; captures that character
 	 * @group PartAsChar
 	 */
-	def charWhere(fn:Function1[Char, Boolean]):SCPCParser[Expr, Type, Char] =
-		new SCPCParser[Expr, Type, Char](internal.CharWhere(fn))
+	def charWhere(fn:Function1[Char, Boolean]):SCPCParser[Ctx, Expr, Type, Char] =
+		new SCPCParser[Ctx, Expr, Type, Char](internal.CharWhere(fn))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Set; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:Set[CodePoint]):SCPCParser[Expr, Type, CodePoint] =
-		new SCPCParser[Expr, Type, CodePoint](internal.CodePointIn(str))
+	def codePointIn(str:Set[CodePoint]):SCPCParser[Ctx, Expr, Type, CodePoint] =
+		new SCPCParser[Ctx, Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given Seq; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:Seq[CodePoint]):SCPCParser[Expr, Type, CodePoint] =
-		new SCPCParser[Expr, Type, CodePoint](internal.CodePointIn(str))
+	def codePointIn(str:Seq[CodePoint]):SCPCParser[Ctx, Expr, Type, CodePoint] =
+		new SCPCParser[Ctx, Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint is a member of the given string; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointIn(str:String):SCPCParser[Expr, Type, CodePoint] =
-		new SCPCParser[Expr, Type, CodePoint](internal.CodePointIn(str))
+	def codePointIn(str:String):SCPCParser[Ctx, Expr, Type, CodePoint] =
+		new SCPCParser[Ctx, Expr, Type, CodePoint](internal.CodePointIn(str))
 
 	/**
 	 * Succeeds if the next codepoint matches the given predicate; captures that code point
 	 * @group PartAsCodepoint
 	 */
-	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCPCParser[Expr, Type, CodePoint] =
-		new SCPCParser[Expr, Type, CodePoint](internal.CodePointWhere(fn))
+	def codePointWhere(fn:Function1[CodePoint, Boolean]):SCPCParser[Ctx, Expr, Type, CodePoint] =
+		new SCPCParser[Ctx, Expr, Type, CodePoint](internal.CodePointWhere(fn))
 
 	/**
 	 * Succeeds if the next set of characters in the input is equal to the given string
 	 * @group Part
 	 */
-	def isString(str:String):SCPCParser[Expr, Type, Unit] =
-		new SCPCParser[Expr, Type, Unit](internal.IsString(str))
+	def isString(str:String):SCPCParser[Ctx, Expr, Type, Unit] =
+		new SCPCParser[Ctx, Expr, Type, Unit](internal.IsString(str))
 
 	/**
 	 * A parser that consumes no input and always succeeds
 	 * @group Constant
 	 */
-	def pass:SCPCParser[Expr, Type, Unit] =
-		new SCPCParser[Expr, Type, Unit](new internal.Pass)
+	def pass:SCPCParser[Ctx, Expr, Type, Unit] =
+		new SCPCParser[Ctx, Expr, Type, Unit](new internal.Pass)
 
 	/**
 	 * Indirectly refers to a parser, to allow for mutual-recursion
 	 * @group Misc
 	 */
-	def fail(message:String):SCPCParser[Expr, Type, Nothing] =
-		new SCPCParser[Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
+	def fail(message:String):SCPCParser[Ctx, Expr, Type, Nothing] =
+		new SCPCParser[Ctx, Expr, Type, Nothing](new internal.Fail(ExpectingDescription(message)))
 
 	/**
 	 * A parser that succeeds iff the input is empty
 	 * @group Position
 	 */
-	def end:SCPCParser[Expr, Type, Unit] =
-		new SCPCParser[Expr, Type, Unit](new internal.End())
+	def end:SCPCParser[Ctx, Expr, Type, Unit] =
+		new SCPCParser[Ctx, Expr, Type, Unit](new internal.End())
 }

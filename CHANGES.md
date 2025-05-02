@@ -10,6 +10,12 @@
 * Flatten Interpolator, Extractor, Parser and companions' inheritance hierarchy
   * Include pages for `Interpolator.LiftedInterpolator` inner classes in docs
   * Use `ifdef` annotation instead of inheritance for scala-version-specific methods
+* Add `Ctx` type parameters and `ctx:Ctx` parameters to a lot of classes, methods, and function paramters
+  * On scala-3, add overloads to some parsers/extractors/interpolators methods such that one has a function parameter with an explicit Ctx parameter and the other has a function parameter with an implicit Ctx parameter
+  * Makes this library `-Xcheck-macros`-safe
+  * `scpc.IdCtx` created as the `Ctx` for the identity context
+  * Removed `quoted.Quotes` or `blackbox.Context` using parameters from leaf parser methods
+* Create `TypeCreator` class; Change `Quotes`-context associated `Type[_]` from `quotes.Type` to `scpc.TypeCreator`
 
 ## [0.1.1](https://github.com/rayrobdod/string-context-parser-combinator/compare/0.1.0...0.1.1) – 2025-02-04
 * Add symbolic operators to Parser, Extractor and Interpolator

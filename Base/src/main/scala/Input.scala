@@ -61,7 +61,7 @@ final class Input[+Expr, Pos : Position : Ordering](
 	 * such as during the [[ExtractorAtom]] parsing
 	 */
 	private[stringContextParserCombinator]
-	def justCurrentPartConsume[Expr2, A](parser:internal.Interpolator[Expr2, A]):Result[Expr, Pos, A] = {
+	def justCurrentPartConsume[Ctx, Expr2, A](parser:internal.Interpolator[Ctx, Expr2, A])(implicit ctx:Ctx):Result[Expr, Pos, A] = {
 		parser.interpolate(new Input[Nothing, Pos](this.parts.head :: Nil, Nil)) match {
 			case failure:Failure[Pos] => failure
 			case success:Success[Nothing, Pos, A] => success.map({

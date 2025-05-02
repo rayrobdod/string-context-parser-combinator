@@ -166,14 +166,15 @@ final class OpmlXmlFactoryTest extends munit.FunSuite {
 	test ("head tag inside outline tag fails") {
 		/* `compileErrors` being in the error message here is weird, but as long as its some munit oddity and not appearing in real uses, its whatever */
 		assertNoDiff(
-			compileErrors("""xml"<outline text='section'><head /></outline>""""),
+			compileErrors("""xml"<outline text='section'><head /></outline>"""")
+					.linesWithSeparators.take(16).mkString,
 			"""|error:
 				|Found:    name.rayrobdod.stringContextParserCombinatorExample.xml.Opml.HeadTag*
 				|Required: (
 				|  name.rayrobdod.stringContextParserCombinatorExample.xml.OpmlXmlFactory.
 				|    OutlineAttribute
 				| | name.rayrobdod.stringContextParserCombinatorExample.xml.Opml.OutlineTag)*
-				|			compileErrors(""".stripMargin + "\"\"\"" + """xml"<outline text='section'><head /></outline>""".stripMargin + "\"\"\"\"" + """),
+				|			compileErrors(""".stripMargin + "\"\"\"" + """xml"<outline text='section'><head /></outline>""".stripMargin + "\"\"\"\"" + """)
 				|               ^
 				|error:
 				|Found:    name.rayrobdod.stringContextParserCombinatorExample.xml.Opml.HeadTag*
@@ -181,7 +182,7 @@ final class OpmlXmlFactoryTest extends munit.FunSuite {
 				|  name.rayrobdod.stringContextParserCombinatorExample.xml.OpmlXmlFactory.
 				|    OutlineAttribute
 				| | name.rayrobdod.stringContextParserCombinatorExample.xml.Opml.OutlineTag)*
-				|			compileErrors(""".stripMargin + "\"\"\"" + """xml"<outline text='section'><head /></outline>""".stripMargin + "\"\"\"\"" + """),
+				|			compileErrors(""".stripMargin + "\"\"\"" + """xml"<outline text='section'><head /></outline>""".stripMargin + "\"\"\"\"" + """)
 				|               ^
 				|""".stripMargin
 		)
