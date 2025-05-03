@@ -301,6 +301,18 @@ lazy val xml = (projectMatrix in file("XmlParser"))
 		scala3Ver,
 	))
 
+
+lazy val jvms = (project in file(".sbt/matrix/jvms"))
+	.disablePlugins(JvmPlugin)
+	.disablePlugins(IvyPlugin)
+	.disablePlugins(com.jsuereth.sbtpgp.SbtPgp)
+	.disablePlugins(GitPlugin)
+	.aggregate(base.jvm.get.map(Project.projectToRef):_*)
+	.aggregate(json.jvm.get.map(Project.projectToRef):_*)
+	.aggregate(time.jvm.get.map(Project.projectToRef):_*)
+	.aggregate(uri.jvm.get.map(Project.projectToRef):_*)
+	.aggregate(xml.jvm.get.map(Project.projectToRef):_*)
+
 disablePlugins(MimaPlugin)
 disablePlugins(TastyMiMaPlugin)
 autoScalaLibrary := false
