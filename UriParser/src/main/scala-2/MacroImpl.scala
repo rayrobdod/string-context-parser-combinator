@@ -16,9 +16,9 @@ object MacroImpl {
 		import c.universe.Quasiquote
 
 		implicit val thisCToExpr = typeclass.ToExprMapping.forContext(c)
-		val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr(c.universe.Literal(c.universe.Constant(x)))}
-		val constNullExpr:c.Expr[Null] = c.Expr(c.universe.Literal(c.universe.Constant(null)))
-		val constNegOneExpr:c.Expr[Int] = c.Expr(c.universe.Literal(c.universe.Constant(-1)))
+		val constExpr:Function1[String, c.Expr[String]] = {x => c.Expr[String](c.universe.Literal(c.universe.Constant(x)))}
+		val constNullExpr:c.Expr[Null] = c.Expr[Null](c.universe.Literal(c.universe.Constant(null)))
+		val constNegOneExpr:c.Expr[Int] = c.Expr[Int](c.universe.Literal(c.universe.Constant(-1)))
 		def parseByteHex(x:(Char, Char)):Int = java.lang.Integer.parseInt(s"${x._1}${x._2}", 16)
 
 		val hexChar:Interpolator[Char] = charWhere(c => '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F').opaque("hexChar")
@@ -101,14 +101,14 @@ object MacroImpl {
 			}
 			/* Luckily, the URI constructor seems to be able to surround v6 addresses in brackets automatically, so that we don't have to */
 			val variableInetAddress:Interpolator[c.Expr[String]] = ofType(c.typeTag[java.net.InetAddress])
-				.map((x, _:c.type) => c.Expr(q"$x.getHostName()"))
+				.map((x, _:c.type) => c.Expr[String](q"$x.getHostName()"))
 			variableInetAddress <|> literalIpv4 <|> literalIpv6 <|> literalName
 		}
 
 		val port:Interpolator[c.Expr[Int]] = {
 			val literal:Interpolator[c.Expr[Int]] = digitChar.repeat(1)
 				.map({(x, _:c.type) => java.lang.Integer.parseInt(x)})
-				.map({(x, _:c.type) => c.Expr(c.universe.Literal(c.universe.Constant(x)))})
+				.map({(x, _:c.type) => c.Expr[Int](c.universe.Literal(c.universe.Constant(x)))})
 				.opaque("Port")
 			val literalEmpty:Interpolator[c.Expr[Int]] = isString("").map({(_:Unit, _:c.type) => constNegOneExpr})
 			val variable:Interpolator[c.Expr[Int]] = ofType[Int]
@@ -117,11 +117,11 @@ object MacroImpl {
 
 		val hostPort:Interpolator[(c.Expr[String], c.Expr[Int])] = {
 			val literal = host <~> (isString(":") <~> port)
-				.optionally().map((x, _:c.type) => x.getOrElse(c.Expr(q"-1")))
+				.optionally().map((x, _:c.type) => x.getOrElse(constNegOneExpr))
 			val SockAddr = ofType(c.typeTag[java.net.InetSocketAddress])
 				.map((x, _:c.type) => (
-					c.Expr(q"$x.getHostString()"),
-					c.Expr(q"$x.getPort()")
+					c.Expr[String](q"$x.getHostString()"),
+					c.Expr[Int](q"$x.getPort()")
 				))
 			SockAddr <|> literal
 		}
@@ -271,7 +271,7 @@ object MacroImpl {
 				}) <|>
 				(opaquePart <~> fragment).map({(x, _:c.type) =>
 					x match {case (ssp, frag) =>
-						c.Expr(q"""
+						c.Expr[URI](q"""
 							new java.net.URI(
 								$scheme,
 								$ssp,
@@ -310,7 +310,7 @@ object MacroImpl {
 		val resolvedUri:Interpolator[c.Expr[URI]] = {
 			(ofType[URI] <~> relativeUri).map({(params, _:c.type) =>
 				val (base, resolvant) = params
-				c.Expr(q"$base.resolve($resolvant)")
+				c.Expr[URI](q"$base.resolve($resolvant)")
 			})
 		}
 
