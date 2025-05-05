@@ -301,6 +301,23 @@ lazy val xml = (projectMatrix in file("XmlParser"))
 		scala3Ver,
 	))
 
+lazy val aggregateLiteral = (projectMatrix in file("AggregateLiteralParser"))
+	.dependsOn(base)
+	.disablePlugins(IfDefPlugin)
+	.disablePlugins(MimaPlugin)
+	.disablePlugins(TastyMiMaPlugin)
+	.settings(sharedSettings)
+	.settings(
+		name := "aggregateLiteral",
+		publish / skip := true,
+		console / initialCommands := """
+			import name.rayrobdod.stringContextParserCombinatorExample.aggregateLiteral._
+		""",
+	)
+	.jvmPlatform(scalaVersions = Seq(
+		scala3Ver,
+	))
+
 
 lazy val jvms = (project in file(".sbt/matrix/jvms"))
 	.disablePlugins(JvmPlugin)
@@ -312,6 +329,7 @@ lazy val jvms = (project in file(".sbt/matrix/jvms"))
 	.aggregate(time.jvm.get.map(Project.projectToRef):_*)
 	.aggregate(uri.jvm.get.map(Project.projectToRef):_*)
 	.aggregate(xml.jvm.get.map(Project.projectToRef):_*)
+	.aggregate(aggregateLiteral.jvm.get.map(Project.projectToRef):_*)
 
 disablePlugins(MimaPlugin)
 disablePlugins(TastyMiMaPlugin)
