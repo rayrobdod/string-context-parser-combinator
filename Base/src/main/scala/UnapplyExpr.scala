@@ -1,8 +1,5 @@
 package name.rayrobdod.stringContextParserCombinator
 
-import com.eed3si9n.ifdef.ifdef
-import scala.reflect.ClassTag
-
 /**
  * The data needed to create an Unapply
  */
@@ -171,20 +168,5 @@ final class UnapplyExprs[Ctx, Expr[+_], Type[_]](implicit exprs: typeclass.Exprs
 		ev:typeclass.ContraOptionally[Ctx, Expr, A, Z]
 	):UnapplyExpr[Ctx, Expr, Type, Z] = {
 		UnapplyExpr[Ctx, Expr, Type, Z]({(value, ctx) => ev.contraNone(value)(ctx)}, Nil)
-	}
-}
-
-private[stringContextParserCombinator]
-object UnapplyExprs {
-	def forId: UnapplyExprs[IdCtx, Id, ClassTag] = new UnapplyExprs[IdCtx, Id, ClassTag]
-
-	@ifdef("scalaEpochVersion:2")
-	def forContext(c: scala.reflect.macros.blackbox.Context): UnapplyExprs[c.type, c.Expr, c.TypeTag] = {
-		new UnapplyExprs[c.type, c.Expr, c.TypeTag]()(using typeclass.Exprs.forContext[c.type])
-	}
-
-	@ifdef("scalaBinaryVersion:3")
-	def forQuoted: UnapplyExprs[quoted.Quotes, quoted.Expr, TypeCreator] = {
-		new UnapplyExprs[quoted.Quotes, quoted.Expr, TypeCreator]()
 	}
 }
