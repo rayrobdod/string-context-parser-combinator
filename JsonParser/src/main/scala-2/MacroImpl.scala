@@ -29,10 +29,11 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	import myInterpolators.lifted
 	private[this] val myRepeateds = typeclass.Repeated.forContext(c)
 	import myRepeateds._
-	private[this] val myBiEithered = typeclass.BiEithered.forContext(c)
-	import myBiEithered._
 	private[this] val myBiRepeateds = typeclass.BiRepeated.forContext(c)
 	import myBiRepeateds._
+
+	// 2.13 can find `contextSymmetric` without the local variable. 2.12 cannot
+	private[this] implicit def mySymmetricBiEithered[A]: typeclass.BiEithered[c.type, c.Expr, A, A, A] = typeclass.BiEithered.contextSymmetric[c.type, A]
 
 	private[this] def charFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] = {
 		charWhere(pf.isDefinedAt)

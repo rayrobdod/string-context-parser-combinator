@@ -192,24 +192,7 @@ object ContraEithered extends LowPrioContraEithered {
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait ContraEithereds[Ctx, Expr[+_]] extends LowPrioContraEithereds[Ctx, Expr] {
-		implicit def unitUnit:ContraEithered[Ctx, Expr, Unit, Unit, Unit]
-	}
-	@ifdef("scalaEpochVersion:2")
-	private[typeclass]
-	trait LowPrioContraEithereds[Ctx, Expr[+_]] {
-		implicit def symmetric[A]:ContraEithered[Ctx, Expr, A, A, A]
-	}
-
-	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):ContraEithereds[c.type, c.Expr] = {
-		val backing = BiEithered.forContext(c)
-
-		new ContraEithereds[c.type, c.Expr] {
-			implicit override def unitUnit:ContraEithered[c.type, c.Expr, Unit, Unit, Unit] = backing.unitUnit
-			implicit override def symmetric[A]:ContraEithered[c.type, c.Expr, A, A, A] = backing.symmetric[A]
-		}
-	}
+	implicit def contextUnitUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]:ContraEithered[Ctx, Ctx#Expr, Unit, Unit, Unit] = BiEithered.contextUnitUnit[Ctx]
 
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnitUnit:ContraEithered[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit, Unit] = quotedSymmetric[Unit]
@@ -220,6 +203,9 @@ object ContraEithered extends LowPrioContraEithered {
 private[typeclass] trait LowPrioContraEithered {
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedSymmetric[A]:ContraEithered[scala.quoted.Quotes, scala.quoted.Expr, A, A, A] = BiEithered.quotedSymmetric
+
+	@ifdef("scalaEpochVersion:2")
+	implicit def contextSymmetric[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]:ContraEithered[Ctx, Ctx#Expr, A, A, A] = BiEithered.contextSymmetric[Ctx, A]
 
 	implicit def idSymmetric[A]:ContraEithered[IdCtx, Id, A, A, A] = BiEithered.idSymmetric
 }
@@ -249,29 +235,7 @@ object BiEithered extends LowPrioBiEithered {
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait BiEithereds[Ctx, Expr[+_]] extends LowPrioBiEithereds[Ctx, Expr] {
-		implicit def unitUnit:BiEithered[Ctx, Expr, Unit, Unit, Unit]
-	}
-	@ifdef("scalaEpochVersion:2")
-	private[typeclass]
-	trait LowPrioBiEithereds[Ctx, Expr[+_]] {
-		implicit def symmetric[A]:BiEithered[Ctx, Expr, A, A, A]
-	}
-	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):BiEithereds[c.type, c.Expr] = {
-		new BiEithereds[c.type, c.Expr] {
-			override def unitUnit:BiEithered[c.type, c.Expr, Unit, Unit, Unit] = this.symmetric[Unit]
-
-			implicit override def symmetric[A]:BiEithered[c.type, c.Expr, A, A, A] = {
-				BiEithered.apply[c.type, c.Expr, A, A, A](
-					(value, _) => value,
-					(value, _) => value,
-					PartialExprFunction.identity[c.type, c.Expr, c.TypeTag, A](using typeclass.Exprs.forContext[c.type]),
-					PartialExprFunction.identity[c.type, c.Expr, c.TypeTag, A](using typeclass.Exprs.forContext[c.type]),
-				)
-			}
-		}
-	}
+	implicit def contextUnitUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiEithered[Ctx, Ctx#Expr, Unit, Unit, Unit] = this.contextSymmetric[Ctx, Unit]
 
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnitUnit:BiEithered[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit, Unit] = quotedSymmetric[Unit]
@@ -311,6 +275,16 @@ private[typeclass] trait LowPrioBiEithered {
 			(value, ctx) => value,
 			PartialExprFunction.identity,
 			PartialExprFunction.identity,
+		)
+	}
+
+	@ifdef("scalaEpochVersion:2")
+	implicit def contextSymmetric[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]:BiEithered[Ctx, Ctx#Expr, A, A, A] = {
+		BiEithered.apply[Ctx, Ctx#Expr, A, A, A](
+			(value, _) => value,
+			(value, _) => value,
+			PartialExprFunction.identity[Ctx, Ctx#Expr, Ctx#TypeTag, A](using typeclass.Exprs.forContext[Ctx]),
+			PartialExprFunction.identity[Ctx, Ctx#Expr, Ctx#TypeTag, A](using typeclass.Exprs.forContext[Ctx]),
 		)
 	}
 

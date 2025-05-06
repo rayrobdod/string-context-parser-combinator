@@ -11,8 +11,8 @@ package datetime {
 
 		private[this] val leafParsers = Parser.contextParsers(c)
 		import leafParsers._
-		private[this] val bieithereds = typeclass.BiEithered.forContext(c)
-		import bieithereds._
+		// 2.13 can find `contextSymmetric` without the local variable. 2.12 cannot
+		private[this] implicit def mySymmetricBiEithered[A]: typeclass.BiEithered[c.type, c.Expr, A, A, A] = typeclass.BiEithered.contextSymmetric[c.type, A]
 		private[this] val timeLiftables = TimeLiftables(c)
 		import timeLiftables._
 		private[this] val timeUnliftables = TimeUnliftables(c)
