@@ -1,6 +1,7 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
+import scala.reflect.ClassTag
 import com.eed3si9n.ifdef.ifdef
 
 /**
@@ -193,7 +194,7 @@ object BiOptionally extends LowPrioBiOptionally {
 	/**
 	 * @since 0.2.0
 	 */
-	implicit def unit[Ctx, Expr[+_]](implicit backing: Exprs[Ctx, Expr]):BiOptionally[Ctx, Expr, Unit, Unit] = {
+	implicit def unit[Ctx, Expr[+_], Type[_]](implicit backing: Exprs[Ctx, Expr, Type]):BiOptionally[Ctx, Expr, Unit, Unit] = {
 		BiOptionally.apply[Ctx, Expr, Unit, Unit](
 			_ => (),
 			(_, _) => (),
@@ -207,7 +208,7 @@ object BiOptionally extends LowPrioBiOptionally {
 		_ => (),
 		(_, _) => (),
 		(_, _) => true,
-		PartialExprFunction.identity[IdCtx, Id, Unit]
+		PartialExprFunction.identity[IdCtx, Id, ClassTag, Unit]
 	)
 
 	@ifdef("scalaEpochVersion:2")
@@ -235,7 +236,7 @@ object BiOptionally extends LowPrioBiOptionally {
 				_ => (),
 				(_, _) => (),
 				(_, ctx) => Exprs.forContext[c.type].constTrue(ctx),
-				PartialExprFunction.identity[c.type, c.Expr, Unit](using Exprs.forContext)
+				PartialExprFunction.identity[c.type, c.Expr, c.TypeTag, Unit](using Exprs.forContext)
 			)
 
 			override def toExprOption[A](implicit typA:c.TypeTag[A]):BiOptionally[c.type, c.Expr, c.Expr[A], c.Expr[Option[A]]] = BiOptionally.apply(

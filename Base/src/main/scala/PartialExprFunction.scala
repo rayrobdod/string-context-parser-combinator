@@ -22,8 +22,8 @@ object PartialExprFunction {
 	}
 
 	private[stringContextParserCombinator]
-	def identity[Ctx, Expr[+_], A](
-		implicit backing: Exprs[Ctx, Expr]
+	def identity[Ctx, Expr[+_], Type[_], A](
+		implicit backing: Exprs[Ctx, Expr, Type]
 	):PartialExprFunction[Ctx, Expr, A, A] = {
 		new PartialExprFunction[Ctx, Expr, A, A] {
 			override def isDefinedAt(a:A)(implicit ctx: Ctx):Expr[Boolean] = backing.constTrue

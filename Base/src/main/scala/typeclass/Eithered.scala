@@ -1,6 +1,7 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
+import scala.reflect.ClassTag
 import com.eed3si9n.ifdef.ifdef
 
 /**
@@ -265,8 +266,8 @@ object BiEithered extends LowPrioBiEithered {
 				BiEithered.apply[c.type, c.Expr, A, A, A](
 					(value, _) => value,
 					(value, _) => value,
-					PartialExprFunction.identity[c.type, c.Expr, A](using typeclass.Exprs.forContext[c.type]),
-					PartialExprFunction.identity[c.type, c.Expr, A](using typeclass.Exprs.forContext[c.type]),
+					PartialExprFunction.identity[c.type, c.Expr, c.TypeTag, A](using typeclass.Exprs.forContext[c.type]),
+					PartialExprFunction.identity[c.type, c.Expr, c.TypeTag, A](using typeclass.Exprs.forContext[c.type]),
 				)
 			}
 		}
@@ -317,8 +318,8 @@ private[typeclass] trait LowPrioBiEithered {
 		BiEithered.apply[IdCtx, Id, A, A, A](
 			(value, _) => value,
 			(value, _) => value,
-			PartialExprFunction.identity[IdCtx, Id, A],
-			PartialExprFunction.identity[IdCtx, Id, A],
+			PartialExprFunction.identity[IdCtx, Id, ClassTag, A],
+			PartialExprFunction.identity[IdCtx, Id, ClassTag, A],
 		)
 	}
 }
