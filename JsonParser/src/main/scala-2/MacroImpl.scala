@@ -166,7 +166,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			}
 
 			val splicableValues: Interpolator[typeclass.Repeated.SplicePiece[c.Expr, JValue]] = {
-				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[JValue], c.Expr[List[JValue]], typeclass.Repeated.SplicePiece[c.Expr,JValue]] = typeclass.Eithered.forContext(c).splicePiece
+				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[JValue], c.Expr[List[JValue]], typeclass.Repeated.SplicePiece[c.Expr,JValue]] = typeclass.Eithered.contextSplicePiece
 
 				val value = jvalue.toInterpolator
 				val array = (isString("..").toInterpolator ~> liftedArray)
@@ -217,7 +217,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			}
 
 			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = {
-				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = typeclass.Eithered.forContext(c).splicePiece
+				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = typeclass.Eithered.contextSplicePiece
 
 				val keyValue = (liftedKeyValue <~ whitespace.toInterpolator)
 				val keyThenValue = (key <~ separator.toInterpolator <~> jvalue.toInterpolator)

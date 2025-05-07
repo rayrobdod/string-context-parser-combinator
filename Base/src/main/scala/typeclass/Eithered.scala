@@ -102,19 +102,8 @@ object Eithered extends LowPrioEithered {
 	 * @version 0.1.1
 	 */
 	@ifdef("scalaEpochVersion:2")
-	trait Eithereds[Ctx, Expr[+_]] {
-		def splicePiece[A]: Eithered[Ctx, Expr[A], Expr[Iterable[A]], Repeated.SplicePiece[Expr, A]]
-	}
-	/**
-	 * @version 0.1.1
-	 */
-	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):Eithereds[c.type, c.Expr] = {
-		new Eithereds[c.type, c.Expr] {
-			def splicePiece[A]: Eithered[c.type, c.Expr[A], c.Expr[Iterable[A]], Repeated.SplicePiece[c.Expr, A]] =
-				Eithered((value, _) => new Repeated.SplicePiece.One(value), (value, _) => new Repeated.SplicePiece.Many(value))
-		}
-	}
+	def contextSplicePiece[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]: Eithered[Ctx, Ctx#Expr[A], Ctx#Expr[Iterable[A]], Repeated.SplicePiece[Ctx#Expr, A]] =
+		Eithered((value, _) => new Repeated.SplicePiece.One(value), (value, _) => new Repeated.SplicePiece.Many(value))
 
 	/**
 	 * @version 0.1.1
