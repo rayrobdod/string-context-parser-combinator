@@ -5,6 +5,9 @@ import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import com.eed3si9n.ifdef.ifdef
 
+@nowarn("msg=make nowarn used")
+private[typeclass] final class Optionally_MakeNowarnUsed
+
 /**
  * Describes how to represent an optional value
  *
@@ -244,33 +247,42 @@ private[typeclass] trait LowPrioBiOptionally {
 	@ifdef("scalaEpochVersion:2")
 	def contextToExprOption[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiOptionally[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[Option[A]]] = BiOptionally.apply(
 		(ctx:Ctx) => {
-			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA.asInstanceOf[ctx.TypeTag[A]]
-			selectTermNames[Option[A]](ctx)("_root_", "scala", "None").asInstanceOf[Ctx#Expr[Option[A]]]
+			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+			import myBindSingletonContexts._
+			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+			selectTermNames[Option[A]](ctx)("_root_", "scala", "None"): Ctx#Expr[Option[A]]
 		},
 		(value, ctx) => {
-			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA.asInstanceOf[ctx.TypeTag[A]]
-			val value2 = value.asInstanceOf[ctx.Expr[A]]
+			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+			import myBindSingletonContexts._
+			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+			val value2: ctx.Expr[A] = value
 			val rootTree = ctx.universe.Ident(ctx.universe.TermName("_root_"))
 			val namesTree = List("scala", "Some", "apply").foldLeft[ctx.universe.Tree](rootTree)({(folding, name) => ctx.universe.Select(folding, ctx.universe.TermName(name))})
-			ctx.Expr[Option[A]](ctx.universe.Apply(namesTree, List(value2.tree))).asInstanceOf[Ctx#Expr[Option[A]]]
+			ctx.Expr[Option[A]](ctx.universe.Apply(namesTree, List(value2.tree))): Ctx#Expr[Option[A]]
 		},
 		(value, ctx) => {
-			val value2 = value.asInstanceOf[ctx.Expr[Option[A]]]
-			select[Option[A], Boolean](ctx)(value2, "isEmpty").asInstanceOf[Ctx#Expr[Boolean]]
+			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+			import myBindSingletonContexts._
+			val value2 = value: ctx.Expr[Option[A]]
+			select[Option[A], Boolean](ctx)(value2, "isEmpty"): Ctx#Expr[Boolean]
 		},
 		PartialExprFunction(
 			(value, ctx) => {
-				val value2 = value.asInstanceOf[ctx.Expr[Option[A]]]
-				select[Option[A], Boolean](ctx)(value2, "nonEmpty").asInstanceOf[Ctx#Expr[Boolean]]
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				val value2 = value: ctx.Expr[Option[A]]
+				select[Option[A], Boolean](ctx)(value2, "nonEmpty"): Ctx#Expr[Boolean]
 			},
 			(value, ctx) => {
-				val value2 = value.asInstanceOf[ctx.Expr[Option[A]]]
-				select[Option[A], A](ctx)(value2, "get").asInstanceOf[Ctx#Expr[A]]
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				val value2 = value: ctx.Expr[Option[A]]
+				select[Option[A], A](ctx)(value2, "get"): Ctx#Expr[A]
 			},
 		)
 	)
 
-	@nowarn("msg=make nowarn used")
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedToExprOption[A](implicit typ: TypeCreator[A]):BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[Option[A]]] =
 		OptionallyImpl.quotedToExprOption[A]

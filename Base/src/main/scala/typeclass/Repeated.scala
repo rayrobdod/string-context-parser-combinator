@@ -1,8 +1,12 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
+import scala.annotation.nowarn
 import com.eed3si9n.ifdef.ifdef
 import scala.collection.mutable.Builder
+
+@nowarn("msg=make nowarn used")
+private[typeclass] final class Repeated_MakeNowarnUsed
 
 /**
  * Describes how to combine a homogeneous sequence of zero-or-more values.
@@ -177,239 +181,186 @@ object Repeated extends LowPrioRepeated {
 	implicit def idFromSplicesToList[A]: Repeated[IdCtx, SplicePiece[Id, A], List[A]] =
 		idFromSplicesUsingBuilder(() => List.newBuilder)
 
-	/**
-	 * @since 0.1.1
-	 */
-	@ifdef("scalaEpochVersion:2")
-	trait Repeateds[Ctx, Expr[+_], Type[_]] {
-		/**
-		 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
-		 * @since 0.1.1
-		 */
-		def concatenateString: Repeated[Ctx, Expr[String], Expr[String]]
-
-		/**
-		 * Splice a sequence of `SplicePiece`s together using a Builder
-		 * @param newAccumulator an Expr creating a new Builder
-		 * @param ifZero the Expr to use when combining zero items together.
-		 *     If None, `newAccumulator.result()` will be used.
-		 *     If Some, should ideally be equivalent to but more efficient than the None expr.
-		 * @param ifOneScalar the Expr to use when combining one scalar item together.
-		 *     When not defined, `newAccumulator.+=(item).result()` will be used.
-		 *     The definition should be equivalent to but more efficient than the undefined expr.
-		 * @param ifOneSplice the Expr to use when combining one splice item together.
-		 *     When not defined, `newAccumulator.++=(item).result()` will be used.
-		 *     The definition should be equivalent to but more efficient than the undefined expr.
-		 * @version 0.1.1
-		 */
-		def fromSplicesUsingBuilder[A, Z](
-				newAccumulator: Expr[Builder[A, Z]],
-				ifZero: Option[() => Expr[Z]],
-				ifOneScalar: PartialFunction[Expr[A], Expr[Z]],
-				ifOneSplice: PartialFunction[Expr[Iterable[A]], Expr[Z]],
-				)(implicit
-				accumulatorType: Type[Builder[A, Z]],
-				zType: Type[Z],
-		): Repeated[Ctx, SplicePiece[Expr, A], Expr[Z]]
-
-		/**
-		 * Splice a sequence of `SplicePiece`s together into a `List`
-		 * @version 0.1.1
-		 */
-		implicit def fromSplicesToExprList[A](implicit
-				accumulatorType: Type[Builder[A, List[A]]],
-				zType: Type[List[A]],
-		): Repeated[Ctx, SplicePiece[Expr, A], Expr[List[A]]]
-	}
 
 	/**
-	 * @since 0.1.1
+	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
+	 * @since 0.2.0
 	 */
 	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):Repeateds[c.type, c.Expr, c.TypeTag] = {
-		new Repeateds[c.type, c.Expr, c.TypeTag] {
-			def concatenateString:Repeated[c.type, c.Expr[String], c.Expr[String]] = {
-				import c.universe.Tree
-				import c.universe.Quasiquote
-				val ttString0 = c.universe.typeTag[String]
-				final class ConcatenateString extends Repeated[c.type, c.Expr[String], c.Expr[String]] {
-					val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
-					val accumulatorTypeTree = c.universe.TypeTree(
-						c.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
-					)
-					val accumulatorIdent = c.universe.Ident(accumulatorName)
-					val accumulatorValDef = c.universe.ValDef(
-						c.universe.NoMods,
-						accumulatorName,
-						accumulatorTypeTree,
-						q"new $accumulatorTypeTree()",
-					)
+	def contextConcatenateString[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:Repeated[Ctx, Ctx#Expr[String], Ctx#Expr[String]] = {
+		final class ConcatenateString extends Repeated[Ctx, Ctx#Expr[String], Ctx#Expr[String]] {
+			type Acc = List[Ctx#Expr[String]]
 
-					implicit val ttString: c.TypeTag[String] = ttString0
+			def init()(implicit ctx: Ctx):Acc = Nil
+			def append(acc:Acc, elem:Ctx#Expr[String])(implicit ctx:Ctx):Acc = elem :: acc
+			def result(acc:Acc)(implicit ctx:Ctx):Ctx#Expr[String] = {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				import ctx.universe.Quasiquote
+				val ttString0: ctx.TypeTag[String] = ctx.typeTag[String]
+				locally {
+					implicit val ttString: ctx.TypeTag[String] = ttString0
 
-					sealed trait Acc
-					final object AccZero extends Acc
-					final class AccOne(val elem: c.Expr[String]) extends Acc
-					final class AccMany extends Acc {
-						val builder: Builder[Tree, c.Expr[String]] = List.newBuilder.mapResult(stat =>
-							c.Expr[String](
-								c.universe.Block(
-									stat,
-									q"$accumulatorIdent.toString"
-								)
+					acc match {
+						case List() => ctx.Expr[String](ctx.universe.Literal(ctx.universe.Constant("")))
+						case List(elem) => elem
+						case _ => {
+							val accumulatorTypeTree = ctx.universe.TypeTree(
+								ctx.universe.rootMirror.staticClass("scala.collection.mutable.StringBuilder").asType.toTypeConstructor
 							)
-						)
-					}
 
-					def init()(implicit ctx:c.type):Acc = AccZero
-					def append(acc:Acc, elem:c.Expr[String])(implicit ctx:c.type):Acc = acc match {
-						case AccZero => new AccOne(elem)
-						case accOne: AccOne => {
-							val retval = new AccMany()
-							retval.builder += accumulatorValDef
-							retval.builder += q"$accumulatorIdent.append(${accOne.elem})"
-							retval.builder += q"$accumulatorIdent.append($elem)"
-							retval
-						}
-						case accMany: AccMany => {
-							accMany.builder += q"$accumulatorIdent.append($elem)"
-							accMany
-						}
-					}
-					def result(acc:Acc)(implicit ctx:c.type):c.Expr[String] = {
-						acc match {
-							case AccZero => c.Expr[String](c.universe.Literal(c.universe.Constant("")))
-							case accOne: AccOne => accOne.elem
-							case accMany: AccMany => accMany.builder.result()
+							val acc2 = acc.map(x => x: ctx.Expr[String])
+
+							val building = acc2.foldRight(q"new $accumulatorTypeTree()")({(part, builder) => q"$builder.append($part)"})
+							ctx.Expr[String](q"$building.result()")
 						}
 					}
 				}
-				new ConcatenateString()
-			}
-
-			def fromSplicesUsingBuilder[A, Z](
-					newAccumulator: c.Expr[Builder[A, Z]],
-					ifZero: Option[() => c.Expr[Z]],
-					ifOneScalar: PartialFunction[c.Expr[A], c.Expr[Z]],
-					ifOneSplice: PartialFunction[c.Expr[Iterable[A]], c.Expr[Z]],
-					)(implicit
-					accumulatorType: c.universe.TypeTag[Builder[A, Z]],
-					zType: c.universe.TypeTag[Z],
-			): Repeated[c.type, SplicePiece[c.Expr, A], c.Expr[Z]] = {
-				// using default arguments confuses the typechecker (found `c.Expr` required `x$1.Expr`), so don't provide default arguments
-
-				import c.universe.Tree
-				import c.universe.Quasiquote
-
-				final class FromSplicesUsingBuilder extends Repeated[c.type, SplicePiece[c.Expr, A], c.Expr[Z]] {
-					val accumulatorName = c.freshName(c.universe.TermName("accumulator$"))
-					val accumulatorTypeTree = c.universe.TypeTree(accumulatorType.tpe)
-					val accumulatorIdent = c.universe.Ident(accumulatorName)
-					val accumulatorExpr = c.Expr(accumulatorIdent)(accumulatorType)
-
-					val accumulatorValDef = c.universe.ValDef(
-						c.universe.NoMods,
-						accumulatorName,
-						accumulatorTypeTree,
-						newAccumulator.tree
-					)
-
-					sealed trait Acc
-					final object AccZero extends Acc
-					final class AccOneScalar(val elem: c.Expr[A]) extends Acc
-					final class AccOneSplice(val iter: c.Expr[Iterable[A]]) extends Acc
-					final class AccMany extends Acc {
-						val builder: Builder[Tree, c.Expr[Z]] = List.newBuilder.mapResult(stat =>
-							c.Expr[Z](
-								c.universe.Block(
-									stat,
-									q"$accumulatorIdent.result()"
-								)
-							)
-						)
-					}
-
-					def init()(implicit ctx:c.type):Acc = AccZero
-					def append(acc:Acc, elem:SplicePiece[c.Expr, A])(implicit ctx:c.type):Acc = acc match {
-						case AccZero =>
-							elem match {
-								case _: SplicePiece.Zero[c.Expr] => AccZero
-								case elemOne: SplicePiece.One[c.Expr, A] => new AccOneScalar(elemOne.elem)
-								case elemMany: SplicePiece.Many[c.Expr, A] => new AccOneSplice(elemMany.iter)
-							}
-						case accOne: AccOneScalar => {
-							elem match {
-								case _: SplicePiece.Zero[c.Expr] => accOne
-								case elemOne: SplicePiece.One[c.Expr, A] =>
-									val retval = new AccMany()
-									retval.builder += accumulatorValDef
-									retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
-									retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
-									retval
-								case elemMany: SplicePiece.Many[c.Expr, A] =>
-									val retval = new AccMany()
-									retval.builder += accumulatorValDef
-									retval.builder += q"$accumulatorIdent.+=(${accOne.elem})"
-									retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-									retval
-							}
-						}
-						case accOne: AccOneSplice => {
-							elem match {
-								case _: SplicePiece.Zero[c.Expr] => accOne
-								case elemOne: SplicePiece.One[c.Expr, A] =>
-									val retval = new AccMany()
-									retval.builder += accumulatorValDef
-									retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
-									retval.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
-									retval
-								case elemMany: SplicePiece.Many[c.Expr, A] =>
-									val retval = new AccMany()
-									retval.builder += accumulatorValDef
-									retval.builder += q"$accumulatorIdent.++=(${accOne.iter})"
-									retval.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-									retval
-							}
-						}
-						case accMany: AccMany => {
-							elem match {
-								case _: SplicePiece.Zero[c.Expr] =>
-									// do nothing
-								case elemOne: SplicePiece.One[c.Expr, A] =>
-									accMany.builder += q"$accumulatorIdent.+=(${elemOne.elem})"
-								case elemMany: SplicePiece.Many[c.Expr, A] =>
-									accMany.builder += q"$accumulatorIdent.++=(${elemMany.iter})"
-							}
-							accMany
-						}
-					}
-
-					def result(acc:Acc)(implicit ctx:c.type):c.Expr[Z] = {
-						acc match {
-							case AccZero => ifZero.map(_.apply()).getOrElse(c.Expr[Z](q"$newAccumulator.result()"))
-							case accOne: AccOneScalar => ifOneScalar.applyOrElse(accOne.elem, (e: c.Expr[A]) => c.Expr[Z](q"$newAccumulator.+=(${e}).result()"))
-							case accOne: AccOneSplice => ifOneSplice.applyOrElse(accOne.iter, (es: c.Expr[Iterable[A]]) => c.Expr[Z](q"$newAccumulator.++=(${es}).result()"))
-							case accMany: AccMany => accMany.builder.result()
-						}
-					}
-
-				}
-				new FromSplicesUsingBuilder()
-			}
-
-			def fromSplicesToExprList[A](implicit
-					accumulatorType: c.universe.TypeTag[Builder[A, List[A]]],
-					zType: c.universe.TypeTag[List[A]],
-			): Repeated[c.type, SplicePiece[c.Expr, A], c.Expr[List[A]]] = {
-				this.fromSplicesUsingBuilder[A, List[A]](
-					c.universe.reify(List.newBuilder),
-					Option(() => c.universe.reify(List.empty)),
-					{case (a: c.Expr[A]) => c.universe.reify(List(a.splice))},
-					{case (a: c.Expr[_]) if a.staticType <:< zType.tpe => c.Expr[List[A]](a.tree)},
-				)
 			}
 		}
+		new ConcatenateString()
 	}
+
+	/**
+	 * Splice a sequence of `SplicePiece`s together using a Builder
+	 * @param newAccumulator an Expr creating a new Builder
+	 * @param ifZero the Expr to use when combining zero items together.
+	 *     If None, `newAccumulator.result()` will be used.
+	 *     If Some, should ideally be equivalent to but more efficient than the None expr.
+	 * @param ifOneScalar the Expr to use when combining one scalar item together.
+	 *     When not defined, `newAccumulator.+=(item).result()` will be used.
+	 *     The definition should be equivalent to but more efficient than the undefined expr.
+	 * @param ifOneSplice the Expr to use when combining one splice item together.
+	 *     When not defined, `newAccumulator.++=(item).result()` will be used.
+	 *     The definition should be equivalent to but more efficient than the undefined expr.
+	 * @since 0.2.0
+	 */
+	@ifdef("scalaEpochVersion:2")
+	def contextFromSplicesUsingBuilder[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A, Z](
+			newAccumulator: Ctx => Ctx#Expr[Builder[A, Z]],
+			ifZero: Ctx => Option[Ctx#Expr[Z]],
+			ifOneScalar: PartialFunction[(Ctx#Expr[A], Ctx), Ctx#Expr[Z]],
+			ifOneSplice: PartialFunction[(Ctx#Expr[Iterable[A]], Ctx), Ctx#Expr[Z]],
+			)(implicit
+			zType: Ctx#TypeTag[Z],
+	): Repeated[Ctx, SplicePiece[Ctx#Expr, A], Ctx#Expr[Z]] = {
+		// using default arguments confuses the typechecker (found `c.Expr` required `x$1.Expr`), so don't provide default arguments
+
+		final class FromSplicesUsingBuilder extends Repeated[Ctx, SplicePiece[Ctx#Expr, A], Ctx#Expr[Z]] {
+			type Acc = List[SplicePiece[Ctx#Expr, A]]
+
+			def init()(implicit ctx:Ctx):Acc = Nil
+			def append(acc:Acc, elem:SplicePiece[Ctx#Expr, A])(implicit ctx:Ctx):Acc = {
+				elem match {
+					case _: SplicePiece.Zero[Ctx#Expr] => acc
+					case other => other :: acc
+				}
+			}
+
+			def result(acc:Acc)(implicit ctx:Ctx):Ctx#Expr[Z] = {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				import ctx.universe.Quasiquote
+
+				val newAccumulator2 = (newAccumulator(ctx): ctx.Expr[Builder[A, Z]]).tree
+
+				acc match {
+					case Nil =>
+						ifZero(ctx).getOrElse(ctx.Expr[Z](q"$newAccumulator2.result()"))
+					case List(SplicePiece.One(elem)) =>
+						ifOneScalar.applyOrElse((elem, ctx), {(arg: (Ctx#Expr[A], Ctx)) =>
+							val (e, _) = arg
+							val e2 = e: ctx.Expr[A]
+							ctx.Expr[Z](q"$newAccumulator2.addOne($e2).result()"):Ctx#Expr[Z]
+						})
+					case List(SplicePiece.Many(iter)) =>
+						ifOneSplice.applyOrElse((iter, ctx), {(arg: (Ctx#Expr[Iterable[A]], Ctx)) =>
+							val (es, _) = arg
+							val es2 = es: ctx.Expr[Iterable[A]]
+							ctx.Expr[Z](q"$newAccumulator2.addAll($es2).result()"):Ctx#Expr[Z]
+						})
+					case _ =>
+						val acc2 = acc.asInstanceOf[List[SplicePiece[ctx.Expr, A]]]
+
+						val building = acc2.foldRight(newAccumulator2)({(part, builder) =>
+							part match {
+								case _: SplicePiece.Zero[ctx.Expr] => builder
+								case SplicePiece.One(part) => q"$builder.+=($part)"
+								case SplicePiece.Many(parts) => q"$builder.++=($parts)"
+							}
+						})
+						ctx.Expr[Z](q"$building.result()")(using zType)
+				}
+			}
+		}
+		new FromSplicesUsingBuilder()
+	}
+
+	/**
+	 * Splice a sequence of `SplicePiece`s together into a `List`
+	 * @since 0.2.0
+	 */
+	@ifdef("scalaEpochVersion:2")
+	implicit def contextFromSplicesToExprList[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit
+			aType: Ctx#TypeTag[A],
+			zType: Ctx#TypeTag[List[A]],
+	): Repeated[Ctx, SplicePiece[Ctx#Expr, A], Ctx#Expr[List[A]]] = {
+		this.contextFromSplicesUsingBuilder[Ctx, A, List[A]](
+			ctx => {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+
+				import ctx.universe.Quasiquote
+				implicit val aType2: ctx.TypeTag[A] = aType
+				val retval = ctx.Expr[Builder[A, List[A]]](q"List.newBuilder[$aType2]")
+				val retval2 = retval: Ctx#Expr[Builder[A, List[A]]]
+				retval2
+			},
+			ctx => {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+
+				import ctx.universe.Quasiquote
+				implicit val aType2: ctx.TypeTag[A] = aType
+				val retval = Option(ctx.Expr[List[A]](q"List.empty[$aType2]"))
+				val retval2 = retval: Option[Ctx#Expr[List[A]]]
+				retval2
+			},
+			{new PartialFunction[(Ctx#Expr[A], Ctx), Ctx#Expr[List[A]]]() {
+				override def isDefinedAt(arg: (Ctx#Expr[A], Ctx)): Boolean = true
+				override def apply(arg: (Ctx#Expr[A], Ctx)): Ctx#Expr[List[A]] = {
+					val (value, ctx) = arg
+					val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+					import myBindSingletonContexts._
+					import ctx.universe.Quasiquote
+
+					val value2: ctx.Expr[A] = value
+					implicit val aType2: ctx.TypeTag[A] = aType
+					ctx.Expr[List[A]](q"List[$aType2]($value2)")
+				}
+			}},
+			{new PartialFunction[(Ctx#Expr[Iterable[A]], Ctx), Ctx#Expr[List[A]]]() {
+				override def isDefinedAt(arg: (Ctx#Expr[Iterable[A]], Ctx)): Boolean = {
+					val (value, _) = arg
+					value.staticType <:< zType.tpe
+				}
+				override def apply(arg: (Ctx#Expr[Iterable[A]], Ctx)): Ctx#Expr[List[A]] = {
+					if (this.isDefinedAt(arg)) {
+						val (value, ctx) = arg
+						val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+						import myBindSingletonContexts._
+						val value2: ctx.Expr[Iterable[A]] = value
+						implicit val zType2: ctx.TypeTag[List[A]] = zType
+						val retval: ctx.Expr[List[A]] = ctx.Expr[List[A]](value2.tree)
+						retval
+					} else {
+						throw new MatchError("PartialFunction not defined at this value")
+					}
+				}
+			}},
+		)
+	}
+
 
 	/**
 	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
@@ -487,22 +438,19 @@ private[typeclass] trait LowPrioRepeated {
 object ContraRepeated extends LowPrioContraRepeated {
 	implicit def idUnit:ContraRepeated[IdCtx, Id, Unit, Unit] = BiRepeated.idUnit
 
+	/**
+	 * @since 0.2.0
+	 */
 	@ifdef("scalaEpochVersion:2")
-	trait ContraRepeateds[Ctx, Expr[+_], Type[_]] {
-		implicit def unit:ContraRepeated[Ctx, Expr, Unit, Unit]
-		implicit def toExprList[A](implicit tt:Type[A]):ContraRepeated[Ctx, Expr, Expr[A], Expr[List[A]]]
-	}
+	implicit def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:ContraRepeated[Ctx, Ctx#Expr, Unit, Unit] =
+		BiRepeated.contextUnit
 
+	/**
+	 * @since 0.2.0
+	 */
 	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):ContraRepeateds[c.type, c.Expr, c.TypeTag] = {
-		new ContraRepeateds[c.type, c.Expr, c.TypeTag] {
-			implicit override def unit:ContraRepeated[c.type, c.Expr, Unit, Unit] =
-				BiRepeated.forContext(c).unit
-
-			implicit override def toExprList[A](implicit tt:c.TypeTag[A]):ContraRepeated[c.type, c.Expr, c.Expr[A], c.Expr[List[A]]] =
-				BiRepeated.forContext(c).toExprList[A]
-		}
-	}
+	implicit def contextToExprList[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit tt:Ctx#TypeTag[A]):ContraRepeated[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[List[A]]] =
+		BiRepeated.contextToExprList[Ctx, A]
 
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:ContraRepeated[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] =
@@ -552,60 +500,76 @@ object BiRepeated extends LowPrioBiRepeated {
 	}
 
 	@ifdef("scalaEpochVersion:2")
-	trait BiRepeateds[Ctx, Expr[+_], Type[_]] {
-		implicit def unit:BiRepeated[Ctx, Expr, Unit, Unit]
-		implicit def toExprList[A](implicit typA:Type[A]):BiRepeated[Ctx, Expr, Expr[A], Expr[List[A]]]
+	private[this] def select[A, Z](c:scala.reflect.macros.blackbox.Context)(qualifier:c.Expr[A], name:String)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+		c.Expr[Z](c.universe.Select(qualifier.tree, c.universe.TermName(name)))
+	}
+	@ifdef("scalaEpochVersion:2")
+	private[this] def selectTermNames[Z](c:scala.reflect.macros.blackbox.Context)(root:String, names:String*)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+		val rootTree = c.universe.Ident(c.universe.TermName(root))
+		val namesTree = names.foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
+		c.Expr[Z](namesTree)
 	}
 
+	/**
+	 * @since 0.2.0
+	 */
 	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):BiRepeateds[c.type, c.Expr, c.TypeTag] = {
-		new BiRepeateds[c.type, c.Expr, c.TypeTag] {
-			private[this] val exprTrue = c.Expr[Boolean](c.universe.Literal(c.universe.Constant(true)))
-			private[this] def select[A, Z](qualifier:c.Expr[A], name:String)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
-				c.Expr[Z](c.universe.Select(qualifier.tree, c.universe.TermName(name)))
-			}
-			private[this] def selectTermNames[Z](root:String, names:String*)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
-				val rootTree = c.universe.Ident(c.universe.TermName(root))
-				val namesTree = names.foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
-				c.Expr[Z](namesTree)
-			}
+	implicit def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiRepeated[Ctx, Ctx#Expr, Unit, Unit] = {
+		BiRepeated.apply[Ctx, Ctx#Expr, Unit, Unit, Unit](
+			(_) => (),
+			(acc, _, _) => acc,
+			(acc, _) => acc,
+			PartialExprFunction[Ctx, Ctx#Expr, Unit, (Unit, Unit)](
+				(_, ctx) => Exprs.forContext[Ctx].constTrue(ctx),
+				(value, _) => (value, value)
+			),
+			(_, ctx) => Exprs.forContext[Ctx].constTrue(ctx),
+		)
+	}
 
-			implicit override def unit:BiRepeated[c.type, c.Expr, Unit, Unit] = {
-				BiRepeated.apply[c.type, c.Expr, Unit, Unit, Unit](
-					(_) => (),
-					(acc, _, _) => acc,
-					(acc, _) => acc,
-					PartialExprFunction[c.type, c.Expr, Unit, (Unit, Unit)](
-						(_, _) => exprTrue,
-						(value, _) => (value, value)
-					),
-					(_, _) => exprTrue,
-				)
-			}
-
-			implicit override def toExprList[A](implicit typA:c.TypeTag[A]):BiRepeated[c.type, c.Expr, c.Expr[A], c.Expr[List[A]]] = {
-				BiRepeated.apply[c.type, c.Expr, c.Expr[A], Builder[c.Tree, List[c.Tree]], c.Expr[List[A]]](
-					(_) => List.newBuilder[c.Tree],
-					(acc, elem, _) => {acc += elem.tree},
-					(acc, _) => {
-						c.Expr[List[A]](
-							c.universe.Apply(
-								selectTermNames[Nothing]("_root_", "scala", "collection", "immutable", "List", "apply").tree,
-								acc.result()
-							)
-						)
-					},
-					PartialExprFunction(
-						(it, _) => select[List[A], Boolean](it, "nonEmpty"),
-						(it, _) => (
-							select[List[A], A](it, "head"),
-							select[List[A], List[A]](it, "tail")
-						)
-					),
-					(it, _) => select[List[A], Boolean](it, "isEmpty"),
-				)
-			}
-		}
+	/**
+	 * @since 0.2.0
+	 */
+	@ifdef("scalaEpochVersion:2")
+	implicit def contextToExprList[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiRepeated[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[List[A]]] = {
+		BiRepeated.apply[Ctx, Ctx#Expr, Ctx#Expr[A], Builder[Ctx#Tree, List[Ctx#Tree]], Ctx#Expr[List[A]]](
+			(_) => List.newBuilder[Ctx#Tree],
+			(acc, elem, _) => {acc += elem.tree},
+			(acc, ctx) => {
+				ctx.Expr[List[A]](
+					ctx.universe.Apply(
+						selectTermNames[Nothing](ctx)("_root_", "scala", "collection", "immutable", "List", "apply").tree,
+						acc.result().asInstanceOf[List[ctx.Tree]]
+					)
+				): Ctx#Expr[List[A]]
+			},
+			PartialExprFunction(
+				(value, ctx) => {
+					val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+					import myBindSingletonContexts._
+					@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+					val value2 = value: ctx.Expr[List[A]]
+					select[List[A], Boolean](ctx)(value2, "nonEmpty"): Ctx#Expr[Boolean]
+				},
+				(value, ctx) => {
+					val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+					import myBindSingletonContexts._
+					@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+					val value2 = value: ctx.Expr[List[A]]
+					(
+						select[List[A], A](ctx)(value2, "head"): Ctx#Expr[A],
+						select[List[A], List[A]](ctx)(value2, "tail"): Ctx#Expr[List[A]]
+					)
+				}
+			),
+			(value, ctx) => {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+				val value2 = value: ctx.Expr[List[A]]
+				select[List[A], Boolean](ctx)(value2, "isEmpty"): Ctx#Expr[Boolean]
+			},
+		)
 	}
 
 	@ifdef("scalaBinaryVersion:3")

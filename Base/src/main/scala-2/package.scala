@@ -85,4 +85,13 @@ package stringContextParserCombinator {
 	trait LiftFunction[U <: Context with Singleton, -CC[_], +Z] {def apply[A](lifter:U#Expr[CC[A]], elem:U#Expr[A]):Z}
 	/** A context avaliable for the identity context. Essentially a `Unit`, but with an implicit value */
 	final class IdCtx()
+
+	/** `type Ctx <: Context with Singleton` and `val ctx: Ctx` apparently does not imply `Ctx =:= ctx.type` */
+	private[stringContextParserCombinator]
+	final class BindSingletonContexts[Ctx1 <: Context with Singleton, Ctx2 <: Context with Singleton] {
+		implicit def ttToLeft[A](a: Ctx1#TypeTag[A]): Ctx2#TypeTag[A] = a.asInstanceOf[Ctx2#TypeTag[A]]
+		implicit def ttToRight[A](a: Ctx2#TypeTag[A]): Ctx1#TypeTag[A] = a.asInstanceOf[Ctx1#TypeTag[A]]
+		implicit def exprToLeft[A](a: Ctx1#Expr[A]): Ctx2#Expr[A] = a.asInstanceOf[Ctx2#Expr[A]]
+		implicit def exprToRight[A](a: Ctx2#Expr[A]): Ctx1#Expr[A] = a.asInstanceOf[Ctx1#Expr[A]]
+	}
 }
