@@ -27,12 +27,11 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 	import leafParsers._
 	private[this] val myInterpolators = Interpolator.contextInterpolators(c)
 	import myInterpolators.lifted
-	private[this] val myRepeateds = typeclass.Repeated.forContext(c)
-	import myRepeateds._
-	private[this] val myBiEithered = typeclass.BiEithered.forContext(c)
-	import myBiEithered._
-	private[this] val myBiRepeateds = typeclass.BiRepeated.forContext(c)
-	import myBiRepeateds._
+
+	// 2.13 can find these without the local variable. 2.12 cannot
+	private[this] implicit def mySymmetricBiEithered[A]: typeclass.BiEithered[c.type, c.Expr, A, A, A] = typeclass.BiEithered.contextSymmetric[c.type, A]
+	private[this] implicit def myUnitBiRepeated: typeclass.BiRepeated[c.type, c.Expr, Unit, Unit] = typeclass.BiRepeated.contextUnit[c.type]
+	private[this] implicit def myToListBiRepeated[A](implicit typA: c.TypeTag[A]): typeclass.BiRepeated[c.type, c.Expr, c.Expr[A], c.Expr[List[A]]] = typeclass.BiRepeated.contextToExprList[c.type, A]
 
 	private[this] def charFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]):Interpolator[A] = {
 		charWhere(pf.isDefinedAt)
@@ -137,7 +136,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 		val content:Parser[c.Expr[String]] = paired(
 			(jCharsLifted <|> jCharsImmediate)
 				.toInterpolator
-				.repeat(strategy = RepeatStrategy.Possessive)(concatenateString)
+				.repeat(strategy = RepeatStrategy.Possessive)(typeclass.Repeated.contextConcatenateString)
 			,
 			(jCharsImmediate).toExtractor
 		)
@@ -167,7 +166,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			}
 
 			val splicableValues: Interpolator[typeclass.Repeated.SplicePiece[c.Expr, JValue]] = {
-				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[JValue], c.Expr[List[JValue]], typeclass.Repeated.SplicePiece[c.Expr,JValue]] = typeclass.Eithered.forContext(c).splicePiece
+				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[JValue], c.Expr[List[JValue]], typeclass.Repeated.SplicePiece[c.Expr,JValue]] = typeclass.Eithered.contextSplicePiece
 
 				val value = jvalue.toInterpolator
 				val array = (isString("..").toInterpolator ~> liftedArray)
@@ -178,7 +177,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				.repeat(
 					delimiter = delimiter.toInterpolator,
 					strategy = RepeatStrategy.Possessive,
-				)
+				)(using typeclass.Repeated.contextFromSplicesToExprList[c.type, JValue])
 				.map((x: c.Expr[List[JValue]], ctx:c.type) => ctx.universe.reify(JArray.apply(x.splice)))
 		}
 
@@ -218,7 +217,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 			}
 
 			val splicableValues:Interpolator[typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = {
-				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = typeclass.Eithered.forContext(c).splicePiece
+				implicit val eitherSplicePiece: typeclass.Eithered[c.type, c.Expr[(String, JValue)], c.Expr[List[(String, JValue)]], typeclass.Repeated.SplicePiece[c.Expr,(String, JValue)]] = typeclass.Eithered.contextSplicePiece
 
 				val keyValue = (liftedKeyValue <~ whitespace.toInterpolator)
 				val keyThenValue = (key <~ separator.toInterpolator <~> jvalue.toInterpolator)
@@ -231,7 +230,7 @@ final class MacroImpl(val c:Context {type PrefixType = JsonStringContext}) {
 				.repeat(
 					delimiter = delimiter.toInterpolator,
 					strategy = RepeatStrategy.Possessive,
-				)
+				)(using typeclass.Repeated.contextFromSplicesToExprList[c.type, (String, JValue)])
 				.map((x, _) => c.universe.reify(JObject.apply(x.splice)))
 		}
 

@@ -46,22 +46,28 @@ object Exprs {
 				ctx.Expr[Boolean](ctx.universe.Liftable.liftBoolean(b))
 			}
 
-			override def andBooleans(left2: Ctx#Expr[Boolean], rightFn: () => Ctx#Expr[Boolean])(implicit ctx: Ctx): Ctx#Expr[Boolean] = {
+			override def andBooleans(left: Ctx#Expr[Boolean], rightFn: () => Ctx#Expr[Boolean])(implicit ctx: Ctx): Ctx#Expr[Boolean] = {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+
 				val B = ctx.universe.Unliftable.unliftBoolean
-				val left = left2.asInstanceOf[ctx.Expr[Boolean]]
-				val right = rightFn().asInstanceOf[ctx.Expr[Boolean]]
-				(left.tree, right.tree) match {
-					case (B(true), _) => right
+				val left2: ctx.Expr[Boolean] = left
+				val right2: ctx.Expr[Boolean] = rightFn()
+				(left2.tree, right2.tree) match {
+					case (B(true), _) => right2
 					case (B(false), _) => this.constFalse
-					case (_, B(true)) => left
+					case (_, B(true)) => left2
 					case (_, B(false)) => this.constFalse
-					case (_, _) => selectApply[Boolean](ctx)(left, "$amp$amp", right)
+					case (_, _) => selectApply[Boolean](ctx)(left2, "$amp$amp", right2)
 				}
 			}
 
 			override def isEqualTo[A](left: Ctx#Expr[A], right: Ctx#Expr[A])(implicit ctx: Ctx, typA: Ctx#TypeTag[A]): Ctx#Expr[Boolean] = {
-				val left2 = left.asInstanceOf[ctx.Expr[A]]
-				val right2 = right.asInstanceOf[ctx.Expr[A]]
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+
+				val left2: ctx.Expr[A] = left
+				val right2: ctx.Expr[A] = right
 				selectApply[Boolean](ctx)(left2, "$eq$eq", right2)
 			}
 		}

@@ -1,8 +1,12 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import com.eed3si9n.ifdef.ifdef
+
+@nowarn("msg=make nowarn used")
+private[typeclass] final class Optionally_MakeNowarnUsed
 
 /**
  * Describes how to represent an optional value
@@ -138,23 +142,7 @@ object ContraOptionally extends LowPrioContraOptionally {
 	implicit def idUnit:ContraOptionally[IdCtx, Id, Unit, Unit] = BiOptionally.idUnit
 
 	@ifdef("scalaEpochVersion:2")
-	trait ContraOptionallys[Ctx, Expr[+_], Type[_]] extends LowPrioContraOptionallys[Ctx, Expr, Type] {
-		implicit def unit:ContraOptionally[Ctx, Expr, Unit, Unit]
-	}
-	@ifdef("scalaEpochVersion:2")
-	trait LowPrioContraOptionallys[Ctx, Expr[+_], Type[_]] {
-		implicit def toExprOption[A](implicit typA:Type[A]):ContraOptionally[Ctx, Expr, Expr[A], Expr[Option[A]]]
-	}
-
-	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):ContraOptionallys[c.type, c.Expr, c.TypeTag] = {
-		new ContraOptionallys[c.type, c.Expr, c.TypeTag] {
-			private[this] val backing = BiOptionally.forContext(c)
-
-			override def unit:ContraOptionally[c.type, c.Expr, Unit, Unit] = backing.unit
-			override def toExprOption[A](implicit typA:c.TypeTag[A]):ContraOptionally[c.type, c.Expr, c.Expr[A], c.Expr[Option[A]]] = backing.toExprOption[A]
-		}
-	}
+	implicit def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiOptionally[Ctx, Ctx#Expr, Unit, Unit] = BiOptionally.contextUnit
 
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] = BiOptionally.quotedUnit
@@ -163,6 +151,9 @@ object ContraOptionally extends LowPrioContraOptionally {
 
 private[typeclass] trait LowPrioContraOptionally {
 	implicit def idToOption[A]:ContraOptionally[IdCtx, Id, A, Option[A]] = BiOptionally.idToOption
+
+	@ifdef("scalaEpochVersion:2")
+	implicit def contextToExprOption[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiOptionally[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[Option[A]]] = BiOptionally.contextToExprOption
 
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedToExprOption[A](implicit typA: TypeCreator[A]):BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[Option[A]]] = BiOptionally.quotedToExprOption
@@ -212,48 +203,12 @@ object BiOptionally extends LowPrioBiOptionally {
 	)
 
 	@ifdef("scalaEpochVersion:2")
-	trait BiOptionallys[Ctx, Expr[+_], Type[_]] extends LowPrioBiOptionallys[Ctx, Expr, Type] {
-		implicit def unit:BiOptionally[Ctx, Expr, Unit, Unit]
-	}
-	@ifdef("scalaEpochVersion:2")
-	trait LowPrioBiOptionallys[Ctx, Expr[+_], Type[_]] {
-		implicit def toExprOption[A](implicit typA:Type[A]):BiOptionally[Ctx, Expr, Expr[A], Expr[Option[A]]]
-	}
-
-	@ifdef("scalaEpochVersion:2")
-	def forContext(c:scala.reflect.macros.blackbox.Context):BiOptionallys[c.type, c.Expr, c.TypeTag] = {
-		new BiOptionallys[c.type, c.Expr, c.TypeTag] {
-			private[this] def select[A, Z](qualifier:c.Expr[A], name:String)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
-				c.Expr[Z](c.universe.Select(qualifier.tree, c.universe.TermName(name)))
-			}
-			private[this] def selectTermNames[Z](root:String, names:String*)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
-				val rootTree = c.universe.Ident(c.universe.TermName(root))
-				val namesTree = names.foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
-				c.Expr[Z](namesTree)
-			}
-
-			override def unit:BiOptionally[c.type, c.Expr, Unit, Unit] = BiOptionally.apply(
-				_ => (),
-				(_, _) => (),
-				(_, ctx) => Exprs.forContext[c.type].constTrue(ctx),
-				PartialExprFunction.identity[c.type, c.Expr, c.TypeTag, Unit](using Exprs.forContext)
-			)
-
-			override def toExprOption[A](implicit typA:c.TypeTag[A]):BiOptionally[c.type, c.Expr, c.Expr[A], c.Expr[Option[A]]] = BiOptionally.apply(
-				_ => selectTermNames[Option[A]]("_root_", "scala", "None"),
-				(value, _) => {
-					val rootTree = c.universe.Ident(c.universe.TermName("_root_"))
-					val namesTree = List("scala", "Some", "apply").foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
-					c.Expr[Option[A]](c.universe.Apply(namesTree, List(value.tree)))
-				},
-				(value, _) => select[Option[A], Boolean](value, "isEmpty"),
-				PartialExprFunction(
-					(value, _) => select[Option[A], Boolean](value, "nonEmpty"),
-					(value, _) => select[Option[A], A](value, "get")
-				)
-			)
-		}
-	}
+	def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiOptionally[Ctx, Ctx#Expr, Unit, Unit] = BiOptionally.apply(
+		_ => (),
+		(_, _) => (),
+		(_, ctx) => Exprs.forContext[Ctx].constTrue(ctx),
+		PartialExprFunction.identity[Ctx, Ctx#Expr, Ctx#TypeTag, Unit](using Exprs.forContext)
+	)
 
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] = BiOptionally.apply(
@@ -275,6 +230,56 @@ private[typeclass] trait LowPrioBiOptionally {
 		PartialExprFunction[IdCtx, Id, Option[A], A](
 			(value, _:IdCtx) => value.nonEmpty,
 			(value, _:IdCtx) => value.get
+		)
+	)
+
+	@ifdef("scalaEpochVersion:2")
+	private[this] def select[A, Z](c:scala.reflect.macros.blackbox.Context)(qualifier:c.Expr[A], name:String)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+		c.Expr[Z](c.universe.Select(qualifier.tree, c.universe.TermName(name)))
+	}
+	@ifdef("scalaEpochVersion:2")
+	private[this] def selectTermNames[Z](c:scala.reflect.macros.blackbox.Context)(root:String, names:String*)(implicit typZ:c.TypeTag[Z]):c.Expr[Z] = {
+		val rootTree = c.universe.Ident(c.universe.TermName(root))
+		val namesTree = names.foldLeft[c.universe.Tree](rootTree)({(folding, name) => c.universe.Select(folding, c.universe.TermName(name))})
+		c.Expr[Z](namesTree)
+	}
+
+	@ifdef("scalaEpochVersion:2")
+	def contextToExprOption[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiOptionally[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[Option[A]]] = BiOptionally.apply(
+		(ctx:Ctx) => {
+			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+			import myBindSingletonContexts._
+			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+			selectTermNames[Option[A]](ctx)("_root_", "scala", "None"): Ctx#Expr[Option[A]]
+		},
+		(value, ctx) => {
+			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+			import myBindSingletonContexts._
+			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+			val value2: ctx.Expr[A] = value
+			val rootTree = ctx.universe.Ident(ctx.universe.TermName("_root_"))
+			val namesTree = List("scala", "Some", "apply").foldLeft[ctx.universe.Tree](rootTree)({(folding, name) => ctx.universe.Select(folding, ctx.universe.TermName(name))})
+			ctx.Expr[Option[A]](ctx.universe.Apply(namesTree, List(value2.tree))): Ctx#Expr[Option[A]]
+		},
+		(value, ctx) => {
+			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+			import myBindSingletonContexts._
+			val value2 = value: ctx.Expr[Option[A]]
+			select[Option[A], Boolean](ctx)(value2, "isEmpty"): Ctx#Expr[Boolean]
+		},
+		PartialExprFunction(
+			(value, ctx) => {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				val value2 = value: ctx.Expr[Option[A]]
+				select[Option[A], Boolean](ctx)(value2, "nonEmpty"): Ctx#Expr[Boolean]
+			},
+			(value, ctx) => {
+				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
+				import myBindSingletonContexts._
+				val value2 = value: ctx.Expr[Option[A]]
+				select[Option[A], A](ctx)(value2, "get"): Ctx#Expr[A]
+			},
 		)
 	)
 
