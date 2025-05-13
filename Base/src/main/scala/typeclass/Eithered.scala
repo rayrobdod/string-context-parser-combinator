@@ -69,10 +69,22 @@ trait BiEithered[Ctx, Expr[+_], A, B, Z]
 /**
  * Predefined implicit implementations of Eithered
  * and methods to create new Eithereds
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
  */
 object Eithered extends LowPrioEithered {
 	/**
 	 * Constructs an `Eithered` from a set of functions corresponding to each of Eithered's methods
+	 * @group Support
 	 */
 	def apply[Ctx, A, B, Z](leftFn:(A, Ctx) => Z, rightFn:(B, Ctx) => Z):Eithered[Ctx, A, B, Z] = {
 		final class Apply extends Eithered[Ctx, A, B, Z] {
@@ -82,16 +94,28 @@ object Eithered extends LowPrioEithered {
 		new Apply()
 	}
 
+	/**
+	 * @group AnyContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def unitUnit:Eithered[Any, Unit, Unit, Unit] = symmetric[Unit]
+	/**
+	 * @group AnyContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def unitUnit:Eithered[Any, Unit, Unit, Unit] = Eithered.generic
 
+	/**
+	 * @group AnyContext
+	 */
 	implicit def unitGeneric[Ctx, B, Z](implicit ev:Optionally[Ctx, B, Z]):Eithered[Ctx, Unit, B, Z] =
 		Eithered(
 			(_:Unit, ctx) => ev.none(ctx),
 			(value, ctx) => ev.some(value)(ctx),
 		)
+	/**
+	 * @group AnyContext
+	 */
 	implicit def genericUnit[Ctx, A, Z](implicit ev:Optionally[Ctx, A, Z]):Eithered[Ctx, A, Unit, Z] =
 		Eithered(
 			(value, ctx) => ev.some(value)(ctx),
@@ -100,6 +124,7 @@ object Eithered extends LowPrioEithered {
 
 	/**
 	 * @version 0.1.1
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	def contextSplicePiece[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]: Eithered[Ctx, Ctx#Expr[A], Ctx#Expr[Iterable[A]], Repeated.SplicePiece[Ctx#Expr, A]] =
@@ -107,6 +132,7 @@ object Eithered extends LowPrioEithered {
 
 	/**
 	 * @version 0.1.1
+	 * @group QuotedContext
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	def quotedSplicePiece[A]: Eithered[scala.quoted.Quotes, scala.quoted.Expr[A], scala.quoted.Expr[Iterable[A]], Repeated.SplicePiece[scala.quoted.Expr, A]] =
@@ -128,6 +154,7 @@ object Eithered extends LowPrioEithered {
 	 * evenOdd.interpolate(StringContext("4"), Nil) // Left(4): Either[Char, Char]
 	 * evenOdd.interpolate(StringContext("7"), Nil) // Right(7): Either[Char, Char]
 	 * ```
+	 * @group AnyContext
 	 */
 	def discriminatedUnion[A, B]:Eithered[Any, A, B, Either[A, B]] =
 		Eithered(
@@ -137,6 +164,9 @@ object Eithered extends LowPrioEithered {
 }
 
 private[typeclass] trait LowPrioEithered {
+	/**
+	 * @group AnyContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def symmetric[A]:Eithered[Any, A, A, A] = {
 		Eithered(
@@ -152,6 +182,7 @@ private[typeclass] trait LowPrioEithered {
 	 * Since the union of a type with itself is equivalent to that same type,
 	 * if this Eithered is used for two parsers of the same type,
 	 * then the result is a parser of that type.
+	 * @group AnyContext
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def generic[A, B]:Eithered[Any, A, B, A | B] =
@@ -164,10 +195,22 @@ private[typeclass] trait LowPrioEithered {
 /**
  * Predefined implicit implementations of ContraEithered
  * and methods to create new ContraEithereds
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
  */
 object ContraEithered extends LowPrioContraEithered {
 	/**
 	 * Constructs an `ContraEithered` from a set of functions corresponding to each of ContraEithered's methods
+	 * @group Support
 	 */
 	def apply[Ctx, Expr[+_], A, B, Z](
 		contraLeftFn:PartialExprFunction[Ctx, Expr, Z, A],
@@ -180,32 +223,62 @@ object ContraEithered extends LowPrioContraEithered {
 		new Apply()
 	}
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextUnitUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]:ContraEithered[Ctx, Ctx#Expr, Unit, Unit, Unit] = BiEithered.contextUnitUnit[Ctx]
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnitUnit:ContraEithered[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit, Unit] = quotedSymmetric[Unit]
 
+	/**
+	 * @group IdContext
+	 */
 	implicit def idUnitUnit:ContraEithered[IdCtx, Id, Unit, Unit, Unit] = idSymmetric[Unit]
 }
 
 private[typeclass] trait LowPrioContraEithered {
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedSymmetric[A]:ContraEithered[scala.quoted.Quotes, scala.quoted.Expr, A, A, A] = BiEithered.quotedSymmetric
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextSymmetric[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]:ContraEithered[Ctx, Ctx#Expr, A, A, A] = BiEithered.contextSymmetric[Ctx, A]
 
+	/**
+	 * @group IdContext
+	 */
 	implicit def idSymmetric[A]:ContraEithered[IdCtx, Id, A, A, A] = BiEithered.idSymmetric
 }
 
 /**
  * Predefined implicit implementations of BiEithered
  * and methods to create new BiEithereds
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
  */
 object BiEithered extends LowPrioBiEithered {
 	/**
 	 * Constructs an `BiEithered` from a set of functions corresponding to each of BiEithered's methods
+	 * @group Support
 	 */
 	def apply[Ctx, Expr[+_], A, B, Z](
 		leftFn:(A, Ctx) => Z,
@@ -223,13 +296,21 @@ object BiEithered extends LowPrioBiEithered {
 		new Apply()
 	}
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextUnitUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiEithered[Ctx, Ctx#Expr, Unit, Unit, Unit] = this.contextSymmetric[Ctx, Unit]
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnitUnit:BiEithered[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit, Unit] = quotedSymmetric[Unit]
 
-	@ifdef("scalaBinaryVersion:3")
+	/**
+	 * @group AnyContext
+	 */
 	implicit def eitherUnitAny[Ctx, Expr[+_], B, Z](implicit ev:BiOptionally[Ctx, Expr, B, Z]):BiEithered[Ctx, Expr, Unit, B, Z] =
 		BiEithered[Ctx, Expr, Unit, B, Z](
 			(_, ctx) => ev.none(ctx),
@@ -240,7 +321,9 @@ object BiEithered extends LowPrioBiEithered {
 			),
 			ev.contraSome,
 		)
-	@ifdef("scalaBinaryVersion:3")
+	/**
+	 * @group AnyContext
+	 */
 	implicit def eitherAnyUnit[Ctx, Expr[+_], A, Z](implicit ev:BiOptionally[Ctx, Expr, A, Z]):BiEithered[Ctx, Expr, A, Unit, Z] =
 		BiEithered(
 			(value, ctx) => ev.some(value)(ctx),
@@ -252,11 +335,17 @@ object BiEithered extends LowPrioBiEithered {
 			),
 		)
 
+	/**
+	 * @group IdContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def idUnitUnit:BiEithered[IdCtx, Id, Unit, Unit, Unit] = idSymmetric[Unit]
 }
 
 private[typeclass] trait LowPrioBiEithered {
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedSymmetric[A]:BiEithered[scala.quoted.Quotes, scala.quoted.Expr, A, A, A] = {
 		BiEithered.apply[scala.quoted.Quotes, scala.quoted.Expr, A, A, A](
@@ -267,6 +356,9 @@ private[typeclass] trait LowPrioBiEithered {
 		)
 	}
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextSymmetric[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A]:BiEithered[Ctx, Ctx#Expr, A, A, A] = {
 		BiEithered.apply[Ctx, Ctx#Expr, A, A, A](
@@ -277,6 +369,9 @@ private[typeclass] trait LowPrioBiEithered {
 		)
 	}
 
+	/**
+	 * @group IdContext
+	 */
 	implicit def idSymmetric[A]:BiEithered[IdCtx, Id, A, A, A] = {
 		BiEithered.apply[IdCtx, Id, A, A, A](
 			(value, _) => value,

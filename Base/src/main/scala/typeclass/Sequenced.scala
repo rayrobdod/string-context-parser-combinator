@@ -70,8 +70,22 @@ trait BiSequenced[-Ctx, A, B, Z]
 
 /**
  * Predefined implicit implementations of Sequenced
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
  */
 object Sequenced extends LowPrioSequenced {
+	/**
+	 * @group Support
+	 */
 	def apply[Ctx, A, B, Z](aggregateFn:(A, B, Ctx) => Z):Sequenced[Ctx, A, B, Z] = {
 		final class Apply extends Sequenced[Ctx, A, B, Z] {
 			def aggregate(left:A, right:B)(implicit ctx:Ctx):Z = aggregateFn(left, right, ctx)
@@ -79,6 +93,9 @@ object Sequenced extends LowPrioSequenced {
 		new Apply()
 	}
 
+	/**
+	 * @group Support
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	def apply[Ctx, A, B, Z](aggregateFn:(A, B) => Ctx ?=> Z):Sequenced[Ctx, A, B, Z] = {
 		final class Apply extends Sequenced[Ctx, A, B, Z] {
@@ -98,14 +115,17 @@ object Sequenced extends LowPrioSequenced {
 	 * //}
 	 * ((u1:Interpolator[Unit]) andThen (u2:Interpolator[Unit])):Interpolator[Unit]
 	 * ```
+	 * @group AnyContext
 	 */
 	implicit def unitUnit:Sequenced[Any, Unit, Unit, Unit] = BiSequenced.unitUnit
 	/**
 	 * Returns the non-unit input value
+	 * @group AnyContext
 	 */
 	implicit def unitGeneric[B]:Sequenced[Any, Unit, B, B] = BiSequenced.unitGeneric
 	/**
 	 * Returns the non-unit input value
+	 * @group AnyContext
 	 */
 	implicit def genericUnit[A]:Sequenced[Any, A, Unit, A] = BiSequenced.genericUnit
 }
@@ -126,28 +146,66 @@ private[typeclass] trait LowPrioSequenced {
 	 * //}
 	 * ((p1:Interpolator[A]) andThen (p2:Interpolator[B])):Interpolator[(A, B)]
 	 * ```
+	 * @group AnyContext
 	 */
 	implicit def toPair[A, B]:Sequenced[Any, A, B, (A, B)] = BiSequenced.toPair
 }
 
 /**
  * Predefined implicit implementations of ContraSequenced
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
  */
 object ContraSequenced extends LowPrioContraSequenced {
+	/**
+	 * @group AnyContext
+	 */
 	implicit def unitUnit:ContraSequenced[Any, Unit, Unit, Unit] = BiSequenced.unitUnit
+	/**
+	 * @group AnyContext
+	 */
 	implicit def unitGeneric[B]:ContraSequenced[Any, Unit, B, B] = BiSequenced.unitGeneric
+	/**
+	 * @group AnyContext
+	 */
 	implicit def genericUnit[A]:ContraSequenced[Any, A, Unit, A] = BiSequenced.genericUnit
 }
 
 private[typeclass] trait LowPrioContraSequenced {
+	/**
+	 * @group AnyContext
+	 */
 	implicit def toPair[A, B]:ContraSequenced[Any, A, B, (A, B)] = BiSequenced.toPair
 }
 
 /**
  * Predefined implicit implementations of BiSequenced
  * and methods to create new BiSequenceds
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
  */
 object BiSequenced extends LowPrioBiSequenced {
+	/**
+	 * @group Support
+	 */
 	private[typeclass] def apply[Ctx, A, B, Z](aggregateFn:(A, B, Ctx) => Z, separateFn:(Z, Ctx) => (A, B)):BiSequenced[Ctx, A, B, Z] = {
 		final class Apply extends BiSequenced[Ctx, A, B, Z] {
 			def aggregate(left:A, right:B)(implicit ctx:Ctx):Z = aggregateFn(left, right, ctx)
@@ -156,11 +214,23 @@ object BiSequenced extends LowPrioBiSequenced {
 		new Apply()
 	}
 
+	/**
+	 * @group AnyContext
+	 */
 	implicit def unitUnit:BiSequenced[Any, Unit, Unit, Unit] = apply((_:Unit, _:Unit, _:Any) => (), (_:Unit, _:Any) => ((), ()))
+	/**
+	 * @group AnyContext
+	 */
 	implicit def unitGeneric[B]:BiSequenced[Any, Unit, B, B] = apply((_:Unit, b:B, _:Any) => b, (b:B, _:Any) => ((), b))
+	/**
+	 * @group AnyContext
+	 */
 	implicit def genericUnit[A]:BiSequenced[Any, A, Unit, A] = apply((a:A, _:Unit, _:Any) => a, (a:A, _:Any) => (a, ()))
 }
 
 private[typeclass] trait LowPrioBiSequenced {
+	/**
+	 * @group AnyContext
+	 */
 	implicit def toPair[A, B]:BiSequenced[Any, A, B, (A, B)] = BiSequenced.apply((a:A, b:B, _:Any) => (a, b), (pair:(A, B), _:Any) => pair)
 }

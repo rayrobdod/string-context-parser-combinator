@@ -89,8 +89,24 @@ trait BiRepeated[-Ctx, Expr[+_], A, Z]
 	extends Repeated[Ctx, A, Z]
 	with ContraRepeated[Ctx, Expr, A, Z]
 
-/** Predefined implicit implementations of Repeated */
+/**
+ * Predefined implicit implementations of Repeated
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
+ */
 object Repeated extends LowPrioRepeated {
+	/**
+	 * @group Support
+	 */
 	private[typeclass] def apply[Ctx, A, Acc, Z](
 		initFn: (Ctx) => Acc,
 		appendFn: (Acc, A, Ctx) => Acc,
@@ -107,6 +123,7 @@ object Repeated extends LowPrioRepeated {
 
 	/**
 	 * Repeated units results in a unit
+	 * @group AnyContext
 	 */
 	implicit def unit:Repeated[Any, Unit, Unit] = {
 		Repeated.apply[Any, Unit, Unit, Unit](
@@ -118,6 +135,7 @@ object Repeated extends LowPrioRepeated {
 
 	/**
 	 * Creates a String consisting of each of the input Char values in order
+	 * @group AnyContext
 	 */
 	implicit def charToString:Repeated[Any, Char, String] = {
 		Repeated.apply[Any, Char, StringBuilder, String](
@@ -129,6 +147,7 @@ object Repeated extends LowPrioRepeated {
 
 	/**
 	 * Creates a String consisting of each of the input CodePoint values in order
+	 * @group AnyContext
 	 */
 	implicit def codepointToString:Repeated[Any, CodePoint, String] = {
 		Repeated.apply[Any, CodePoint, java.lang.StringBuilder, String](
@@ -141,18 +160,20 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * Creates a String consisting of the concatenation of the component strings
 	 * @since 0.1.1
+	 * @group AnyContext
 	 */
-	def idConcatenateString:Repeated[IdCtx, String, String] = {
+	def idConcatenateString:Repeated[Any, String, String] = {
 		Repeated.apply(
-			(_: IdCtx) => new StringBuilder,
-			(acc:StringBuilder, elem:String, _: IdCtx) => acc ++= elem,
-			(acc:StringBuilder, _: IdCtx) => acc.toString,
+			(_: Any) => new StringBuilder,
+			(acc:StringBuilder, elem:String, _: Any) => acc ++= elem,
+			(acc:StringBuilder, _: Any) => acc.toString,
 		)
 	}
 
 	/**
 	 * @param newAccumulator a Function0 that creates a new Builder
 	 * @version 0.1.1
+	 * @group IdContext
 	 */
 	def idFromSplicesUsingBuilder[A, Z](
 		newAccumulator: () => Builder[A, Z],
@@ -177,6 +198,7 @@ object Repeated extends LowPrioRepeated {
 
 	/**
 	 * @version 0.1.1
+	 * @group IdContext
 	 */
 	implicit def idFromSplicesToList[A]: Repeated[IdCtx, SplicePiece[Id, A], List[A]] =
 		idFromSplicesUsingBuilder(() => List.newBuilder)
@@ -185,6 +207,7 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	def contextConcatenateString[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:Repeated[Ctx, Ctx#Expr[String], Ctx#Expr[String]] = {
@@ -234,6 +257,7 @@ object Repeated extends LowPrioRepeated {
 	 *     When not defined, `newAccumulator.++=(item).result()` will be used.
 	 *     The definition should be equivalent to but more efficient than the undefined expr.
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	def contextFromSplicesUsingBuilder[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A, Z](
@@ -299,6 +323,7 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * Splice a sequence of `SplicePiece`s together into a `List`
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextFromSplicesToExprList[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit
@@ -365,6 +390,7 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * Creates an Expr[String] consisting of the concatenation of the component Expr[String]s
 	 * @since 0.1.1
+	 * @group QuotedContext
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	def quotedConcatenateString:Repeated[scala.quoted.Quotes, scala.quoted.Expr[String], scala.quoted.Expr[String]] = {
@@ -384,6 +410,7 @@ object Repeated extends LowPrioRepeated {
 	 *     When not defined, `'{$newAccumulator.addAll($item).result()}` will be used.
 	 *     The definition should be equivalent to but more efficient than the undefined expr.
 	 * @version 0.1.1
+	 * @group QuotedContext
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	def quotedFromSplicesUsingBuilder[A, Z](
@@ -399,6 +426,7 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * Splice a sequence of `SplicePiece`s together into a `List`
 	 * @since 0.1.1
+	 * @group QuotedContext
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedFromSplicesToExprList[A](implicit typA: TypeCreator[A]): Repeated[scala.quoted.Quotes, SplicePiece[scala.quoted.Expr, A], scala.quoted.Expr[List[A]]] =
@@ -407,11 +435,13 @@ object Repeated extends LowPrioRepeated {
 	/**
 	 * Represents either zero items, one item or a sequence of items.
 	 * @version 0.1.1
+	 * @group Support
 	 */
 	sealed trait SplicePiece[Expr[+_], +A]
 	/**
 	 * The [[SplicePiece]] cases
 	 * @version 0.1.1
+	 * @group Support
 	 */
 	object SplicePiece {
 		final case class Zero[Expr[+_]]() extends SplicePiece[Expr, Nothing]
@@ -424,6 +454,7 @@ private[typeclass] trait LowPrioRepeated {
 	/**
 	 * The fallback Repeated;
 	 * creates a List containing each of the input values
+	 * @group AnyContext
 	 */
 	implicit def toList[A]:Repeated[Any, A, List[A]] = {
 		Repeated.apply[Any, A, Builder[A, List[A]], List[A]](
@@ -434,12 +465,29 @@ private[typeclass] trait LowPrioRepeated {
 	}
 }
 
-/** Predefined implicit implementations of ContraRepeated */
+/**
+ * Predefined implicit implementations of ContraRepeated
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
+ */
 object ContraRepeated extends LowPrioContraRepeated {
+	/**
+	 * @group IdContext
+	 */
 	implicit def idUnit:ContraRepeated[IdCtx, Id, Unit, Unit] = BiRepeated.idUnit
 
 	/**
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:ContraRepeated[Ctx, Ctx#Expr, Unit, Unit] =
@@ -447,26 +495,52 @@ object ContraRepeated extends LowPrioContraRepeated {
 
 	/**
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextToExprList[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit tt:Ctx#TypeTag[A]):ContraRepeated[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[List[A]]] =
 		BiRepeated.contextToExprList[Ctx, A]
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:ContraRepeated[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] =
 		BiRepeated.quotedUnit
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedToExprList[A](implicit typA: TypeCreator[A]):ContraRepeated[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[List[A]]] =
 		BiRepeated.quotedToExprList
 }
 
 private[typeclass] trait LowPrioContraRepeated {
+	/**
+	 * @group IdContext
+	 */
 	implicit def idToList[A]:ContraRepeated[IdCtx, Id, A, List[A]] = BiRepeated.idToList
 }
 
-/** Predefined implicit implementations of BiRepeated */
+/**
+ * Predefined implicit implementations of BiRepeated
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
+ */
 object BiRepeated extends LowPrioBiRepeated {
+	/**
+	 * @group Support
+	 */
 	private[typeclass] def apply[Ctx, Expr[+_], A, Acc, Z](
 		initFn: (Ctx) => Acc,
 		appendFn: (Acc, A, Ctx) => Acc,
@@ -486,6 +560,9 @@ object BiRepeated extends LowPrioBiRepeated {
 		}
 	}
 
+	/**
+	 * @group IdContext
+	 */
 	implicit def idUnit:BiRepeated[IdCtx, Id, Unit, Unit] = {
 		BiRepeated.apply[IdCtx, Id, Unit, Unit, Unit](
 			(_) => (),
@@ -512,6 +589,7 @@ object BiRepeated extends LowPrioBiRepeated {
 
 	/**
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiRepeated[Ctx, Ctx#Expr, Unit, Unit] = {
@@ -529,6 +607,7 @@ object BiRepeated extends LowPrioBiRepeated {
 
 	/**
 	 * @since 0.2.0
+	 * @group MacroContext
 	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextToExprList[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiRepeated[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[List[A]]] = {
@@ -572,6 +651,9 @@ object BiRepeated extends LowPrioBiRepeated {
 		)
 	}
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:BiRepeated[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] = {
 		BiRepeated.apply[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit, Unit](
@@ -592,12 +674,18 @@ object BiRepeated extends LowPrioBiRepeated {
 		)
 	}
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedToExprList[A](implicit typ: TypeCreator[A]):BiRepeated[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[List[A]]] =
 		RepeatedImpl.quotedToExprList
 }
 
 private[typeclass] trait LowPrioBiRepeated {
+	/**
+	 * @group IdContext
+	 */
 	implicit def idToList[A]:BiRepeated[IdCtx, Id, A, List[A]] = {
 		BiRepeated.apply[IdCtx, Id, A, Builder[A, List[A]], List[A]](
 			(_: IdCtx) => List.newBuilder[A],

@@ -55,10 +55,22 @@ trait BiOptionally[-Ctx, Expr[+_], A, Z]
 /**
  * Predefined implicit implementations of Optionally
  * and methods to create new Optionally
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
   */
 object Optionally extends LowPrioOptionally {
 	/**
 	 * Constructs an `Optionally` from a set of functions corresponding to each of Optionally's methods
+	 * @group Support
 	 */
 	def apply[Ctx, A, Z](noneFn: (Ctx) => Z, someFn: (A, Ctx) => Z):Optionally[Ctx, A, Z] = {
 		final class Apply extends Optionally[Ctx, A, Z] {
@@ -79,9 +91,13 @@ object Optionally extends LowPrioOptionally {
 	 * p.interpolate(StringContext("5"), Nil) // '5': Char
 	 * p.interpolate(StringContext(""), Nil) // 'A': Char
 	 * ```
+	 * @group AnyContext
 	 */
 	def whereDefault[Ctx, A](default: Ctx => A):Optionally[Ctx, A, A] = this.apply[Ctx, A, A](default, (value, _) => value)
 
+	/**
+	 * @group AnyContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	@scala.annotation.targetName("whereDefault2")
 	def whereDefault[Ctx, A](default: Ctx ?=> A):Optionally[Ctx, A, A] = this.apply[Ctx, A, A]((ctx) => default(using ctx), (value, _) => value)
@@ -98,6 +114,7 @@ object Optionally extends LowPrioOptionally {
 	 * //}
 	 * ((p1:Interpolator[Unit]).optionally()):Interpolator[Unit]
 	 * ```
+	 * @group AnyContext
 	 */
 	implicit def unit:Optionally[Any, Unit, Unit] = this.whereDefault(_ => ())
 }
@@ -116,17 +133,30 @@ private[typeclass] trait LowPrioOptionally {
 	 * //}
 	 * ((p1:Interpolator[A]).optionally()):Interpolator[Option[A]]
 	 * ```
+	 * @group AnyContext
 	 */
-	implicit def toOption[Ctx, A]:Optionally[Ctx, A, Option[A]] = Optionally(_ => None, (value, _) => Some(value))
+	implicit def toOption[A]:Optionally[Any, A, Option[A]] = Optionally(_ => None, (value, _) => Some(value))
 }
 
 /**
  * Predefined implicit implementations of ContraOptionally
  * and methods to create new ContraOptionally
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
   */
 object ContraOptionally extends LowPrioContraOptionally {
 	/**
 	 * Constructs an `ContraOptionally` from a set of functions corresponding to each of ContraOptionally's methods
+	 * @group Support
 	 */
 	def apply[Ctx, Expr[+_], A, Z](
 		contraNoneFn:(Z, Ctx) => Expr[Boolean],
@@ -139,22 +169,40 @@ object ContraOptionally extends LowPrioContraOptionally {
 		new Apply
 	}
 
+	/**
+	 * @group IdContext
+	 */
 	implicit def idUnit:ContraOptionally[IdCtx, Id, Unit, Unit] = BiOptionally.idUnit
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiOptionally[Ctx, Ctx#Expr, Unit, Unit] = BiOptionally.contextUnit
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] = BiOptionally.quotedUnit
 
 }
 
 private[typeclass] trait LowPrioContraOptionally {
+	/**
+	 * @group IdContext
+	 */
 	implicit def idToOption[A]:ContraOptionally[IdCtx, Id, A, Option[A]] = BiOptionally.idToOption
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	implicit def contextToExprOption[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiOptionally[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[Option[A]]] = BiOptionally.contextToExprOption
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedToExprOption[A](implicit typA: TypeCreator[A]):BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[Option[A]]] = BiOptionally.quotedToExprOption
 }
@@ -162,10 +210,22 @@ private[typeclass] trait LowPrioContraOptionally {
 /**
  * Predefined implicit implementations of BiOptionally
  * and methods to create new BiOptionally
+ *
+ * @groupname Support Support
+ * @groupprio Support 100
+ * @groupname AnyContext Any Context
+ * @groupprio AnyContext 1000
+ * @groupname QuotedContext Quotes Context
+ * @groupprio QuotedContext 1010
+ * @groupname MacroContext Macro Context
+ * @groupprio MacroContext 1020
+ * @groupname IdContext Identity Context
+ * @groupprio IdContext 1030
   */
 object BiOptionally extends LowPrioBiOptionally {
 	/**
 	 * Constructs an `BiOptionally` from a set of functions corresponding to each of BiOptionally's methods
+	 * @group Support
 	 */
 	def apply[Ctx, Expr[+_], A, Z](
 		noneFn: (Ctx) => Z,
@@ -183,6 +243,7 @@ object BiOptionally extends LowPrioBiOptionally {
 	}
 
 	/**
+	 * @group AnyContext
 	 * @since 0.2.0
 	 */
 	implicit def unit[Ctx, Expr[+_], Type[_]](implicit backing: Exprs[Ctx, Expr, Type]):BiOptionally[Ctx, Expr, Unit, Unit] = {
@@ -194,6 +255,9 @@ object BiOptionally extends LowPrioBiOptionally {
 		)
 	}
 
+	/**
+	 * @group IdContext
+	 */
 	//TODO: @deprecated("0.2.0", "use `BiOptionally.unit[IdCtx, Id]` instead")
 	implicit def idUnit:BiOptionally[IdCtx, Id, Unit, Unit] = BiOptionally.apply[IdCtx, Id, Unit, Unit](
 		_ => (),
@@ -202,6 +266,9 @@ object BiOptionally extends LowPrioBiOptionally {
 		PartialExprFunction.identity[IdCtx, Id, ClassTag, Unit]
 	)
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	def contextUnit[Ctx <: scala.reflect.macros.blackbox.Context with Singleton]:BiOptionally[Ctx, Ctx#Expr, Unit, Unit] = BiOptionally.apply(
 		_ => (),
@@ -210,6 +277,9 @@ object BiOptionally extends LowPrioBiOptionally {
 		PartialExprFunction.identity[Ctx, Ctx#Expr, Ctx#TypeTag, Unit](using Exprs.forContext)
 	)
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedUnit:BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, Unit, Unit] = BiOptionally.apply(
 		_ => (),
@@ -223,6 +293,9 @@ object BiOptionally extends LowPrioBiOptionally {
 }
 
 private[typeclass] trait LowPrioBiOptionally {
+	/**
+	 * @group IdContext
+	 */
 	implicit def idToOption[A]:BiOptionally[IdCtx, Id, A, Option[A]] = BiOptionally.apply[IdCtx, Id, A, Option[A]](
 		_ => None,
 		(value, _:IdCtx) => Some(value),
@@ -244,6 +317,9 @@ private[typeclass] trait LowPrioBiOptionally {
 		c.Expr[Z](namesTree)
 	}
 
+	/**
+	 * @group MacroContext
+	 */
 	@ifdef("scalaEpochVersion:2")
 	def contextToExprOption[Ctx <: scala.reflect.macros.blackbox.Context with Singleton, A](implicit typA:Ctx#TypeTag[A]):BiOptionally[Ctx, Ctx#Expr, Ctx#Expr[A], Ctx#Expr[Option[A]]] = BiOptionally.apply(
 		(ctx:Ctx) => {
@@ -283,6 +359,9 @@ private[typeclass] trait LowPrioBiOptionally {
 		)
 	)
 
+	/**
+	 * @group QuotedContext
+	 */
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedToExprOption[A](implicit typ: TypeCreator[A]):BiOptionally[scala.quoted.Quotes, scala.quoted.Expr, scala.quoted.Expr[A], scala.quoted.Expr[Option[A]]] =
 		OptionallyImpl.quotedToExprOption[A]
