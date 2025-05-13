@@ -1,6 +1,6 @@
 val scala212Ver = "2.12.20"
 val scala213Ver = "2.13.16"
-val scala3Ver = "3.3.5"
+val scala3Ver = "3.3.6"
 
 val githubId = "rayrobdod/string-context-parser-combinator"
 
@@ -26,7 +26,7 @@ lazy val sharedSettings = Seq(
 	),
 	autoAPIMappings := true,
 	libraryDependencies += {
-		"org.scalameta" %%% "munit" % "1.1.0" % Test,
+		"org.scalameta" %%% "munit" % "1.1.1" % Test,
 	},
 	tpolecatScalacOptions ++= {
 		import org.typelevel.scalacoptions.ScalaVersion.V3_0_0
