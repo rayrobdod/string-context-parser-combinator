@@ -1,7 +1,7 @@
 addSbtPlugin("ch.epfl.scala" % "sbt-tasty-mima" % "1.3.0")
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
 addSbtPlugin("com.eed3si9n.ifdef" % "sbt-ifdef" % "0.4.1")
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.9.3")
+addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.11.0")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.4")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.18.2")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.7")
