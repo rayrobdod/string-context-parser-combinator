@@ -18,6 +18,7 @@ final class CodePoint private (val intValue:Int) {
 
 	def charCount	: Int	= Character.charCount(intValue)
 	def name	: String	= Character.getName(intValue)
+	def category	: Int	= Character.getType(intValue)
 	def isAlphabetic	: Boolean	= Character.isAlphabetic(intValue)
 	def isBmp	: Boolean	= Character.isBmpCodePoint(intValue)
 	def isDefined	: Boolean	= Character.isDefined(intValue)
