@@ -212,6 +212,23 @@ lazy val json = (projectMatrix in file("JsonParser"))
 		scala3Ver,
 	))
 
+lazy val scalaQuasiquotes = (projectMatrix in file("ScalaParser"))
+	.dependsOn(base)
+	.disablePlugins(IfDefPlugin)
+	.disablePlugins(MimaPlugin)
+	.disablePlugins(TastyMiMaPlugin)
+	.settings(sharedSettings)
+	.settings(
+		name := "scala",
+		publish / skip := true,
+		console / initialCommands := """
+			import name.rayrobdod.stringContextParserCombinatorExample.quasiquotes._
+		""",
+	)
+	.jvmPlatform(scalaVersions = Seq(
+		scala3Ver,
+	))
+
 lazy val time = (projectMatrix in file("TimeParser"))
 	.dependsOn(base)
 	.disablePlugins(IfDefPlugin)
@@ -305,6 +322,7 @@ lazy val jvms = (project in file(".sbt/matrix/jvms"))
 	.disablePlugins(GitPlugin)
 	.aggregate(base.jvm.get.map(Project.projectToRef):_*)
 	.aggregate(json.jvm.get.map(Project.projectToRef):_*)
+	.aggregate(scalaQuasiquotes.jvm.get.map(Project.projectToRef):_*)
 	.aggregate(time.jvm.get.map(Project.projectToRef):_*)
 	.aggregate(uri.jvm.get.map(Project.projectToRef):_*)
 	.aggregate(xml.jvm.get.map(Project.projectToRef):_*)
