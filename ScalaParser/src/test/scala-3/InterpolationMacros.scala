@@ -1,10 +1,11 @@
 package name.rayrobdod.stringContextParserCombinatorExample.quasiquotesTests
 
+import scala.annotation.unused
 import scala.quoted.*
 import name.rayrobdod.stringContextParserCombinatorExample.quasiquotes.*
 
 object InterpolationMacros:
-	//extension [A] (a: Expr[A]) private def showInfix(using Quotes) = {quotes.reflect.report.info(a.show); a}
+	extension [A] (a: Expr[A]) @unused private def showInfix(using Quotes) = {quotes.reflect.report.info(a.show); a}
 
 	def splicedValueImpl[A](v: Expr[A])(using Quotes, Type[A]): Expr[A] = q"${v}".asExprOf[A]
 	def liftedStringImpl(v: String)(using Quotes): Expr[String] = q"${v}".asExprOf[String]
@@ -19,3 +20,5 @@ object InterpolationMacros:
 	def hexIntImpl(using Quotes): Expr[Int] = q"0x12_34_56".asExprOf[Int]
 	def hexLongImpl(using Quotes): Expr[Long] = q"0x1234_5678_9ABC_DEF0L".asExprOf[Long]
 	def notTrueImpl(using Quotes): Expr[Boolean] = q"! true".asExprOf[Boolean]
+	def intToFloat(using Quotes): Expr[Float] = q"25.toFloat".asExprOf[Float]
+	def rangeTripleTail(v: Expr[Range])(using Quotes): Expr[Range] = q"${v}.tail.tail.tail".asExprOf[Range]

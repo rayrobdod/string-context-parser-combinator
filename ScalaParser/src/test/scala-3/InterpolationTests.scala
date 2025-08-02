@@ -67,4 +67,16 @@ final class InterpolationTest extends munit.FunSuite {
 		val expected = ! true
 		assertEquals(actual, expected)
 	}
+	test("toFloat call on Int") {
+		inline def actual = ${ InterpolationMacros.intToFloat }
+		val expected = 25.toFloat
+		assertEquals(actual, expected)
+	}
+	test("tail.tail.tail call on Range") {
+		inline def dut(value: Range) = ${ InterpolationMacros.rangeTripleTail('value) }
+		val base = 0 to 25 by 3
+		val expected = base.tail.tail.tail
+		val actual = dut(base)
+		assertEquals(actual, expected)
+	}
 }

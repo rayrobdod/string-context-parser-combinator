@@ -4,8 +4,8 @@ import scala.quoted.*
 import name.rayrobdod.stringContextParserCombinator.typeclass.*
 import name.rayrobdod.stringContextParserCombinator.LiftFunction
 import name.rayrobdod.stringContextParserCombinator.RepeatStrategy.Greedy
-import name.rayrobdod.stringContextParserCombinator.Interpolator.quotedInterpolators._
-import name.rayrobdod.stringContextParserCombinatorExample.quasiquotes.LexicalParsers.whitespaces
+import name.rayrobdod.stringContextParserCombinator.Interpolator.quotedInterpolators.*
+import name.rayrobdod.stringContextParserCombinatorExample.quasiquotes.LexicalParsers.*
 
 object ExpressionParsers:
 
@@ -129,11 +129,15 @@ object ExpressionParsers:
 			<|> liftedExpr
 			<|> Literal
 
+	private[quasiquotes] val SimpleExpr2: Interpolator[Expr[TermFunction]] =
+		(SimpleExpr1 <~> (isString(".") <~> id).repeat()).map: x =>
+			x._2.foldLeft(x._1)({(term, name) => '{ TermFunction.SelectUnary($term, ${Expr(name)})}})
+
 	private[quasiquotes] val SimpleExpr: Interpolator[Expr[TermFunction]] =
-		SimpleExpr1
+		SimpleExpr2
 
 	private[quasiquotes] val PrefixExpr: Interpolator[Expr[TermFunction]] =
-		(charIn("-+~!").optionally()<~> whitespaces <~> SimpleExpr).map: value =>
+		(charIn("-+~!").optionally() <~> whitespaces <~> SimpleExpr).map: value =>
 			val (opOp, expr) = value
 			opOp match
 				case None => expr
