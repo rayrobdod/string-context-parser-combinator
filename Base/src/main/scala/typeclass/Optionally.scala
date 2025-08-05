@@ -1,12 +1,8 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
-import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import com.eed3si9n.ifdef.ifdef
-
-@nowarn("msg=make nowarn used")
-private[typeclass] final class Optionally_MakeNowarnUsed
 
 /**
  * Describes how to represent an optional value
@@ -325,13 +321,13 @@ private[typeclass] trait LowPrioBiOptionally {
 		(ctx:Ctx) => {
 			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
 			import myBindSingletonContexts._
-			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+			@annotation.nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
 			selectTermNames[Option[A]](ctx)("_root_", "scala", "None"): Ctx#Expr[Option[A]]
 		},
 		(value, ctx) => {
 			val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
 			import myBindSingletonContexts._
-			@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+			@annotation.nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
 			val value2: ctx.Expr[A] = value
 			val rootTree = ctx.universe.Ident(ctx.universe.TermName("_root_"))
 			val namesTree = List("scala", "Some", "apply").foldLeft[ctx.universe.Tree](rootTree)({(folding, name) => ctx.universe.Select(folding, ctx.universe.TermName(name))})

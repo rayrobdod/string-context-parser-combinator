@@ -3,9 +3,6 @@ package typeclass
 
 import com.eed3si9n.ifdef.ifdef
 
-@ifdef("scalaEpochVersion:2")
-private class NoWarnAboutUnusedIfdef {}
-
 /**
  * Describes how to combine two adjacent values into one value
  *
@@ -92,6 +89,10 @@ object Sequenced extends LowPrioSequenced {
 		}
 		new Apply()
 	}
+
+	@scala.annotation.nowarn("msg=unused")
+	@ifdef("scalaEpochVersion:2")
+	private def __do_not_warn_about_unused_ifdef = 0
 
 	/**
 	 * @group Support

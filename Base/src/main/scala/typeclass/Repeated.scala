@@ -1,12 +1,8 @@
 package name.rayrobdod.stringContextParserCombinator
 package typeclass
 
-import scala.annotation.nowarn
 import com.eed3si9n.ifdef.ifdef
 import scala.collection.mutable.Builder
-
-@nowarn("msg=make nowarn used")
-private[typeclass] final class Repeated_MakeNowarnUsed
 
 /**
  * Describes how to combine a homogeneous sequence of zero-or-more values.
@@ -626,14 +622,14 @@ object BiRepeated extends LowPrioBiRepeated {
 				(value, ctx) => {
 					val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
 					import myBindSingletonContexts._
-					@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+					@annotation.nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
 					val value2 = value: ctx.Expr[List[A]]
 					select[List[A], Boolean](ctx)(value2, "nonEmpty"): Ctx#Expr[Boolean]
 				},
 				(value, ctx) => {
 					val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
 					import myBindSingletonContexts._
-					@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+					@annotation.nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
 					val value2 = value: ctx.Expr[List[A]]
 					(
 						select[List[A], A](ctx)(value2, "head"): Ctx#Expr[A],
@@ -644,7 +640,7 @@ object BiRepeated extends LowPrioBiRepeated {
 			(value, ctx) => {
 				val myBindSingletonContexts = new BindSingletonContexts[Ctx, ctx.type]
 				import myBindSingletonContexts._
-				@nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
+				@annotation.nowarn("msg=never used") implicit val typA2:ctx.TypeTag[A] = typA
 				val value2 = value: ctx.Expr[List[A]]
 				select[List[A], Boolean](ctx)(value2, "isEmpty"): Ctx#Expr[Boolean]
 			},
