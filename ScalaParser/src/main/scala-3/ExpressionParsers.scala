@@ -206,7 +206,7 @@ object ExpressionParsers:
 		'{
 			val a: TermFunction = $interpolated
 			val quotes1Up: Quotes = $quotes1
-			val b: quotes1Up.reflect.Term = a(using quotes1Up)
+			val b: quotes1Up.reflect.Term = a()(using quotes1Up)
 			val c = b.asExpr
 			c
 		}
