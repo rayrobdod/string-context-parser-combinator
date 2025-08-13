@@ -109,4 +109,16 @@ final class InterpolationTest extends munit.FunSuite {
 		val actual = dut(base)
 		assertEquals(actual, expected)
 	}
+	test("if else [1]") {
+		inline def dut(cond: Boolean) = ${ InterpolationMacros.ifElseImpl('cond) }
+		val expected = 42
+		val actual = dut(true)
+		assertEquals(actual, expected)
+	}
+	test("if else [2]") {
+		inline def dut(cond: Boolean) = ${ InterpolationMacros.ifElseImpl('cond) }
+		val expected = 151
+		val actual = dut(false)
+		assertEquals(actual, expected)
+	}
 }

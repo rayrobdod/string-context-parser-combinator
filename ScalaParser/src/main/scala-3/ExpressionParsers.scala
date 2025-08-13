@@ -51,7 +51,7 @@ object ExpressionParsers:
 
 
 	private[quasiquotes] val nullLiteral: Interpolator[Expr[TermFunction]] =
-		isString("null")
+		(isString("null") <~ whitespaces)
 			.map(_ => '{ new TermFunction.NullConstant })
 
 	private[quasiquotes] val booleanLiteral: Interpolator[Expr[TermFunction]] =
@@ -61,7 +61,7 @@ object ExpressionParsers:
 		val falseLiteral: Interpolator[Expr[TermFunction]] =
 			isString("false")
 				.map(_ => '{ new TermFunction.BooleanConstant(false) })
-		trueLiteral <|> falseLiteral
+		(trueLiteral <|> falseLiteral) <~ whitespaces
 
 	private[quasiquotes] val integerLiteral: Interpolator[Expr[TermFunction]] =
 		given Optionally[Any, BigInt, BigInt] = Optionally.whereDefault(_ => BigInt(0))
@@ -90,7 +90,7 @@ object ExpressionParsers:
 
 		val isLong: Interpolator[Boolean] = charIn("lL").void.optionally()(using unitOptionally(false, true))
 
-		(number <~> isLong).collect(
+		(number <~> isLong <~ whitespaces).collect(
 			{
 				case ((bi, true), q) if bi.isValidLong =>
 					given Quotes = q
@@ -113,7 +113,7 @@ object ExpressionParsers:
 		val element = (charNoQuoteOrNewline <|> escapeSeq)
 				.map(c => '{ new TermFunction.CharConstant(${Expr(c)}) })
 
-		delim ~> element <~ delim
+		delim ~> element <~ delim <~ whitespaces
 	end charLiteral
 
 	private[quasiquotes] val singleLineStringLiteral: Interpolator[Expr[TermFunction]] =
@@ -122,7 +122,7 @@ object ExpressionParsers:
 		val elements = (charNoQuoteOrNewline <|> escapeSeq).repeat()
 				.map(s => '{ new TermFunction.StringConstant(${Expr(s)}) })
 
-		delim ~> elements <~ delim
+		delim ~> elements <~ delim <~ whitespaces
 	end singleLineStringLiteral
 
 	private[quasiquotes] val Literal: Interpolator[Expr[TermFunction]] =
@@ -164,8 +164,34 @@ object ExpressionParsers:
 				case Some(op) => '{ TermFunction.SelectUnary($expr, ${Expr(s"unary_$op")}) }
 	end PrefixExpr
 
+	private[quasiquotes] val InfixExpr: Interpolator[Expr[TermFunction]] =
+		PrefixExpr
+	end InfixExpr
+
+	private[quasiquotes] val Expr1: Interpolator[Expr[TermFunction]] =
+		val defaultUnitOptionally: Optionally[Quotes, Expr[TermFunction], Expr[TermFunction]] =
+				Optionally.whereDefault({quotes => given Quotes = quotes;  '{ TermFunction.UnitConstant() }})
+		val ifexpr =
+			(
+				isString("if") <~ whitespaces <~>
+				isString("(") <~ whitespaces <~>
+				`lazy`(() => expr) <~>
+				isString(")") <~ whitespaces <~>
+				`lazy`(() => expr) <~> (
+					isString("else") <~ whitespaces <~>
+					`lazy`(() => expr)
+				).optionally()(using defaultUnitOptionally)
+			).map({case ((cond, thenp), elsep) =>
+				'{ TermFunction.If( $cond, $thenp, $elsep ) }
+			})
+
+		ifexpr <|>
+		InfixExpr
+	end Expr1
+
 	private[quasiquotes] val expr: Interpolator[Expr[TermFunction]] =
-		PrefixExpr <~> whitespaces
+		Expr1
+	end expr
 
 
 	def main(

@@ -28,3 +28,4 @@ object InterpolationMacros:
 	def notTrueImpl(using Quotes): Expr[Boolean] = q"! true".asExprOf[Boolean]
 	def intToFloat(using Quotes): Expr[Float] = q"25.toFloat".asExprOf[Float]
 	def rangeTripleTail(v: Expr[Range])(using Quotes): Expr[Range] = q"${v}.tail.tail.tail".asExprOf[Range]
+	def ifElseImpl(cond: Expr[Boolean])(using Quotes): Expr[Int] = q""" if ($cond) 42 else 151 """.asExprOf[Int]

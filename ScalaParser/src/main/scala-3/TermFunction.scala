@@ -20,6 +20,10 @@ object TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.NullConstant())
 
+	final class UnitConstant extends TermFunction:
+		def apply(using quotes: Quotes): quotes.reflect.Term =
+			quotes.reflect.Literal(quotes.reflect.UnitConstant())
+
 	final class BooleanConstant(v: Boolean) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.BooleanConstant(v))
@@ -39,6 +43,10 @@ object TermFunction:
 	final class StringConstant(v: String) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.StringConstant(v))
+
+	final class If(cond: TermFunction, thenp: TermFunction, elsep: TermFunction) extends TermFunction:
+		def apply(using quotes: Quotes): quotes.reflect.Term =
+			quotes.reflect.If(cond(using quotes), thenp(using quotes), elsep(using quotes))
 
 	final class SelectUnary(targetFn: TermFunction, name: String) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
