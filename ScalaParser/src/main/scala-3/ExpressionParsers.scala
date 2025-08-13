@@ -116,10 +116,20 @@ object ExpressionParsers:
 		delim ~> element <~ delim
 	end charLiteral
 
+	private[quasiquotes] val singleLineStringLiteral: Interpolator[Expr[TermFunction]] =
+		val delim = isString("\"")
+		val charNoQuoteOrNewline = charWhere(c => c != '\n' && c != '\r' && c != '\"' && c != '\\')
+		val elements = (charNoQuoteOrNewline <|> escapeSeq).repeat()
+				.map(s => '{ new TermFunction.StringConstant(${Expr(s)}) })
+
+		delim ~> elements <~ delim
+	end singleLineStringLiteral
+
 	private[quasiquotes] val Literal: Interpolator[Expr[TermFunction]] =
 		nullLiteral
 			<|> booleanLiteral
 			<|> charLiteral
+			<|> singleLineStringLiteral
 			<|> integerLiteral
 
 	private[quasiquotes] val spliceExpr: Interpolator[Expr[TermFunction]] =
@@ -155,7 +165,7 @@ object ExpressionParsers:
 	end PrefixExpr
 
 	private[quasiquotes] val expr: Interpolator[Expr[TermFunction]] =
-		PrefixExpr
+		PrefixExpr <~> whitespaces
 
 
 	def main(
@@ -165,7 +175,7 @@ object ExpressionParsers:
 		)(
 		using Quotes,
 	): Expr[Expr[?]] =
-		val interpolated: Expr[TermFunction] = (expr <~> end).interpolate(sc, args)
+		val interpolated: Expr[TermFunction] = (whitespaces <~> expr <~> end).interpolate(sc, args)
 
 		'{
 			val a: TermFunction = $interpolated

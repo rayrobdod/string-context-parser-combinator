@@ -28,13 +28,17 @@ object TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.IntConstant(v))
 
+	final class LongConstant(v: Long) extends TermFunction:
+		def apply(using quotes: Quotes): quotes.reflect.Term =
+			quotes.reflect.Literal(quotes.reflect.LongConstant(v))
+
 	final class CharConstant(v: Char) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.CharConstant(v))
 
-	final class LongConstant(v: Long) extends TermFunction:
+	final class StringConstant(v: String) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
-			quotes.reflect.Literal(quotes.reflect.LongConstant(v))
+			quotes.reflect.Literal(quotes.reflect.StringConstant(v))
 
 	final class SelectUnary(targetFn: TermFunction, name: String) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =

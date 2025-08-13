@@ -77,6 +77,21 @@ final class InterpolationTest extends munit.FunSuite {
 		val expected = 0x1234_5678_9ABC_DEF0L
 		assertEquals(actual, expected)
 	}
+	test("""`""`""") {
+		inline def actual = ${ InterpolationMacros.emptyStringImpl }
+		val expected = ""
+		assertEquals(actual, expected)
+	}
+	test("ascii string literal") {
+		inline def actual = ${ InterpolationMacros.asciiStringImpl }
+		val expected = "Hello World"
+		assertEquals(actual, expected)
+	}
+	test("escapes string literal") {
+		inline def actual = ${ InterpolationMacros.escapesStringImpl }
+		val expected = "\u0041\n\u0042"
+		assertEquals(actual, expected)
+	}
 	test("prefix op ! on Boolean") {
 		inline def actual = ${ InterpolationMacros.notTrueImpl }
 		val expected = ! true
