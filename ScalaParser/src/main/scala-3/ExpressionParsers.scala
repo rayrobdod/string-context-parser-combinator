@@ -107,9 +107,19 @@ object ExpressionParsers:
 		)
 	end integerLiteral
 
+	private[quasiquotes] val charLiteral: Interpolator[Expr[TermFunction]] =
+		val delim = isString("\'")
+		val charNoQuoteOrNewline = charWhere(c => c != '\n' && c != '\r' && c != '\'' && c != '\\')
+		val element = (charNoQuoteOrNewline <|> escapeSeq)
+				.map(c => '{ new TermFunction.CharConstant(${Expr(c)}) })
+
+		delim ~> element <~ delim
+	end charLiteral
+
 	private[quasiquotes] val Literal: Interpolator[Expr[TermFunction]] =
 		nullLiteral
 			<|> booleanLiteral
+			<|> charLiteral
 			<|> integerLiteral
 
 	private[quasiquotes] val spliceExpr: Interpolator[Expr[TermFunction]] =

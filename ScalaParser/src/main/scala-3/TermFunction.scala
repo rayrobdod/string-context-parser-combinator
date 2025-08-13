@@ -28,6 +28,10 @@ object TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.IntConstant(v))
 
+	final class CharConstant(v: Char) extends TermFunction:
+		def apply(using quotes: Quotes): quotes.reflect.Term =
+			quotes.reflect.Literal(quotes.reflect.CharConstant(v))
+
 	final class LongConstant(v: Long) extends TermFunction:
 		def apply(using quotes: Quotes): quotes.reflect.Term =
 			quotes.reflect.Literal(quotes.reflect.LongConstant(v))

@@ -6,6 +6,9 @@ import name.rayrobdod.stringContextParserCombinator.Interpolator.quotedInterpola
 import name.rayrobdod.stringContextParserCombinator.typeclass.*
 
 object LexicalParsers:
+	private[quasiquotes] def charFlatCollect[A](pf: PartialFunction[Char, Interpolator[A]]): Interpolator[A] =
+		charWhere(x => pf.isDefinedAt(x)).flatMap(x => pf(x))
+
 	private given Sequenced[Any, CodePoint, String, String] = new:
 		def aggregate(_1: CodePoint, _2: String)(implicit ctx: Any) = s"$_1$_2"
 	private given Sequenced[Any, String, String, String] = new:
@@ -25,6 +28,20 @@ object LexicalParsers:
 		charWhere(c => ('0' <= c && c <= '9'))
 	private[quasiquotes] val hexDigit: Interpolator[Char] =
 		charWhere(c => ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F'))
+
+	private[quasiquotes] val escapeSeq: Interpolator[Char] =
+		(isString("\\") ~> charFlatCollect({
+			case '\\' => pass.map(_ => '\\')
+			case '\'' => pass.map(_ => '\'')
+			case '"' => pass.map(_ => '"')
+			case 'n' => pass.map(_ => '\n')
+			case 'r' => pass.map(_ => '\r')
+			case 'b' => pass.map(_ => '\b')
+			case 'f' => pass.map(_ => '\f')
+			case 't' => pass.map(_ => '\t')
+			case 'u' => hexDigit.repeat(4,4).map(x => Integer.parseInt(x, 16).toChar)
+		}))
+
 
 	private[quasiquotes] val upper: Interpolator[CodePoint] = codePointWhere: c =>
 		CodePoint('$') == c || (CodePoint('A') <= c && c <= CodePoint('Z')) || {
