@@ -101,6 +101,16 @@ lazy val sharedJsSettings = Seq(
 )
 
 lazy val base = (projectMatrix in file("Base"))
+	// IfDefPlugin shoves all compile classes into the test compile path because the intention of IfDef is to make rust-style unit-tests-in-main-sources.
+	// However, macro definitions being in the same source group is not supposed to work, and keeps causing issues for this macro-heavy project.
+	// So. Copy the IfDefPlugin settings without the changes to Test/managedSources or Test/internalDependencyClasspath
+	.disablePlugins(IfDefPlugin)
+	.settings(
+		libraryDependencies += "com.eed3si9n.ifdef" %% "ifdef-annotation" % IfDefPlugin.ifDefVersion % Provided,
+		libraryDependencies += compilerPlugin("com.eed3si9n.ifdef" %% "ifdef-plugin" % IfDefPlugin.ifDefVersion),
+	)
+	.settings(inConfig(Compile)(IfDefPlugin.configurationSettings))
+	// end ifdef
 	.settings(sharedSettings)
 	.settings(
 		name := "string-context-parser-combinator",
