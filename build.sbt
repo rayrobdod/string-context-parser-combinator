@@ -38,6 +38,7 @@ lazy val sharedSettings = Seq(
 		org.typelevel.scalacoptions.ScalacOptions.warnUnusedNoWarn,
 		org.typelevel.scalacoptions.ScalacOptions.privateWarnUnusedNoWarn,
 	),
+	Compile / ifDefDeclarations ++= Seq("always"),
 	Compile / ifDefDeclarations ++= (scalaBinaryVersion.value match {
 		case "2.12" | "2.13" =>
 			Seq("scalaEpochVersion:2")
@@ -98,6 +99,7 @@ lazy val sharedJsSettings = Seq(
 			),
 		)
 	},
+	Compile / ifDefDeclarations ++= Seq("platform:js"),
 )
 
 lazy val base = (projectMatrix in file("Base"))
@@ -167,11 +169,16 @@ lazy val base = (projectMatrix in file("Base"))
 				).asJava)
 		},
 	)
-	.jvmPlatform(scalaVersions = Seq(
-		scala212Ver,
-		scala213Ver,
-		scala3Ver,
-	))
+	.jvmPlatform(
+		scalaVersions = Seq(
+			scala212Ver,
+			scala213Ver,
+			scala3Ver,
+		),
+		Seq(
+			Compile / ifDefDeclarations ++= Seq("platform:jvm"),
+		),
+	)
 	.jsPlatform(
 		scalaVersions = Seq(
 			scala212Ver,
@@ -180,11 +187,16 @@ lazy val base = (projectMatrix in file("Base"))
 		),
 		sharedJsSettings,
 	)
-	.nativePlatform(scalaVersions = Seq(
-		scala212Ver,
-		scala213Ver,
-		scala3Ver,
-	))
+	.nativePlatform(
+		scalaVersions = Seq(
+			scala212Ver,
+			scala213Ver,
+			scala3Ver,
+		),
+		Seq(
+			Compile / ifDefDeclarations ++= Seq("platform:native"),
+		),
+	)
 
 lazy val json = (projectMatrix in file("JsonParser"))
 	.dependsOn(base)

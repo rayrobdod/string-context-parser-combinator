@@ -3,6 +3,8 @@ package name.rayrobdod
 import scala.reflect.api.Universe
 import scala.reflect.macros.blackbox.Context
 import scala.Predef._
+import com.eed3si9n.ifdef.ifdef
+import com.eed3si9n.ifdef.ifndef
 
 /**
  * A library for implementing custom string interpolation implementations using Parser Combinators
@@ -14,9 +16,26 @@ package object stringContextParserCombinator {
 	type IdToExpr[A] = =:=[A, A]
 	implicit val given_IdCtx: IdCtx = new IdCtx()
 
+	@scala.annotation.nowarn("msg=unused")
+	@ifdef("always")
+	private def __do_not_warn_about_unused_ifdef = 0
+
+	@scala.annotation.nowarn("msg=unused")
+	@ifndef("never")
+	private def __do_not_warn_about_unused_ifndef = 0
+
+	@ifndef("platform:js")
 	private[stringContextParserCombinator]
-	val Name = new Unapply.Fixed[Universe#Name, String] {
-		def unapply(input:Universe#Name):Option[String] = Option(input.decodedName.toString)
+	val Name: Unapply.Fixed[Universe#Name, String] = {
+		(input:Universe#Name) => Option(input.decodedName.toString)
+	}
+
+	// needs to be lazy so that the js linker can elide the calls to the
+	// "non-existent method scala.reflect.api.Names$NameApi.decodedName()"
+	@ifdef("platform:js")
+	private[stringContextParserCombinator]
+	lazy val Name: Unapply.Fixed[Universe#Name, String] = {
+		(input:Universe#Name) => Option(input.decodedName.toString)
 	}
 
 	private[stringContextParserCombinator]
