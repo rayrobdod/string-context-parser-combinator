@@ -1,6 +1,6 @@
 val scala212Ver = "2.12.20"
 val scala213Ver = "2.13.16"
-val scala3Ver = "3.3.6"
+val scala3Ver = "3.3.7"
 
 val githubId = "rayrobdod/string-context-parser-combinator"
 
