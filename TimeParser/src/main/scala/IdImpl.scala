@@ -9,7 +9,7 @@ object IdImpl {
 	private[this] val leafParsers = Parser.idParsers
 	import leafParsers.end
 	import leafParsers.ofType
-	private[this] val intTwoDigits = (min:Int, max:Int) => TimeParsers.intTwoDigits({(cs: Seq[Char]) => leafParsers.charIn(cs).toInterpolator})(min, max)
+	private[this] val intTwoDigits = (min:Int, max:Int) => TimeParsers.intTwoDigits[IdCtx, Id]({(cs: Seq[Char]) => leafParsers.charIn(cs).toInterpolator})(min, max)
 	import typeclass.BiEithered.idSymmetric
 
 	private[this] implicit object sequenced_YearMonth extends typeclass.BiSequenced[Any, Year, Month, YearMonth] {

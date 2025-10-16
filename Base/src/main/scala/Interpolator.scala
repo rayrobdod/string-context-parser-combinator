@@ -645,7 +645,7 @@ object Interpolator
 				new SCPCInterpolator[c.type, c.Expr[Any], c.Expr[A]](new internal.OfType[c.type, A](tpe))
 
 			override def lifted[Lifter[_], Z](lift:LiftFunction[c.type, Lifter, Z], description:String)(implicit lifterTypeTag:c.TypeTag[Lifter[_]]): SCPCInterpolator[c.type, c.Expr[Any], Z] =
-				new SCPCInterpolator[c.type, c.Expr[Any], Z](internal.Lifted(c)(lift, ExpectingDescription(description)))
+				new SCPCInterpolator[c.type, c.Expr[Any], Z](internal.Lifted[Lifter, Z](c)(lift, ExpectingDescription(description)))
 		}
 	}
 
