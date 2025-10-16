@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Test-${{ matrix.os }}-${{ matrix.java }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: coursier/cache-action@v6
     - uses: coursier/setup-action@v1
       with:
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     name: MigrationManager
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: coursier/cache-action@v6
     - uses: coursier/setup-action@v1
       with:
@@ -44,7 +44,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Artifact-${{ matrix.os }}-${{ matrix.java }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
     - uses: coursier/cache-action@v6
