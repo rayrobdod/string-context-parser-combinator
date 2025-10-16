@@ -353,18 +353,16 @@ private[xml] object XmlParser {
 
 	def interpolate[Z](sc:Expr[scala.StringContext], args:Expr[Seq[Any]], factory:Expr[XmlFactory[Z]])(using Type[Z], Quotes):Expr[Z] = {
 		import quotes.reflect.*
-		val (factoryExpr, factoryType) = factory match {case '{ $x: t } => ((x, Type.of[t])) }
-
 		val initialNsb:NamespaceBinding = Map(
 			(None, ""),
 			(Some("xml"), "http://www.w3.org/XML/1998/namespace"),
 			(Some("xmlns"), "http://www.w3.org/200/xmlns/")
 		)
 
-		factoryExpr.asTerm
+		factory.asTerm
 			.selectAndApplyToArgsMaybeDynamicMaybeVarargs
 				("literal")
-				((fragment(factoryExpr, initialNsb) <~> end).interpolate(sc, args).map(_.asTerm))
+				((fragment(factory, initialNsb) <~> end).interpolate(sc, args).map(_.asTerm))
 			.asExprOf[Z]
 	}
 

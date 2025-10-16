@@ -136,7 +136,7 @@ object Eithered extends LowPrioEithered {
 	 */
 	@ifdef("scalaBinaryVersion:3")
 	def quotedSplicePiece[A]: Eithered[scala.quoted.Quotes, scala.quoted.Expr[A], scala.quoted.Expr[Iterable[A]], Repeated.SplicePiece[scala.quoted.Expr, A]] =
-			Eithered((value, ctx) => new Repeated.SplicePiece.One(value), (value, ctx) => new Repeated.SplicePiece.Many(value))
+			Eithered((value, _) => new Repeated.SplicePiece.One(value), (value, _) => new Repeated.SplicePiece.Many(value))
 
 	/**
 	 * An Eithered that wraps the value in a `scala.Either`
@@ -349,8 +349,8 @@ private[typeclass] trait LowPrioBiEithered {
 	@ifdef("scalaBinaryVersion:3")
 	implicit def quotedSymmetric[A]:BiEithered[scala.quoted.Quotes, scala.quoted.Expr, A, A, A] = {
 		BiEithered.apply[scala.quoted.Quotes, scala.quoted.Expr, A, A, A](
-			(value, ctx) => value,
-			(value, ctx) => value,
+			(value, _) => value,
+			(value, _) => value,
 			PartialExprFunction.identity,
 			PartialExprFunction.identity,
 		)

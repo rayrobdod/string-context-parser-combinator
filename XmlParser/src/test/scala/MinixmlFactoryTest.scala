@@ -1,5 +1,6 @@
 package name.rayrobdod.stringContextParserCombinatorExample.xml
 
+import scala.annotation.unused
 import scala.language.dynamics
 
 package minixml:
@@ -60,7 +61,7 @@ object MinixmlFactory extends XmlFactory[minixml.Elem]:
 		def selectDynamic(uri:String):Namespaced =
 			new Namespaced(uri)
 
-		def applyDynamic(uri: String)(prefix:String):Namespaced =
+		def applyDynamic(uri: String)(@unused prefix:String):Namespaced =
 			new Namespaced(uri)
 
 final class MiniXmlFactoryTest extends munit.FunSuite {

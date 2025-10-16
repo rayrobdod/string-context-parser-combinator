@@ -242,7 +242,7 @@ object MacroImpl {
 	}
 
 	private def absoluteUri:Interpolator[Expr[URI]] = {(
-		(scheme <~ isString(":")).flatMap: (scheme:Expr[String], ctx1:Quotes) =>
+		(scheme <~ isString(":")).flatMap: (scheme:Expr[String], _:Quotes) =>
 			(isString("//") ~>
 				server <~>
 				absolutePathExpr.optionally().map(_.getOrElse(nullExpr)) <~>

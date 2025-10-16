@@ -143,8 +143,8 @@ object RepeatedImpl {
 	private[typeclass]
 	def quotedToExprList[A](using TypeCreator[A]):BiRepeated[Quotes, Expr, Expr[A], Expr[List[A]]] = {
 		BiRepeated.apply[Quotes, Expr, Expr[A], Builder[Expr[A], List[Expr[A]]], Expr[List[A]]](
-			(ctx) => List.newBuilder[Expr[A]],
-			(acc, elem, ctx) => {acc += elem},
+			(_) => List.newBuilder[Expr[A]],
+			(acc, elem, _) => {acc += elem},
 			(acc, ctx) => {
 				given Quotes = ctx
 				@nowarn("id=E198") given Type[A] = TypeCreator[A].createType
