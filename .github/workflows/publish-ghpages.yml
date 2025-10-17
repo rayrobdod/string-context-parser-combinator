@@ -40,7 +40,7 @@ jobs:
     - uses: coursier/setup-action@v1
       with:
         apps: sbt
-        jvm: zulu:17
+        jvm: zulu:25
     - name: Setup Pages
       uses: actions/configure-pages@v5
     - name: Build site
