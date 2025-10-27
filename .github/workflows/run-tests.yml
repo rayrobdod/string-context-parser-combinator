@@ -57,7 +57,7 @@ jobs:
     - name: move local publish to somewhere upload-artifact can reach
       run: mv ~/.ivy2/local ./publish
     - name: upload directory
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: publish-${{ matrix.os }}-${{ matrix.java }}
         path: publish
