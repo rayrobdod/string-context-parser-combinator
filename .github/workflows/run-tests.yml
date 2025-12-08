@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - uses: coursier/cache-action@v7
-    - uses: coursier/setup-action@v1
+    - uses: coursier/setup-action@v2
       with:
         apps: sbt
         jvm: zulu:${{matrix.java}}
@@ -28,7 +28,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - uses: coursier/cache-action@v7
-    - uses: coursier/setup-action@v1
+    - uses: coursier/setup-action@v2
       with:
         apps: sbt
         jvm: zulu:8
@@ -48,7 +48,7 @@ jobs:
       with:
         fetch-depth: 0
     - uses: coursier/cache-action@v7
-    - uses: coursier/setup-action@v1
+    - uses: coursier/setup-action@v2
       with:
         apps: sbt
         jvm: zulu:${{matrix.java}}

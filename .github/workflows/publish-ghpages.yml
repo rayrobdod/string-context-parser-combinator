@@ -37,7 +37,7 @@ jobs:
           sbt-site-
           setup-java-Linux-sbt-${{ hashFiles('**/*.sbt','**/project/build.properties','**/project/**.scala','**/project/**.sbt') }}
           setup-java-Linux-sbt-
-    - uses: coursier/setup-action@v1
+    - uses: coursier/setup-action@v2
       with:
         apps: sbt
         jvm: zulu:17
