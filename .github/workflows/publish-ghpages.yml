@@ -24,7 +24,7 @@ jobs:
       # since webStage will pull some artifacts that the other tasks will not
       # and caches are immutable, meaning without a new cache key,
       # the webStage artifacts will not be cached
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.ivy2/cache
