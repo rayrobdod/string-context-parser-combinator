@@ -22,7 +22,7 @@ lazy val sharedSettings = Seq(
 	),
 	autoAPIMappings := true,
 	libraryDependencies += {
-		"org.scalameta" %%% "munit" % "1.2.1" % Test,
+		"org.scalameta" %%% "munit" % "1.2.4" % Test,
 	},
 	tpolecatScalacOptions ++= {
 		import org.typelevel.scalacoptions.ScalaVersion.V3_0_0
