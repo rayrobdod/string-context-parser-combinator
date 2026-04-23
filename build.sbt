@@ -1,4 +1,4 @@
-val scala212Ver = "2.12.20"
+val scala212Ver = "2.12.21"
 val scala213Ver = "2.13.18"
 val scala3Ver = "3.3.7"
 
@@ -22,7 +22,7 @@ lazy val sharedSettings = Seq(
 	),
 	autoAPIMappings := true,
 	libraryDependencies += {
-		"org.scalameta" %%% "munit" % "1.2.1" % Test,
+		"org.scalameta" %%% "munit" % "1.3.0" % Test,
 	},
 	tpolecatScalacOptions ++= {
 		import org.typelevel.scalacoptions.ScalaVersion.V3_0_0
