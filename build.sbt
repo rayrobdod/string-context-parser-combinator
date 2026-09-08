@@ -309,7 +309,7 @@ lazy val xml = (projectMatrix in file("XmlParser"))
 		name := "xml",
 		publish / skip := true,
 		libraryDependencies ++= Seq(
-			"org.scala-lang.modules" %%% "scala-xml" % "2.4.0",
+			"org.scala-lang.modules" %%% "scala-xml" % "2.5.0",
 		),
 		console / initialCommands := """
 			import name.rayrobdod.stringContextParserCombinatorExample.xml._
