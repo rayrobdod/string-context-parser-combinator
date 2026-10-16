@@ -261,7 +261,7 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		),
 		Seq(
 			libraryDependencies ++= Seq(
-				"io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
+				"io.github.cquiroz" %%% "scala-java-time" % "2.8.0",
 			),
 		) ++
 		sharedJsSettings,
@@ -274,7 +274,7 @@ lazy val time = (projectMatrix in file("TimeParser"))
 		),
 		Seq(
 			libraryDependencies ++= Seq(
-				"io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
+				"io.github.cquiroz" %%% "scala-java-time" % "2.8.0",
 			),
 		)
 	)
